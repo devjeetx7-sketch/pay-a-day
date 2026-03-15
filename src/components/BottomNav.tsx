@@ -1,4 +1,4 @@
-import { Home, CalendarDays, Clock, Settings } from "lucide-react";
+import { Home, CalendarDays, Clock, BarChart3, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -10,6 +10,7 @@ const BottomNav = () => {
   const tabs = [
     { path: "/", icon: Home, label: t("dashboard") },
     { path: "/calendar", icon: CalendarDays, label: t("calendar") },
+    { path: "/stats", icon: BarChart3, label: t("stats") },
     { path: "/history", icon: Clock, label: t("history") },
     { path: "/settings", icon: Settings, label: t("settings") },
   ];
@@ -23,12 +24,12 @@ const BottomNav = () => {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center justify-center touch-target gap-0.5 flex-1 transition-colors ${
+              className={`flex flex-col items-center justify-center gap-0.5 flex-1 transition-colors ${
                 active ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              <Icon size={24} strokeWidth={active ? 2.5 : 2} />
-              <span className="text-[11px] font-medium">{label}</span>
+              <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+              <span className="text-[10px] font-medium">{label}</span>
             </button>
           );
         })}
