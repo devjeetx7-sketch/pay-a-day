@@ -3,9 +3,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet, User } from "lucide-react";
+import { LogOut, Globe, Wallet, User, Camera } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const SettingsPage = () => {
   const { user, userData, logout } = useAuth();
@@ -19,36 +20,64 @@ const SettingsPage = () => {
     if (!user) return;
     const val = parseInt(wage, 10);
     if (isNaN(val) || val <= 0) return;
-    await updateDoc(doc(db, "users", user.uid), { daily_wage: val });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await updateDoc(doc(db, "users", user.uid), { daily_wage: val });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error("Error saving wage:", err);
+    }
   };
 
   const saveName = async () => {
     if (!user || !name.trim()) return;
-    await updateDoc(doc(db, "users", user.uid), { name: name.trim() });
-    setNameSaved(true);
-    setTimeout(() => setNameSaved(false), 2000);
+    try {
+      await updateDoc(doc(db, "users", user.uid), { name: name.trim() });
+      setNameSaved(true);
+      setTimeout(() => setNameSaved(false), 2000);
+    } catch (err) {
+      console.error("Error saving name:", err);
+    }
   };
 
   const handleLangChange = async (newLang: string) => {
     setLang(newLang);
     if (user) {
-      await updateDoc(doc(db, "users", user.uid), { language: newLang });
+      try {
+        await updateDoc(doc(db, "users", user.uid), { language: newLang });
+      } catch (err) {
+        console.error("Error saving language:", err);
+      }
     }
   };
+
+  const initials = (userData?.name || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="mx-auto max-w-lg px-4 pt-6">
         <h1 className="text-xl font-bold text-foreground mb-6">{t("settings")}</h1>
 
-        {/* Profile */}
-        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
-          <div className="flex items-center gap-3 mb-3">
-            <User size={20} className="text-muted-foreground" />
-            <span className="text-base font-bold text-foreground">{t("profile")}</span>
+        {/* Profile Card */}
+        <div className="rounded-2xl bg-card border border-border p-5 mb-4">
+          <div className="flex items-center gap-4 mb-4">
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={user?.photoURL || ""} alt={userData?.name || ""} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-lg font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold text-foreground truncate">{userData?.name || "User"}</p>
+              <p className="text-xs text-muted-foreground truncate">{userData?.email}</p>
+            </div>
           </div>
+
           <div className="space-y-3">
             <div>
               <label className="text-xs text-muted-foreground font-medium mb-1 block">{t("name")}</label>
@@ -60,7 +89,7 @@ const SettingsPage = () => {
                 />
                 <button
                   onClick={saveName}
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground active:scale-95 touch-target"
+                  className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground active:scale-95"
                 >
                   {nameSaved ? t("saved") : t("save")}
                 </button>
@@ -88,7 +117,7 @@ const SettingsPage = () => {
               <button
                 key={code}
                 onClick={() => handleLangChange(code)}
-                className={`rounded-xl px-3 py-3 text-sm font-semibold transition-all active:scale-95 touch-target ${
+                className={`rounded-xl px-3 py-3 text-sm font-semibold transition-all active:scale-95 ${
                   lang === code
                     ? "bg-primary text-primary-foreground"
                     : "bg-background border border-border text-foreground"
@@ -118,7 +147,7 @@ const SettingsPage = () => {
             </div>
             <button
               onClick={saveWage}
-              className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground active:scale-95 touch-target"
+              className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground active:scale-95"
             >
               {saved ? t("saved") : t("save")}
             </button>
@@ -128,7 +157,7 @@ const SettingsPage = () => {
         {/* Logout */}
         <button
           onClick={logout}
-          className="w-full rounded-2xl border-2 border-destructive py-4 flex items-center justify-center gap-2 text-destructive font-bold text-base active:scale-95 touch-target"
+          className="w-full rounded-2xl border-2 border-destructive py-4 flex items-center justify-center gap-2 text-destructive font-bold text-base active:scale-95"
         >
           <LogOut size={20} />
           {t("logout")}
