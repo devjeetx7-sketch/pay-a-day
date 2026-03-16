@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Check, X, Clock, FileText, Minus, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, X, Clock, Minus, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
@@ -8,7 +8,7 @@ import {
 } from "firebase/firestore";
 import BottomNav from "@/components/BottomNav";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,104 +52,125 @@ const Dashboard = () => {
     const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const endDate = `${year}-${String(month + 1).padStart(2, "0")}-31`;
 
+    // Simple query: only filter by user_id, then filter dates client-side
     const q = query(
       collection(db, "attendance"),
-      where("user_id", "==", user.uid),
-      where("date", ">=", startDate),
-      where("date", "<=", endDate)
+      where("user_id", "==", user.uid)
     );
 
-    const snap = await getDocs(q);
-    let worked = 0;
-    let ot = 0;
-    let leaves = 0;
+    try {
+      const snap = await getDocs(q);
+      let worked = 0;
+      let ot = 0;
+      let leaves = 0;
 
-    snap.docs.forEach((d) => {
-      const data = d.data();
-      if (data.status === "present") {
-        worked++;
-        if (data.type === "half") worked -= 0.5;
-        ot += data.overtime_hours || 0;
-      } else if (data.status === "absent" || data.status === "leave") {
-        leaves++;
-      }
-      if (data.date === todayStr) {
-        setMarked(true);
-        setTodayStatus(data.status);
-        setTodayNote(data.note || "");
-      }
-    });
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        // Client-side date filtering
+        if (data.date < startDate || data.date > endDate) return;
 
-    setDaysWorked(worked);
-    setTotalOvertime(ot);
-    setLeaveDays(leaves);
+        if (data.status === "present") {
+          worked++;
+          if (data.type === "half") worked -= 0.5;
+          ot += data.overtime_hours || 0;
+        } else if (data.status === "absent" || data.status === "leave") {
+          leaves++;
+        }
+        if (data.date === todayStr) {
+          setMarked(true);
+          setTodayStatus(data.status);
+          setTodayNote(data.note || "");
+        }
+      });
+
+      setDaysWorked(worked);
+      setTotalOvertime(ot);
+      setLeaveDays(leaves);
+    } catch (err) {
+      console.error("Error loading month data:", err);
+    }
   };
 
   const markAttendance = async (type: "full" | "half" = "full") => {
     if (!user || marked || loading) return;
     setLoading(true);
-    const docId = `${user.uid}_${todayStr}`;
-    await setDoc(doc(db, "attendance", docId), {
-      user_id: user.uid,
-      date: todayStr,
-      status: "present",
-      type,
-      overtime_hours: overtimeHours,
-      note,
-      timestamp: serverTimestamp(),
-    });
-    setMarked(true);
-    setTodayStatus("present");
-    setTodayNote(note);
-    setDaysWorked((d) => d + (type === "half" ? 0.5 : 1));
-    setTotalOvertime((o) => o + overtimeHours);
+    try {
+      const docId = `${user.uid}_${todayStr}`;
+      await setDoc(doc(db, "attendance", docId), {
+        user_id: user.uid,
+        date: todayStr,
+        status: "present",
+        type,
+        overtime_hours: overtimeHours,
+        note,
+        timestamp: serverTimestamp(),
+      });
+      setMarked(true);
+      setTodayStatus("present");
+      setTodayNote(note);
+      setDaysWorked((d) => d + (type === "half" ? 0.5 : 1));
+      setTotalOvertime((o) => o + overtimeHours);
+      setNote("");
+      setOvertimeHours(0);
+    } catch (err) {
+      console.error("Error marking attendance:", err);
+    }
     setLoading(false);
-    setNote("");
-    setOvertimeHours(0);
   };
 
   const markAbsent = async () => {
     if (!user || loading) return;
     setLoading(true);
-    const docId = `${user.uid}_${todayStr}`;
-    await setDoc(doc(db, "attendance", docId), {
-      user_id: user.uid,
-      date: todayStr,
-      status: "absent",
-      reason: absenceReason,
-      note,
-      timestamp: serverTimestamp(),
-    });
-    setMarked(true);
-    setTodayStatus("absent");
-    setTodayNote(note);
-    setLeaveDays((d) => d + 1);
+    try {
+      const docId = `${user.uid}_${todayStr}`;
+      await setDoc(doc(db, "attendance", docId), {
+        user_id: user.uid,
+        date: todayStr,
+        status: "absent",
+        reason: absenceReason,
+        note,
+        timestamp: serverTimestamp(),
+      });
+      setMarked(true);
+      setTodayStatus("absent");
+      setTodayNote(note);
+      setLeaveDays((d) => d + 1);
+      setShowAbsentDialog(false);
+      setNote("");
+    } catch (err) {
+      console.error("Error marking absent:", err);
+    }
     setLoading(false);
-    setShowAbsentDialog(false);
-    setNote("");
   };
 
   const removeAttendance = async () => {
     if (!user || !marked || loading) return;
     setLoading(true);
-    const docId = `${user.uid}_${todayStr}`;
-    await deleteDoc(doc(db, "attendance", docId));
-    setMarked(false);
-    setTodayStatus(null);
-    setTodayNote("");
-    // Reload data
-    await loadMonthData();
-    setMarked(false);
-    setTodayStatus(null);
+    try {
+      const docId = `${user.uid}_${todayStr}`;
+      await deleteDoc(doc(db, "attendance", docId));
+      setMarked(false);
+      setTodayStatus(null);
+      setTodayNote("");
+      await loadMonthData();
+      setMarked(false);
+      setTodayStatus(null);
+    } catch (err) {
+      console.error("Error removing attendance:", err);
+    }
     setLoading(false);
   };
 
   const saveNote = async () => {
     if (!user) return;
-    const docId = `${user.uid}_${todayStr}`;
-    await setDoc(doc(db, "attendance", docId), { note }, { merge: true });
-    setTodayNote(note);
-    setShowNoteDialog(false);
+    try {
+      const docId = `${user.uid}_${todayStr}`;
+      await setDoc(doc(db, "attendance", docId), { note }, { merge: true });
+      setTodayNote(note);
+      setShowNoteDialog(false);
+    } catch (err) {
+      console.error("Error saving note:", err);
+    }
   };
 
   const firstName = userData?.name?.split(" ")[0] || "";
@@ -302,9 +323,9 @@ const Dashboard = () => {
         <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
             <DialogTitle>{t("markAbsent")}</DialogTitle>
+            <DialogDescription>{t("reason")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm font-medium text-muted-foreground">{t("reason")}</p>
             <div className="grid grid-cols-2 gap-2">
               {absenceReasons.map((r) => (
                 <button
@@ -339,6 +360,7 @@ const Dashboard = () => {
         <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
             <DialogTitle>{t("addNote")}</DialogTitle>
+            <DialogDescription>{t("notes")}</DialogDescription>
           </DialogHeader>
           <Textarea
             value={note}

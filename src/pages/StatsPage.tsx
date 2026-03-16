@@ -24,61 +24,60 @@ const StatsPage = () => {
   const loadStats = async () => {
     if (!user) return;
     const today = new Date();
-    const year = today.getFullYear();
-
-    // Load last 6 months
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const months: { name: string; days: number }[] = [];
 
-    for (let i = 5; i >= 0; i--) {
-      const m = new Date(year, today.getMonth() - i, 1);
-      const mYear = m.getFullYear();
-      const mMonth = m.getMonth();
-      const startDate = `${mYear}-${String(mMonth + 1).padStart(2, "0")}-01`;
-      const endDate = `${mYear}-${String(mMonth + 1).padStart(2, "0")}-31`;
-
+    try {
+      // Single query: get all records for this user
       const q = query(
         collection(db, "attendance"),
-        where("user_id", "==", user.uid),
-        where("date", ">=", startDate),
-        where("date", "<=", endDate),
-        where("status", "==", "present")
+        where("user_id", "==", user.uid)
       );
       const snap = await getDocs(q);
-      months.push({ name: monthNames[mMonth], days: snap.size });
-    }
-    setMonthlyData(months);
+      const allRecords = snap.docs.map((d) => d.data());
 
-    // Current month detailed stats
-    const cm = today.getMonth();
-    const startDate = `${year}-${String(cm + 1).padStart(2, "0")}-01`;
-    const endDate = `${year}-${String(cm + 1).padStart(2, "0")}-31`;
+      // Build monthly data for last 6 months
+      const months: { name: string; days: number }[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const m = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const mYear = m.getFullYear();
+        const mMonth = m.getMonth();
+        const startDate = `${mYear}-${String(mMonth + 1).padStart(2, "0")}-01`;
+        const endDate = `${mYear}-${String(mMonth + 1).padStart(2, "0")}-31`;
 
-    const allQ = query(
-      collection(db, "attendance"),
-      where("user_id", "==", user.uid),
-      where("date", ">=", startDate),
-      where("date", "<=", endDate)
-    );
-    const allSnap = await getDocs(allQ);
-
-    let present = 0, absent = 0, halfDays = 0, overtime = 0;
-    allSnap.docs.forEach((d) => {
-      const data = d.data();
-      if (data.status === "present") {
-        present++;
-        if (data.type === "half") halfDays++;
-        overtime += data.overtime_hours || 0;
-      } else {
-        absent++;
+        const count = allRecords.filter(
+          (r) => r.date >= startDate && r.date <= endDate && r.status === "present"
+        ).length;
+        months.push({ name: monthNames[mMonth], days: count });
       }
-    });
+      setMonthlyData(months);
 
-    const effectiveDays = present - halfDays * 0.5;
-    setCurrentMonthStats({
-      present, absent, halfDays, overtime,
-      totalEarnings: effectiveDays * dailyWage,
-    });
+      // Current month stats
+      const cm = today.getMonth();
+      const year = today.getFullYear();
+      const startDate = `${year}-${String(cm + 1).padStart(2, "0")}-01`;
+      const endDate = `${year}-${String(cm + 1).padStart(2, "0")}-31`;
+
+      let present = 0, absent = 0, halfDays = 0, overtime = 0;
+      allRecords
+        .filter((r) => r.date >= startDate && r.date <= endDate)
+        .forEach((data) => {
+          if (data.status === "present") {
+            present++;
+            if (data.type === "half") halfDays++;
+            overtime += data.overtime_hours || 0;
+          } else {
+            absent++;
+          }
+        });
+
+      const effectiveDays = present - halfDays * 0.5;
+      setCurrentMonthStats({
+        present, absent, halfDays, overtime,
+        totalEarnings: effectiveDays * dailyWage,
+      });
+    } catch (err) {
+      console.error("Error loading stats:", err);
+    }
   };
 
   const pieData = [

@@ -3,14 +3,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet } from "lucide-react";
+import { LogOut, Globe, Wallet, User } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { Input } from "@/components/ui/input";
 
 const SettingsPage = () => {
   const { user, userData, logout } = useAuth();
   const { t, lang, setLang, languages } = useLanguage();
   const [wage, setWage] = useState(String(userData?.daily_wage || 500));
+  const [name, setName] = useState(userData?.name || "");
   const [saved, setSaved] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
 
   const saveWage = async () => {
     if (!user) return;
@@ -19,6 +22,13 @@ const SettingsPage = () => {
     await updateDoc(doc(db, "users", user.uid), { daily_wage: val });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const saveName = async () => {
+    if (!user || !name.trim()) return;
+    await updateDoc(doc(db, "users", user.uid), { name: name.trim() });
+    setNameSaved(true);
+    setTimeout(() => setNameSaved(false), 2000);
   };
 
   const handleLangChange = async (newLang: string) => {
@@ -33,6 +43,40 @@ const SettingsPage = () => {
       <div className="mx-auto max-w-lg px-4 pt-6">
         <h1 className="text-xl font-bold text-foreground mb-6">{t("settings")}</h1>
 
+        {/* Profile */}
+        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <User size={20} className="text-muted-foreground" />
+            <span className="text-base font-bold text-foreground">{t("profile")}</span>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground font-medium mb-1 block">{t("name")}</label>
+              <div className="flex gap-2">
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="flex-1"
+                />
+                <button
+                  onClick={saveName}
+                  className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground active:scale-95 touch-target"
+                >
+                  {nameSaved ? t("saved") : t("save")}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground font-medium mb-1 block">{t("email")}</label>
+              <Input
+                value={userData?.email || ""}
+                disabled
+                className="opacity-60"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Language */}
         <div className="rounded-2xl bg-card border border-border p-4 mb-4">
           <div className="flex items-center gap-3 mb-3">
@@ -40,7 +84,7 @@ const SettingsPage = () => {
             <span className="text-base font-bold text-foreground">{t("language")}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {Object.entries(languages).map(([code, name]) => (
+            {Object.entries(languages).map(([code, langName]) => (
               <button
                 key={code}
                 onClick={() => handleLangChange(code)}
@@ -50,7 +94,7 @@ const SettingsPage = () => {
                     : "bg-background border border-border text-foreground"
                 }`}
               >
-                {name}
+                {langName}
               </button>
             ))}
           </div>

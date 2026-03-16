@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import BottomNav from "@/components/BottomNav";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,27 +54,32 @@ const CalendarPage = () => {
     const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const endDate = `${year}-${String(month + 1).padStart(2, "0")}-31`;
 
-    const q = query(
-      collection(db, "attendance"),
-      where("user_id", "==", user.uid),
-      where("date", ">=", startDate),
-      where("date", "<=", endDate)
-    );
+    try {
+      // Simple query: only filter by user_id
+      const q = query(
+        collection(db, "attendance"),
+        where("user_id", "==", user.uid)
+      );
 
-    const snap = await getDocs(q);
-    const map: Record<number, DayData> = {};
-    snap.docs.forEach((d) => {
-      const data = d.data();
-      const day = parseInt(data.date.split("-")[2], 10);
-      map[day] = {
-        status: data.status,
-        type: data.type,
-        reason: data.reason,
-        overtime_hours: data.overtime_hours,
-        note: data.note,
-      };
-    });
-    setDayMap(map);
+      const snap = await getDocs(q);
+      const map: Record<number, DayData> = {};
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        // Client-side date filtering
+        if (data.date < startDate || data.date > endDate) return;
+        const day = parseInt(data.date.split("-")[2], 10);
+        map[day] = {
+          status: data.status,
+          type: data.type,
+          reason: data.reason,
+          overtime_hours: data.overtime_hours,
+          note: data.note,
+        };
+      });
+      setDayMap(map);
+    } catch (err) {
+      console.error("Error loading calendar:", err);
+    }
   };
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
@@ -104,29 +109,37 @@ const CalendarPage = () => {
 
   const saveDay = async () => {
     if (!user || selectedDay === null) return;
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
-    const docId = `${user.uid}_${dateStr}`;
-    await setDoc(doc(db, "attendance", docId), {
-      user_id: user.uid,
-      date: dateStr,
-      status: editStatus,
-      type: editStatus === "present" ? editType : null,
-      reason: editStatus === "absent" ? editReason : null,
-      overtime_hours: editStatus === "present" ? editOT : 0,
-      note: editNote || null,
-      timestamp: serverTimestamp(),
-    });
-    setShowEditDialog(false);
-    loadMonth();
+    try {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+      const docId = `${user.uid}_${dateStr}`;
+      await setDoc(doc(db, "attendance", docId), {
+        user_id: user.uid,
+        date: dateStr,
+        status: editStatus,
+        type: editStatus === "present" ? editType : null,
+        reason: editStatus === "absent" ? editReason : null,
+        overtime_hours: editStatus === "present" ? editOT : 0,
+        note: editNote || null,
+        timestamp: serverTimestamp(),
+      });
+      setShowEditDialog(false);
+      loadMonth();
+    } catch (err) {
+      console.error("Error saving day:", err);
+    }
   };
 
   const deleteDay = async () => {
     if (!user || selectedDay === null) return;
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
-    const docId = `${user.uid}_${dateStr}`;
-    await deleteDoc(doc(db, "attendance", docId));
-    setShowEditDialog(false);
-    loadMonth();
+    try {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+      const docId = `${user.uid}_${dateStr}`;
+      await deleteDoc(doc(db, "attendance", docId));
+      setShowEditDialog(false);
+      loadMonth();
+    } catch (err) {
+      console.error("Error deleting day:", err);
+    }
   };
 
   const presentCount = Object.values(dayMap).filter((d) => d.status === "present").length;
@@ -232,6 +245,7 @@ const CalendarPage = () => {
             <DialogTitle>
               {selectedDay && `${selectedDay} ${monthNames[month]} ${year}`}
             </DialogTitle>
+            <DialogDescription>{t("tapToEdit")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {/* Status toggle */}
