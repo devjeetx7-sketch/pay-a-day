@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { Download, FileImage, FileText, FileSpreadsheet } from "lucide-react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { FileImage, FileText, FileSpreadsheet } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
@@ -31,13 +31,19 @@ const History = () => {
 
   const loadHistory = async () => {
     if (!user) return;
-    const q = query(
-      collection(db, "attendance"),
-      where("user_id", "==", user.uid),
-      orderBy("date", "desc")
-    );
-    const snap = await getDocs(q);
-    setRecords(snap.docs.map((d) => d.data() as AttendanceRecord));
+    try {
+      const q = query(
+        collection(db, "attendance"),
+        where("user_id", "==", user.uid)
+      );
+      const snap = await getDocs(q);
+      const data = snap.docs
+        .map((d) => d.data() as AttendanceRecord)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      setRecords(data);
+    } catch (err) {
+      console.error("Error loading history:", err);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -61,25 +67,33 @@ const History = () => {
 
   const exportPDF = async () => {
     if (!tableRef.current) return;
-    const canvas = await html2canvas(tableRef.current, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pdfW = pdf.internal.pageSize.getWidth();
-    const pdfH = (canvas.height * pdfW) / canvas.width;
-    pdf.setFontSize(16);
-    pdf.text(`${userData?.name || ""} - Attendance Report`, 14, 15);
-    pdf.addImage(imgData, "PNG", 0, 25, pdfW, pdfH);
-    pdf.save(`attendance_${userData?.name || "report"}.pdf`);
+    try {
+      const canvas = await html2canvas(tableRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = (canvas.height * pdfW) / canvas.width;
+      pdf.setFontSize(16);
+      pdf.text(`${userData?.name || ""} - Attendance Report`, 14, 15);
+      pdf.addImage(imgData, "PNG", 0, 25, pdfW, pdfH);
+      pdf.save(`attendance_${userData?.name || "report"}.pdf`);
+    } catch (err) {
+      console.error("Error exporting PDF:", err);
+    }
   };
 
   const exportImage = async () => {
     if (!tableRef.current) return;
-    const canvas = await html2canvas(tableRef.current, { scale: 2 });
-    const url = canvas.toDataURL("image/png");
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `attendance_${userData?.name || "report"}.png`;
-    a.click();
+    try {
+      const canvas = await html2canvas(tableRef.current, { scale: 2 });
+      const url = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `attendance_${userData?.name || "report"}.png`;
+      a.click();
+    } catch (err) {
+      console.error("Error exporting image:", err);
+    }
   };
 
   const totalPresent = records.filter((r) => r.status === "present").length;
