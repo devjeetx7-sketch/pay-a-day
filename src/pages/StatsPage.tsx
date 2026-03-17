@@ -6,6 +6,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { Flame, TrendingUp, Award, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const StatsPage = () => {
   const { user, userData } = useAuth();
@@ -184,132 +185,146 @@ const StatsPage = () => {
         </div>
 
         {/* Streak & Best Streak */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <Flame size={22} className="text-orange-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{streak}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">Current Streak</p>
-            </div>
-          </div>
-          <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
-              <Award size={22} className="text-yellow-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{bestStreak}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">Best Streak</p>
-            </div>
-          </div>
-        </div>
+        <Tabs defaultValue="month" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50 p-1">
+            <TabsTrigger value="month" className="rounded-xl">{monthNames[selectedMonth.getMonth()]}</TabsTrigger>
+            <TabsTrigger value="allTime" className="rounded-xl">All Time</TabsTrigger>
+          </TabsList>
 
-        {/* Attendance Rate */}
-        <div className="rounded-2xl bg-card border border-border p-5 mb-4 flex items-center gap-4">
-          <div className="h-20 w-20">
-            {pieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} innerRadius={24} outerRadius={36} dataKey="value" strokeWidth={0}>
-                    {pieData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full w-full rounded-full border-4 border-muted flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">0%</span>
+          {/* MONTHLY STATS */}
+          <TabsContent value="month" className="mt-0">
+            {/* Streak & Best Streak */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
+                  <Flame size={22} className="text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{streak}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Current Streak</p>
+                </div>
               </div>
-            )}
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-foreground">{attendanceRate}%</p>
-            <p className="text-sm text-muted-foreground font-medium">{t("attendanceRate")}</p>
-          </div>
-        </div>
+              <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                  <Award size={22} className="text-yellow-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{bestStreak}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">Best Streak</p>
+                </div>
+              </div>
+            </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="rounded-2xl bg-card border border-border p-4">
-            <p className="text-xs text-muted-foreground font-medium">{t("earnings")}</p>
-            <p className="text-2xl font-bold text-primary">₹{currentMonthStats.totalEarnings.toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground">{monthNames[selectedMonth.getMonth()]}</p>
-          </div>
-          <div className="rounded-2xl bg-card border border-border p-4">
-            <p className="text-xs text-muted-foreground font-medium">{t("totalOvertime")}</p>
-            <p className="text-2xl font-bold text-foreground">{currentMonthStats.overtime} <span className="text-sm">{t("hours")}</span></p>
-            <p className="text-[10px] text-muted-foreground">{monthNames[selectedMonth.getMonth()]}</p>
-          </div>
-        </div>
+            {/* Attendance Rate */}
+            <div className="rounded-2xl bg-card border border-border p-5 mb-4 flex items-center gap-4">
+              <div className="h-20 w-20">
+                {pieData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={pieData} innerRadius={24} outerRadius={36} dataKey="value" strokeWidth={0}>
+                        {pieData.map((entry, index) => (
+                          <Cell key={index} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full w-full rounded-full border-4 border-muted flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">0%</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-foreground">{attendanceRate}%</p>
+                <p className="text-sm text-muted-foreground font-medium">{t("attendanceRate")}</p>
+              </div>
+            </div>
 
-        {/* All Time Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="rounded-2xl bg-card border border-border p-4">
-            <p className="text-xs text-muted-foreground font-medium">{t("totalEarningsAllTime") || "Total Earnings"}</p>
-            <p className="text-2xl font-bold text-primary">₹{allTimeStats.totalEarnings.toLocaleString()}</p>
-          </div>
-          <div className="rounded-2xl bg-card border border-border p-4">
-            <p className="text-xs text-muted-foreground font-medium">{t("totalDaysAllTime") || "Total Days"}</p>
-            <p className="text-2xl font-bold text-foreground">{allTimeStats.totalDays}</p>
-          </div>
-        </div>
+            {/* Quick stats */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <p className="text-xs text-muted-foreground font-medium">{t("earnings")}</p>
+                <p className="text-2xl font-bold text-primary">₹{currentMonthStats.totalEarnings.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">{monthNames[selectedMonth.getMonth()]}</p>
+              </div>
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <p className="text-xs text-muted-foreground font-medium">{t("totalOvertime")}</p>
+                <p className="text-2xl font-bold text-foreground">{currentMonthStats.overtime} <span className="text-sm">{t("hours")}</span></p>
+                <p className="text-[10px] text-muted-foreground">{monthNames[selectedMonth.getMonth()]}</p>
+              </div>
+            </div>
 
-        {/* Weekly breakdown */}
-        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp size={16} className="text-primary" />
-            <p className="text-sm font-bold text-foreground">{t("weeklyAvg")} - {monthNames[selectedMonth.getMonth()]}</p>
-          </div>
-          <div className="h-28">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData}>
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Bar dataKey="days" radius={[6, 6, 0, 0]}>
-                  {weeklyData.map((_, i) => (
-                    <Cell key={i} fill={`hsl(160, 81%, ${50 - i * 5}%)`} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+            {/* Detail cards */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="rounded-xl bg-primary/10 p-3 text-center">
+                <p className="text-lg font-bold text-primary">{currentMonthStats.present}</p>
+                <p className="text-[10px] text-muted-foreground">{t("present")}</p>
+              </div>
+              <div className="rounded-xl bg-destructive/10 p-3 text-center">
+                <p className="text-lg font-bold text-destructive">{currentMonthStats.absent}</p>
+                <p className="text-[10px] text-muted-foreground">{t("absent")}</p>
+              </div>
+              <div className="rounded-xl bg-accent p-3 text-center">
+                <p className="text-lg font-bold text-foreground">{currentMonthStats.halfDays}</p>
+                <p className="text-[10px] text-muted-foreground">{t("halfDay")}</p>
+              </div>
+            </div>
 
-        {/* Monthly chart */}
-        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
-          <p className="text-sm font-bold text-foreground mb-3">{t("totalDays")} - 6 Months</p>
-          <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Bar dataKey="days" radius={[6, 6, 0, 0]}>
-                  {monthlyData.map((_, i) => (
-                    <Cell key={i} fill={i === monthlyData.length - 1 ? "hsl(160, 81%, 40%)" : "hsl(220, 14%, 90%)"} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+            {/* Weekly breakdown */}
+            <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp size={16} className="text-primary" />
+                <p className="text-sm font-bold text-foreground">{t("weeklyAvg")} - {monthNames[selectedMonth.getMonth()]}</p>
+              </div>
+              <div className="h-28">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyData}>
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis hide />
+                    <Bar dataKey="days" radius={[6, 6, 0, 0]}>
+                      {weeklyData.map((_, i) => (
+                        <Cell key={i} fill={`hsl(160, 81%, ${50 - i * 5}%)`} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </TabsContent>
 
-        {/* Detail cards */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-primary/10 p-3 text-center">
-            <p className="text-lg font-bold text-primary">{currentMonthStats.present}</p>
-            <p className="text-[10px] text-muted-foreground">{t("present")}</p>
-          </div>
-          <div className="rounded-xl bg-destructive/10 p-3 text-center">
-            <p className="text-lg font-bold text-destructive">{currentMonthStats.absent}</p>
-            <p className="text-[10px] text-muted-foreground">{t("absent")}</p>
-          </div>
-          <div className="rounded-xl bg-accent p-3 text-center">
-            <p className="text-lg font-bold text-foreground">{currentMonthStats.halfDays}</p>
-            <p className="text-[10px] text-muted-foreground">{t("halfDay")}</p>
-          </div>
-        </div>
+          {/* ALL TIME STATS */}
+          <TabsContent value="allTime" className="mt-0">
+            {/* All Time Stats */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <p className="text-xs text-muted-foreground font-medium">{t("totalEarningsAllTime") || "Total Earnings"}</p>
+                <p className="text-2xl font-bold text-primary">₹{allTimeStats.totalEarnings.toLocaleString()}</p>
+              </div>
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <p className="text-xs text-muted-foreground font-medium">{t("totalDaysAllTime") || "Total Days"}</p>
+                <p className="text-2xl font-bold text-foreground">{allTimeStats.totalDays}</p>
+              </div>
+            </div>
+
+            {/* Monthly chart */}
+            <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+              <p className="text-sm font-bold text-foreground mb-3">{t("totalDays")} - 6 Months</p>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData}>
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis hide />
+                    <Bar dataKey="days" radius={[6, 6, 0, 0]}>
+                      {monthlyData.map((_, i) => (
+                        <Cell key={i} fill={i === monthlyData.length - 1 ? "hsl(160, 81%, 40%)" : "hsl(220, 14%, 90%)"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
       <BottomNav />
     </div>

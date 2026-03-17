@@ -17,6 +17,7 @@ export interface UserData {
   email: string;
   role: string;
   daily_wage: number;
+  advance_payment?: number;
   language: string;
 }
 
