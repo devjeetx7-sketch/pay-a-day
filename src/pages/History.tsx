@@ -67,12 +67,38 @@ const History = () => {
         where("user_id", "==", user.uid)
       );
       const snap = await getDocs(q);
-      const data = snap.docs
-        .map((d) => d.data() as AttendanceRecord)
-        .filter((r) => r.date >= startDate && r.date <= endDate)
-        .sort((a, b) => b.date.localeCompare(a.date));
-      setRecords(data);
-      setFilteredRecords(data);
+
+      // Group records by date to merge advance payments with attendance
+      const mergedMap: Record<string, AttendanceRecord> = {};
+
+      snap.docs.forEach((doc) => {
+        const data = doc.data() as AttendanceRecord;
+        if (data.date >= startDate && data.date <= endDate) {
+          if (!mergedMap[data.date]) {
+            mergedMap[data.date] = { ...data };
+          } else {
+            // Merge advance amount
+            if (data.status === "advance") {
+               mergedMap[data.date].advance_amount = (mergedMap[data.date].advance_amount || 0) + (data.advance_amount || 0);
+               // Combine notes safely
+               if (data.note && data.note !== "Advance Payment") {
+                 mergedMap[data.date].note = mergedMap[data.date].note
+                   ? `${mergedMap[data.date].note} | ${data.note}`
+                   : data.note;
+               }
+            } else {
+               // Prioritize actual attendance status (present/absent) over 'advance' placeholder
+               const prevAdvance = mergedMap[data.date].advance_amount || 0;
+               mergedMap[data.date] = { ...data, advance_amount: prevAdvance + (data.advance_amount || 0) };
+            }
+          }
+        }
+      });
+
+      const mergedData = Object.values(mergedMap).sort((a, b) => b.date.localeCompare(a.date));
+
+      setRecords(mergedData);
+      setFilteredRecords(mergedData);
     } catch (err) {
       console.error("Error loading history:", err);
     }
@@ -442,21 +468,29 @@ const History = () => {
                         </span>
                       )}
                     </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${
-                        r.status === "present"
-                          ? "bg-primary/10 text-primary"
-                          : r.status === "advance"
-                          ? "bg-orange-500/10 text-orange-500"
-                          : "bg-destructive/10 text-destructive"
-                      }`}
-                    >
-                      {r.status === "present"
-                        ? t("present")
-                        : r.status === "advance"
-                        ? `₹${r.advance_amount || 0} Advance`
-                        : t("absent")}
-                    </span>
+                    <div className="flex flex-col items-end gap-1.5">
+                      {r.status !== "advance" && (
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${
+                            r.status === "present"
+                              ? "bg-primary/10 text-primary"
+                              : "bg-destructive/10 text-destructive"
+                          }`}
+                        >
+                          {r.status === "present" ? t("present") : t("absent")}
+                        </span>
+                      )}
+                      {(r.advance_amount || 0) > 0 && (
+                        <span className="rounded-full px-3 py-1 text-xs font-bold bg-orange-500/10 text-orange-500">
+                          ₹{r.advance_amount} Advance
+                        </span>
+                      )}
+                      {r.status === "advance" && (!r.advance_amount || r.advance_amount === 0) && (
+                        <span className="rounded-full px-3 py-1 text-xs font-bold bg-orange-500/10 text-orange-500">
+                          Advance
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {(r.reason || r.note) && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
