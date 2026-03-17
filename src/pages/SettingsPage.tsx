@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const SettingsPage = () => {
   const { user, userData, logout } = useAuth();
@@ -161,21 +162,18 @@ const SettingsPage = () => {
             <Globe size={20} className="text-muted-foreground" />
             <span className="text-base font-bold text-foreground">{t("language")}</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(languages).map(([code, langName]) => (
-              <button
-                key={code}
-                onClick={() => handleLangChange(code)}
-                className={`rounded-xl px-3 py-3 text-sm font-semibold transition-all active:scale-95 ${
-                  lang === code
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background border border-border text-foreground"
-                }`}
-              >
-                {langName}
-              </button>
-            ))}
-          </div>
+          <Select value={lang} onValueChange={handleLangChange}>
+            <SelectTrigger className="w-full h-12 rounded-xl text-base font-semibold">
+              <SelectValue placeholder="Select Language" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(languages).map(([code, langName]) => (
+                <SelectItem key={code} value={code} className="text-base font-medium py-3">
+                  {langName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Daily Wage */}
