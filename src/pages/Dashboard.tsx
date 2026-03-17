@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Clock, Minus, Plus } from "lucide-react";
+import { Check, X, Clock, Minus, Plus, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [totalOvertime, setTotalOvertime] = useState(0);
   const [leaveDays, setLeaveDays] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [showAbsentDialog, setShowAbsentDialog] = useState(false);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [absenceReason, setAbsenceReason] = useState("sick");
@@ -47,12 +48,12 @@ const Dashboard = () => {
 
   const loadMonthData = async () => {
     if (!user) return;
+    setPageLoading(true);
     const year = today.getFullYear();
     const month = today.getMonth();
     const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const endDate = `${year}-${String(month + 1).padStart(2, "0")}-31`;
 
-    // Simple query: only filter by user_id, then filter dates client-side
     const q = query(
       collection(db, "attendance"),
       where("user_id", "==", user.uid)
@@ -63,10 +64,10 @@ const Dashboard = () => {
       let worked = 0;
       let ot = 0;
       let leaves = 0;
+      let foundToday = false;
 
       snap.docs.forEach((d) => {
         const data = d.data();
-        // Client-side date filtering
         if (data.date < startDate || data.date > endDate) return;
 
         if (data.status === "present") {
@@ -77,11 +78,18 @@ const Dashboard = () => {
           leaves++;
         }
         if (data.date === todayStr) {
+          foundToday = true;
           setMarked(true);
           setTodayStatus(data.status);
           setTodayNote(data.note || "");
         }
       });
+
+      if (!foundToday) {
+        setMarked(false);
+        setTodayStatus(null);
+        setTodayNote("");
+      }
 
       setDaysWorked(worked);
       setTotalOvertime(ot);
@@ -89,6 +97,7 @@ const Dashboard = () => {
     } catch (err) {
       console.error("Error loading month data:", err);
     }
+    setPageLoading(false);
   };
 
   const markAttendance = async (type: "full" | "half" = "full") => {
@@ -153,8 +162,6 @@ const Dashboard = () => {
       setTodayStatus(null);
       setTodayNote("");
       await loadMonthData();
-      setMarked(false);
-      setTodayStatus(null);
     } catch (err) {
       console.error("Error removing attendance:", err);
     }
@@ -174,6 +181,15 @@ const Dashboard = () => {
   };
 
   const firstName = userData?.name?.split(" ")[0] || "";
+
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
