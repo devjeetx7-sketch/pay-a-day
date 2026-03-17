@@ -200,16 +200,16 @@ const StatsPage = () => {
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="rounded-2xl bg-card border border-border p-4">
-                <p className="text-xs text-muted-foreground font-medium">Advance Deductions</p>
+                <p className="text-xs text-muted-foreground font-medium">{t("advanceDeductions")}</p>
                 <p className="text-2xl font-bold text-orange-500">₹{currentMonthStats.advanceTotal.toLocaleString()}</p>
                 <p className="text-[10px] text-muted-foreground">{monthNames[selectedMonth.getMonth()]}</p>
               </div>
               <div className="rounded-2xl bg-card border border-border p-4">
-                <p className="text-xs text-muted-foreground font-medium">Net Payable</p>
+                <p className="text-xs text-muted-foreground font-medium">{t("netPayable")}</p>
                 <p className="text-2xl font-bold text-green-600">
                   ₹{Math.max(0, currentMonthStats.totalEarnings - currentMonthStats.advanceTotal).toLocaleString()}
                 </p>
-                <p className="text-[10px] text-muted-foreground">After deductions</p>
+                <p className="text-[10px] text-muted-foreground">{t("afterDeductions")}</p>
               </div>
             </div>
 

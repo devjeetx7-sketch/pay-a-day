@@ -412,7 +412,7 @@ const Dashboard = () => {
             className="w-full rounded-2xl border border-dashed border-primary bg-primary/5 py-4 flex items-center justify-center gap-2 text-primary font-bold text-sm active:scale-95"
           >
             <Plus size={20} />
-            Add Advance Payment Today
+            {t("addAdvancePayment")}
           </button>
         </div>
 
@@ -433,16 +433,16 @@ const Dashboard = () => {
         </div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="rounded-2xl bg-card p-4 border border-border">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Total Advance</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t("totalAdvance")}</p>
             <p className="text-2xl font-bold text-orange-500">₹{monthlyAdvance.toLocaleString()}</p>
             <p className="text-[10px] font-medium text-muted-foreground mt-1">{t("thisMonth")}</p>
           </div>
           <div className="rounded-2xl bg-card p-4 border border-border">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Net Payable</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t("netPayable")}</p>
             <p className="text-2xl font-bold text-green-600">
               ₹{Math.max(0, (daysWorked * dailyWage) - monthlyAdvance).toLocaleString()}
             </p>
-            <p className="text-[10px] font-medium text-muted-foreground mt-1">After deductions</p>
+            <p className="text-[10px] font-medium text-muted-foreground mt-1">{t("afterDeductions")}</p>
           </div>
         </div>
       </div>
@@ -451,12 +451,12 @@ const Dashboard = () => {
       <Dialog open={showAdvanceDialog} onOpenChange={setShowAdvanceDialog}>
         <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
-            <DialogTitle>Add Advance Payment</DialogTitle>
-            <DialogDescription>Record money received in advance</DialogDescription>
+            <DialogTitle>{t("addAdvancePayment")}</DialogTitle>
+            <DialogDescription>{t("addAdvancePayment")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-2">
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1 block">Select Date</label>
+              <label className="text-xs text-muted-foreground font-medium mb-1 block">{t("selectDate")}</label>
               <input
                 type="date"
                 value={advanceDate}
