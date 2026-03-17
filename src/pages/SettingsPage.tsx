@@ -3,29 +3,28 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, CreditCard, Sparkles } from "lucide-react";
+import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const SettingsPage = () => {
   const { user, userData, logout } = useAuth();
   const { t, lang, setLang, languages } = useLanguage();
   const [wage, setWage] = useState(String(userData?.daily_wage || 500));
-  const [advance, setAdvance] = useState(String(userData?.advance_payment || 0));
   const [name, setName] = useState(userData?.name || "");
   const [saved, setSaved] = useState(false);
-  const [advanceSaved, setAdvanceSaved] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
   const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
   const [reminders, setReminders] = useState(() => localStorage.getItem("reminders") === "true");
+  const [showHowToUse, setShowHowToUse] = useState(false);
 
   useEffect(() => {
     if (userData?.name) setName(userData.name);
     if (userData?.daily_wage) setWage(String(userData.daily_wage));
-    if (userData?.advance_payment !== undefined) setAdvance(String(userData.advance_payment));
   }, [userData]);
 
   const toggleDarkMode = (enabled: boolean) => {
@@ -54,19 +53,6 @@ const SettingsPage = () => {
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error("Error saving wage:", err);
-    }
-  };
-
-  const saveAdvance = async () => {
-    if (!user) return;
-    const val = parseInt(advance, 10);
-    if (isNaN(val) || val < 0) return;
-    try {
-      await updateDoc(doc(db, "users", user.uid), { advance_payment: val });
-      setAdvanceSaved(true);
-      setTimeout(() => setAdvanceSaved(false), 2000);
-    } catch (err) {
-      console.error("Error saving advance payment:", err);
     }
   };
 
@@ -217,31 +203,6 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* Advance Payment */}
-        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
-          <div className="flex items-center gap-3 mb-3">
-            <CreditCard size={20} className="text-muted-foreground" />
-            <span className="text-base font-bold text-foreground">Advance Payment</span>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
-              <input
-                type="number"
-                value={advance}
-                onChange={(e) => setAdvance(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-8 py-3 text-lg font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <button
-              onClick={saveAdvance}
-              className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground active:scale-95"
-            >
-              {advanceSaved ? t("saved") : t("save")}
-            </button>
-          </div>
-        </div>
-
         {/* Premium */}
         <div className="rounded-2xl bg-gradient-to-r from-yellow-500/10 via-orange-500/10 to-red-500/10 border border-border p-4 mb-4">
           <div className="flex items-center justify-between">
@@ -258,17 +219,25 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* About */}
-        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
-          <div className="flex items-center gap-3 mb-2">
-            <Info size={20} className="text-muted-foreground" />
-            <span className="text-base font-bold text-foreground">About WorkDay</span>
+        {/* How to Use / About */}
+        <div className="rounded-2xl bg-card border border-border p-4 mb-4 space-y-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Info size={20} className="text-muted-foreground" />
+              <span className="text-base font-bold text-foreground">About WorkDay</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              WorkDay helps daily wage workers seamlessly track attendance, earnings, overtime, and leaves.
+              Export professional reports, view analytics, and manage your work life entirely in one app.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            WorkDay helps daily wage workers track attendance, earnings, overtime, and leave. 
-            Export professional reports, view analytics, and manage your work life — all in one app.
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-2">Version 1.0.0</p>
+          <button
+            onClick={() => setShowHowToUse(true)}
+            className="w-full rounded-xl bg-muted/50 border border-border py-3 text-sm font-bold text-foreground active:scale-95 transition-all"
+          >
+            How to Use WorkDay
+          </button>
+          <p className="text-[10px] text-muted-foreground">Version 1.0.0</p>
         </div>
 
         {/* Data & Privacy */}
@@ -291,6 +260,43 @@ const SettingsPage = () => {
           {t("logout")}
         </button>
       </div>
+      {/* How to Use Dialog */}
+      <Dialog open={showHowToUse} onOpenChange={setShowHowToUse}>
+        <DialogContent className="max-w-sm mx-auto max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>How to Use WorkDay</DialogTitle>
+            <DialogDescription>A quick guide to tracking your work effectively</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 mt-2">
+            <div>
+              <h3 className="text-sm font-bold text-foreground mb-1">📅 Marking Attendance</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                On the Dashboard, click <b>Full Day</b> or <b>Half Day</b> to mark today's attendance. Add overtime using the + / - buttons before saving. If you didn't work, click <b>Mark Absent</b>.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground mb-1">💸 Net Payable & Earnings</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Your <b>Earnings</b> are automatically calculated by multiplying your working days with your Daily Wage. <b>Net Payable</b> on the dashboard and stats page shows your final take-home amount: <br/><br/>
+                <span className="font-mono bg-muted px-1 py-0.5 rounded text-primary">Net Payable = Total Earnings - Advance Payments</span>
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground mb-1">💳 Advance Payments</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                If you receive money ahead of time, click <b>Add Advance Payment Today</b> on the Dashboard or add it directly on a specific date inside the <b>Calendar</b>. This is automatically deducted from your Net Payable.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground mb-1">📊 Calendar & History</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Use the <b>Calendar</b> to edit past records (e.g. if you forgot to mark attendance yesterday). Use <b>History</b> to export your monthly logs as a PDF or CSV, and click the Share button to send reports via WhatsApp or Email.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );

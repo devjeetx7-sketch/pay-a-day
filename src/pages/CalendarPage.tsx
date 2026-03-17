@@ -31,6 +31,7 @@ const CalendarPage = () => {
   const [editReason, setEditReason] = useState("sick");
   const [editNote, setEditNote] = useState("");
   const [editOT, setEditOT] = useState(0);
+  const [editAdvance, setEditAdvance] = useState(0);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -68,12 +69,30 @@ const CalendarPage = () => {
         // Client-side date filtering
         if (data.date < startDate || data.date > endDate) return;
         const day = parseInt(data.date.split("-")[2], 10);
+
+        if (map[day] && data.status === "advance") {
+             map[day].advance_amount = (map[day].advance_amount || 0) + data.advance_amount;
+             return;
+        }
+        if (map[day] && map[day].status === "advance" && data.status !== "advance") {
+             map[day] = {
+               status: data.status,
+               type: data.type,
+               reason: data.reason,
+               overtime_hours: data.overtime_hours,
+               note: data.note,
+               advance_amount: map[day].advance_amount
+             };
+             return;
+        }
+
         map[day] = {
           status: data.status,
           type: data.type,
           reason: data.reason,
           overtime_hours: data.overtime_hours,
           note: data.note,
+          advance_amount: data.advance_amount
         };
       });
       setDayMap(map);
@@ -92,17 +111,19 @@ const CalendarPage = () => {
     const data = dayMap[day];
     setSelectedDay(day);
     if (data) {
-      setEditStatus(data.status);
+      setEditStatus(data.status === "advance" ? "present" : data.status);
       setEditType(data.type || "full");
       setEditReason(data.reason || "sick");
       setEditNote(data.note || "");
       setEditOT(data.overtime_hours || 0);
+      setEditAdvance(data.advance_amount || 0);
     } else {
       setEditStatus("present");
       setEditType("full");
       setEditReason("sick");
       setEditNote("");
       setEditOT(0);
+      setEditAdvance(0);
     }
     setShowEditDialog(true);
   };
@@ -111,17 +132,36 @@ const CalendarPage = () => {
     if (!user || selectedDay === null) return;
     try {
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
-      const docId = `${user.uid}_${dateStr}`;
-      await setDoc(doc(db, "attendance", docId), {
-        user_id: user.uid,
-        date: dateStr,
-        status: editStatus,
-        type: editStatus === "present" ? editType : null,
-        reason: editStatus === "absent" ? editReason : null,
-        overtime_hours: editStatus === "present" ? editOT : 0,
-        note: editNote || null,
-        timestamp: serverTimestamp(),
-      });
+
+      if (editStatus === "present" || editStatus === "absent") {
+        const docId = `${user.uid}_${dateStr}`;
+        await setDoc(doc(db, "attendance", docId), {
+          user_id: user.uid,
+          date: dateStr,
+          status: editStatus,
+          type: editStatus === "present" ? editType : null,
+          reason: editStatus === "absent" ? editReason : null,
+          overtime_hours: editStatus === "present" ? editOT : 0,
+          note: editNote || null,
+          timestamp: serverTimestamp(),
+        });
+      }
+
+      if (editAdvance > 0) {
+         const advanceDocId = `${user.uid}_${dateStr}_advance`;
+         await setDoc(doc(db, "attendance", advanceDocId), {
+           user_id: user.uid,
+           date: dateStr,
+           status: "advance",
+           advance_amount: editAdvance,
+           note: "Advance Payment (Calendar)",
+           timestamp: serverTimestamp(),
+         });
+      } else {
+         const advanceDocId = `${user.uid}_${dateStr}_advance`;
+         await deleteDoc(doc(db, "attendance", advanceDocId)).catch(() => {});
+      }
+
       setShowEditDialog(false);
       loadMonth();
     } catch (err) {
@@ -134,7 +174,11 @@ const CalendarPage = () => {
     try {
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
       const docId = `${user.uid}_${dateStr}`;
-      await deleteDoc(doc(db, "attendance", docId));
+      await deleteDoc(doc(db, "attendance", docId)).catch(() => {});
+
+      const advanceDocId = `${user.uid}_${dateStr}_advance`;
+      await deleteDoc(doc(db, "attendance", advanceDocId)).catch(() => {});
+
       setShowEditDialog(false);
       loadMonth();
     } catch (err) {
@@ -197,6 +241,7 @@ const CalendarPage = () => {
             const isPresent = data?.status === "present";
             const isAbsent = data?.status === "absent";
             const isHalf = data?.type === "half";
+            const hasAdvance = data?.advance_amount && data.advance_amount > 0;
             const isToday = isCurrentMonth && day === todayDate.getDate();
             return (
               <button
@@ -214,7 +259,10 @@ const CalendarPage = () => {
               >
                 {day}
                 {isHalf && (
-                  <div className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-accent-foreground" />
+                  <div className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-accent-foreground" />
+                )}
+                {hasAdvance && (
+                  <div className="absolute bottom-1 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_4px_rgba(249,115,22,0.6)]" />
                 )}
               </button>
             );
@@ -232,8 +280,8 @@ const CalendarPage = () => {
             <span className="text-[10px] font-medium text-muted-foreground">{t("absent")}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded-full border-2 border-border" />
-            <span className="text-[10px] font-medium text-muted-foreground">—</span>
+            <div className="h-3 w-3 rounded-full bg-orange-500" />
+            <span className="text-[10px] font-medium text-muted-foreground">Advance</span>
           </div>
         </div>
       </div>
@@ -310,6 +358,20 @@ const CalendarPage = () => {
                 ))}
               </div>
             )}
+
+            <div className="flex flex-col gap-1.5 pt-2">
+              <span className="text-sm font-medium">Advance Payment (₹)</span>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
+                <input
+                  type="number"
+                  value={editAdvance || ""}
+                  onChange={(e) => setEditAdvance(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  className="w-full rounded-xl border border-border bg-background px-8 py-2.5 text-base font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
 
             <Textarea
               value={editNote}

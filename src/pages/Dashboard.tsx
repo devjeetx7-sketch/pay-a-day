@@ -25,13 +25,17 @@ const Dashboard = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [showAbsentDialog, setShowAbsentDialog] = useState(false);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [showAdvanceDialog, setShowAdvanceDialog] = useState(false);
   const [absenceReason, setAbsenceReason] = useState("sick");
   const [overtimeHours, setOvertimeHours] = useState(0);
   const [note, setNote] = useState("");
   const [todayNote, setTodayNote] = useState("");
+  const [advanceAmount, setAdvanceAmount] = useState("");
+  const [monthlyAdvance, setMonthlyAdvance] = useState(0);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
+  const [advanceDate, setAdvanceDate] = useState(todayStr);
   const dailyWage = userData?.daily_wage || 500;
 
   const monthNames = [
@@ -65,6 +69,7 @@ const Dashboard = () => {
       let ot = 0;
       let leaves = 0;
       let foundToday = false;
+      let advanceTotal = 0;
 
       snap.docs.forEach((d) => {
         const data = d.data();
@@ -77,7 +82,10 @@ const Dashboard = () => {
         } else if (data.status === "absent" || data.status === "leave") {
           leaves++;
         }
-        if (data.date === todayStr) {
+        if (data.advance_amount) {
+          advanceTotal += data.advance_amount;
+        }
+        if (data.date === todayStr && data.status !== "advance") {
           foundToday = true;
           setMarked(true);
           setTodayStatus(data.status);
@@ -94,6 +102,7 @@ const Dashboard = () => {
       setDaysWorked(worked);
       setTotalOvertime(ot);
       setLeaveDays(leaves);
+      setMonthlyAdvance(advanceTotal);
     } catch (err) {
       console.error("Error loading month data:", err);
     }
@@ -180,6 +189,45 @@ const Dashboard = () => {
     }
   };
 
+  const saveAdvance = async () => {
+    if (!user || !advanceAmount) return;
+    const amount = parseInt(advanceAmount, 10);
+    if (isNaN(amount) || amount <= 0) return;
+    setLoading(true);
+    try {
+      const docId = `${user.uid}_${advanceDate}_advance`;
+
+      // Fetch existing advance to add to it instead of overwriting/duplicating
+      const existingDoc = await getDocs(query(
+        collection(db, "attendance"),
+        where("user_id", "==", user.uid),
+        where("date", "==", advanceDate),
+        where("status", "==", "advance")
+      ));
+
+      let newAmount = amount;
+      if (!existingDoc.empty) {
+        newAmount += existingDoc.docs[0].data().advance_amount || 0;
+      }
+
+      await setDoc(doc(db, "attendance", docId), {
+        user_id: user.uid,
+        date: advanceDate,
+        status: "advance",
+        advance_amount: newAmount,
+        note: "Advance Payment",
+        timestamp: serverTimestamp(),
+      });
+      setAdvanceAmount("");
+      setAdvanceDate(todayStr);
+      setShowAdvanceDialog(false);
+      await loadMonthData();
+    } catch (err) {
+      console.error("Error saving advance:", err);
+    }
+    setLoading(false);
+  };
+
   const firstName = userData?.name?.split(" ")[0] || "";
 
   if (pageLoading) {
@@ -207,17 +255,33 @@ const Dashboard = () => {
         {!marked ? (
           <div className="mb-6 space-y-3">
             {/* Overtime selector */}
-            <div className="flex items-center justify-between rounded-xl bg-card border border-border px-4 py-3">
-              <span className="text-sm font-bold text-foreground">{t("overtime")}</span>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setOvertimeHours(Math.max(0, overtimeHours - 1))} className="h-8 w-8 rounded-full bg-muted flex items-center justify-center active:scale-90">
-                  <Minus size={16} />
-                </button>
-                <span className="text-lg font-bold text-foreground w-6 text-center">{overtimeHours}</span>
-                <button onClick={() => setOvertimeHours(overtimeHours + 1)} className="h-8 w-8 rounded-full bg-muted flex items-center justify-center active:scale-90">
-                  <Plus size={16} />
-                </button>
+            <div className="flex flex-col gap-2 rounded-xl bg-card border border-border px-4 py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-foreground">{t("overtime")} (Hours)</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setOvertimeHours(Math.max(0, overtimeHours - 1))} className="h-10 w-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center active:scale-90 transition-transform">
+                    <Minus size={20} strokeWidth={2.5} />
+                  </button>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="24"
+                      value={overtimeHours || ""}
+                      onChange={(e) => setOvertimeHours(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-16 h-10 text-center text-xl font-bold bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <button onClick={() => setOvertimeHours(overtimeHours + 1)} className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center active:scale-90 transition-transform">
+                    <Plus size={20} strokeWidth={2.5} />
+                  </button>
+                </div>
               </div>
+              {overtimeHours > 0 && (
+                <p className="text-xs text-primary font-medium text-center">
+                  +{overtimeHours} hours overtime will be added
+                </p>
+              )}
             </div>
 
             {/* Note input */}
@@ -307,6 +371,17 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Add Advance Payment Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowAdvanceDialog(true)}
+            className="w-full rounded-2xl border border-dashed border-primary bg-primary/5 py-4 flex items-center justify-center gap-2 text-primary font-bold text-sm active:scale-95"
+          >
+            <Plus size={20} />
+            Add Advance Payment Today
+          </button>
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="rounded-2xl bg-card p-4 border border-border">
@@ -322,17 +397,56 @@ const Dashboard = () => {
             <p className="text-[10px] font-medium text-muted-foreground mt-1">{t("thisMonth")}</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="rounded-2xl bg-card p-4 border border-border">
-            <p className="text-xs font-medium text-muted-foreground mb-1">{t("totalOvertime")}</p>
-            <p className="text-2xl font-bold text-foreground">{totalOvertime} <span className="text-sm">{t("hours")}</span></p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Total Advance</p>
+            <p className="text-2xl font-bold text-orange-500">₹{monthlyAdvance.toLocaleString()}</p>
+            <p className="text-[10px] font-medium text-muted-foreground mt-1">{t("thisMonth")}</p>
           </div>
           <div className="rounded-2xl bg-card p-4 border border-border">
-            <p className="text-xs font-medium text-muted-foreground mb-1">{t("leaveDays")}</p>
-            <p className="text-2xl font-bold text-destructive">{leaveDays}</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Net Payable</p>
+            <p className="text-2xl font-bold text-green-600">
+              ₹{Math.max(0, (daysWorked * dailyWage) - monthlyAdvance).toLocaleString()}
+            </p>
+            <p className="text-[10px] font-medium text-muted-foreground mt-1">After deductions</p>
           </div>
         </div>
       </div>
+
+      {/* Advance Dialog */}
+      <Dialog open={showAdvanceDialog} onOpenChange={setShowAdvanceDialog}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle>Add Advance Payment</DialogTitle>
+            <DialogDescription>Record money received in advance</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div>
+              <label className="text-xs text-muted-foreground font-medium mb-1 block">Select Date</label>
+              <input
+                type="date"
+                value={advanceDate}
+                onChange={(e) => setAdvanceDate(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
+              <input
+                type="number"
+                value={advanceAmount}
+                onChange={(e) => setAdvanceAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="w-full rounded-xl border border-border bg-background px-8 py-3 text-lg font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowAdvanceDialog(false)}>{t("cancel")}</Button>
+            <Button onClick={saveAdvance} disabled={loading || !advanceAmount}>{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Absent Dialog */}
       <Dialog open={showAbsentDialog} onOpenChange={setShowAbsentDialog}>
