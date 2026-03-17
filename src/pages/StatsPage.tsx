@@ -16,6 +16,9 @@ const StatsPage = () => {
   const [currentMonthStats, setCurrentMonthStats] = useState({
     present: 0, absent: 0, halfDays: 0, overtime: 0, totalEarnings: 0,
   });
+  const [allTimeStats, setAllTimeStats] = useState({
+    totalDays: 0, totalEarnings: 0,
+  });
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [weeklyData, setWeeklyData] = useState<{ name: string; days: number }[]>([]);
@@ -94,6 +97,20 @@ const StatsPage = () => {
     setCurrentMonthStats({
       present, absent, halfDays, overtime,
       totalEarnings: effectiveDays * dailyWage,
+    });
+
+    // All-time stats
+    let allTimePresent = 0, allTimeHalfDays = 0;
+    allRecords.forEach((data) => {
+      if (data.status === "present") {
+        allTimePresent++;
+        if (data.type === "half") allTimeHalfDays++;
+      }
+    });
+    const allTimeEffectiveDays = allTimePresent - allTimeHalfDays * 0.5;
+    setAllTimeStats({
+      totalDays: allTimeEffectiveDays,
+      totalEarnings: allTimeEffectiveDays * dailyWage,
     });
 
     // Calculate streaks from today
@@ -224,6 +241,18 @@ const StatsPage = () => {
             <p className="text-xs text-muted-foreground font-medium">{t("totalOvertime")}</p>
             <p className="text-2xl font-bold text-foreground">{currentMonthStats.overtime} <span className="text-sm">{t("hours")}</span></p>
             <p className="text-[10px] text-muted-foreground">{monthNames[selectedMonth.getMonth()]}</p>
+          </div>
+        </div>
+
+        {/* All Time Stats */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="rounded-2xl bg-card border border-border p-4">
+            <p className="text-xs text-muted-foreground font-medium">{t("totalEarningsAllTime") || "Total Earnings"}</p>
+            <p className="text-2xl font-bold text-primary">₹{allTimeStats.totalEarnings.toLocaleString()}</p>
+          </div>
+          <div className="rounded-2xl bg-card border border-border p-4">
+            <p className="text-xs text-muted-foreground font-medium">{t("totalDaysAllTime") || "Total Days"}</p>
+            <p className="text-2xl font-bold text-foreground">{allTimeStats.totalDays}</p>
           </div>
         </div>
 
