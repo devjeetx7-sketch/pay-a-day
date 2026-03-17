@@ -195,12 +195,26 @@ const Dashboard = () => {
     if (isNaN(amount) || amount <= 0) return;
     setLoading(true);
     try {
-      const docId = `${user.uid}_${advanceDate}_advance_${Date.now()}`;
+      const docId = `${user.uid}_${advanceDate}_advance`;
+
+      // Fetch existing advance to add to it instead of overwriting/duplicating
+      const existingDoc = await getDocs(query(
+        collection(db, "attendance"),
+        where("user_id", "==", user.uid),
+        where("date", "==", advanceDate),
+        where("status", "==", "advance")
+      ));
+
+      let newAmount = amount;
+      if (!existingDoc.empty) {
+        newAmount += existingDoc.docs[0].data().advance_amount || 0;
+      }
+
       await setDoc(doc(db, "attendance", docId), {
         user_id: user.uid,
         date: advanceDate,
         status: "advance",
-        advance_amount: amount,
+        advance_amount: newAmount,
         note: "Advance Payment",
         timestamp: serverTimestamp(),
       });
