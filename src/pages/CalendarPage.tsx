@@ -70,11 +70,19 @@ const CalendarPage = () => {
         if (data.date < startDate || data.date > endDate) return;
         const day = parseInt(data.date.split("-")[2], 10);
 
-        if (map[day] && data.status === "advance") {
-             map[day].advance_amount = (map[day].advance_amount || 0) + data.advance_amount;
-             return;
+        if (data.status === "advance") {
+          if (map[day]) {
+            map[day].advance_amount = (map[day].advance_amount || 0) + data.advance_amount;
+          } else {
+            map[day] = {
+              status: "advance",
+              advance_amount: data.advance_amount
+            };
+          }
+          return;
         }
-        if (map[day] && map[day].status === "advance" && data.status !== "advance") {
+
+        if (map[day] && map[day].status === "advance") {
              map[day] = {
                status: data.status,
                type: data.type,
