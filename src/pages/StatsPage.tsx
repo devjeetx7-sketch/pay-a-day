@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
-import { Flame, TrendingUp, Award, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { TrendingUp, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -15,13 +15,11 @@ const StatsPage = () => {
   const [allRecords, setAllRecords] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<{ name: string; days: number }[]>([]);
   const [currentMonthStats, setCurrentMonthStats] = useState({
-    present: 0, absent: 0, halfDays: 0, overtime: 0, totalEarnings: 0,
+    present: 0, absent: 0, halfDays: 0, overtime: 0, totalEarnings: 0, advanceTotal: 0
   });
   const [allTimeStats, setAllTimeStats] = useState({
     totalDays: 0, totalEarnings: 0,
   });
-  const [streak, setStreak] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
   const [weeklyData, setWeeklyData] = useState<{ name: string; days: number }[]>([]);
 
   const dailyWage = userData?.daily_wage || 500;
@@ -81,7 +79,7 @@ const StatsPage = () => {
     setWeeklyData(weeks);
 
     // Current month stats
-    let present = 0, absent = 0, halfDays = 0, overtime = 0;
+    let present = 0, absent = 0, halfDays = 0, overtime = 0, advanceTotal = 0;
     allRecords
       .filter((r) => r.date >= startDate && r.date <= endDate)
       .forEach((data) => {
@@ -89,14 +87,17 @@ const StatsPage = () => {
           present++;
           if (data.type === "half") halfDays++;
           overtime += data.overtime_hours || 0;
-        } else {
+        } else if (data.status === "absent" || data.status === "leave") {
           absent++;
+        }
+        if (data.advance_amount) {
+          advanceTotal += data.advance_amount;
         }
       });
 
     const effectiveDays = present - halfDays * 0.5;
     setCurrentMonthStats({
-      present, absent, halfDays, overtime,
+      present, absent, halfDays, overtime, advanceTotal,
       totalEarnings: effectiveDays * dailyWage,
     });
 
@@ -114,41 +115,6 @@ const StatsPage = () => {
       totalEarnings: allTimeEffectiveDays * dailyWage,
     });
 
-    // Calculate streaks from today
-    const sortedDates = allRecords
-      .filter((r) => r.status === "present")
-      .map((r) => r.date)
-      .sort((a: string, b: string) => b.localeCompare(a));
-
-    let currentStreak = 0;
-    for (let i = 0; i < 365; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      if (d.getDay() === 0) continue;
-      const dStr = d.toISOString().split("T")[0];
-      if (sortedDates.includes(dStr)) {
-        currentStreak++;
-      } else {
-        break;
-      }
-    }
-    setStreak(currentStreak);
-
-    const allDates = [...new Set(sortedDates)].sort();
-    let maxStreak = 1;
-    let tempStreak = 1;
-    for (let i = 1; i < allDates.length; i++) {
-      const prev = new Date(allDates[i - 1]);
-      const curr = new Date(allDates[i]);
-      const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-      if (diff <= 2) {
-        tempStreak++;
-        maxStreak = Math.max(maxStreak, tempStreak);
-      } else {
-        tempStreak = 1;
-      }
-    }
-    setBestStreak(allDates.length > 0 ? maxStreak : 0);
   };
 
   const prevMonth = () => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1));
@@ -193,28 +159,6 @@ const StatsPage = () => {
 
           {/* MONTHLY STATS */}
           <TabsContent value="month" className="mt-0">
-            {/* Streak & Best Streak */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-                  <Flame size={22} className="text-orange-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">{streak}</p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Current Streak</p>
-                </div>
-              </div>
-              <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                  <Award size={22} className="text-yellow-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">{bestStreak}</p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Best Streak</p>
-                </div>
-              </div>
-            </div>
-
             {/* Attendance Rate */}
             <div className="rounded-2xl bg-card border border-border p-5 mb-4 flex items-center gap-4">
               <div className="h-20 w-20">
@@ -241,7 +185,7 @@ const StatsPage = () => {
             </div>
 
             {/* Quick stats */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-3">
               <div className="rounded-2xl bg-card border border-border p-4">
                 <p className="text-xs text-muted-foreground font-medium">{t("earnings")}</p>
                 <p className="text-2xl font-bold text-primary">₹{currentMonthStats.totalEarnings.toLocaleString()}</p>
@@ -251,6 +195,21 @@ const StatsPage = () => {
                 <p className="text-xs text-muted-foreground font-medium">{t("totalOvertime")}</p>
                 <p className="text-2xl font-bold text-foreground">{currentMonthStats.overtime} <span className="text-sm">{t("hours")}</span></p>
                 <p className="text-[10px] text-muted-foreground">{monthNames[selectedMonth.getMonth()]}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <p className="text-xs text-muted-foreground font-medium">Advance Deductions</p>
+                <p className="text-2xl font-bold text-orange-500">₹{currentMonthStats.advanceTotal.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">{monthNames[selectedMonth.getMonth()]}</p>
+              </div>
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <p className="text-xs text-muted-foreground font-medium">Net Payable</p>
+                <p className="text-2xl font-bold text-green-600">
+                  ₹{Math.max(0, currentMonthStats.totalEarnings - currentMonthStats.advanceTotal).toLocaleString()}
+                </p>
+                <p className="text-[10px] text-muted-foreground">After deductions</p>
               </div>
             </div>
 
