@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search, Download } from "lucide-react";
+import { FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search, Download, Share2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -227,6 +227,23 @@ const History = () => {
     pdf.save(`WorkDay_${userName}_${monthLabel.replace(" ", "_")}.pdf`);
   };
 
+  const handleShare = async () => {
+    const summary = `WorkDay Attendance Report\n${userData?.name || 'User'} | ${monthNames[selectedMonth.getMonth()]} ${selectedMonth.getFullYear()}\n\nPresent: ${totalPresent}\nAbsent: ${totalAbsent}\nHalf Days: ${totalHalf}\nOvertime: ${totalOT}h\nEstimated Earnings: ₹${(effectiveDays * dailyWage).toLocaleString()}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Attendance Report',
+          text: summary,
+        });
+      } catch (err) {
+        console.error("Error sharing:", err);
+      }
+    } else {
+      // Fallback if Web Share API is not supported
+      alert("Sharing is not supported on this browser.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="mx-auto max-w-lg px-4 pt-6">
@@ -258,13 +275,16 @@ const History = () => {
           />
         </div>
 
-        {/* Export buttons */}
+        {/* Export & Share buttons */}
         <div className="flex gap-2 mb-4">
           <Button variant="outline" size="sm" onClick={exportPDF} className="flex-1 gap-1">
             <FileText size={14} /> PDF
           </Button>
           <Button variant="outline" size="sm" onClick={exportCSV} className="flex-1 gap-1">
             <FileSpreadsheet size={14} /> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleShare} className="flex-1 gap-1">
+            <Share2 size={14} /> Share
           </Button>
         </div>
 
