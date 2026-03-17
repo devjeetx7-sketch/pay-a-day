@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { FileImage, FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search, Download } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 interface AttendanceRecord {
   date: string;
@@ -26,8 +25,6 @@ const History = () => {
   const [filteredRecords, setFilteredRecords] = useState<AttendanceRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [exporting, setExporting] = useState(false);
-  const tableRef = useRef<HTMLDivElement>(null);
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -110,60 +107,125 @@ const History = () => {
     URL.revokeObjectURL(url);
   };
 
-  const exportPDF = async () => {
-    if (!tableRef.current || exporting) return;
-    setExporting(true);
-    try {
-      const canvas = await html2canvas(tableRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfW = pdf.internal.pageSize.getWidth();
-      const pdfH = (canvas.height * pdfW) / canvas.width;
-
-      pdf.setFontSize(18);
-      pdf.setTextColor(33, 33, 33);
-      pdf.text(`${userData?.name || "User"} - Attendance Report`, 14, 15);
-      pdf.setFontSize(11);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text(`${monthNames[selectedMonth.getMonth()]} ${selectedMonth.getFullYear()}`, 14, 22);
-      pdf.text(`Present: ${totalPresent} | Absent: ${totalAbsent} | Overtime: ${totalOT}h`, 14, 28);
-
-      pdf.addImage(imgData, "PNG", 5, 35, pdfW - 10, pdfH - 10);
-      pdf.save(`attendance_${monthNames[selectedMonth.getMonth()]}_${selectedMonth.getFullYear()}.pdf`);
-    } catch (err) {
-      console.error("Error exporting PDF:", err);
-    }
-    setExporting(false);
-  };
-
-  const exportImage = async () => {
-    if (!tableRef.current || exporting) return;
-    setExporting(true);
-    try {
-      const canvas = await html2canvas(tableRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
-      const url = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `attendance_${monthNames[selectedMonth.getMonth()]}_${selectedMonth.getFullYear()}.png`;
-      a.click();
-    } catch (err) {
-      console.error("Error exporting image:", err);
-    }
-    setExporting(false);
-  };
-
   const totalPresent = records.filter((r) => r.status === "present").length;
   const totalAbsent = records.filter((r) => r.status === "absent").length;
   const totalOT = records.reduce((sum, r) => sum + (r.overtime_hours || 0), 0);
   const totalHalf = records.filter((r) => r.type === "half").length;
+  const dailyWage = userData?.daily_wage || 500;
+  const effectiveDays = totalPresent - totalHalf * 0.5;
+
+  const exportPDF = () => {
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageW = pdf.internal.pageSize.getWidth();
+    const userName = userData?.name || "User";
+    const monthLabel = `${monthNames[selectedMonth.getMonth()]} ${selectedMonth.getFullYear()}`;
+
+    // Header
+    pdf.setFillColor(22, 163, 74);
+    pdf.rect(0, 0, pageW, 35, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(20);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("WorkDay - Attendance Report", 14, 15);
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`${userName} | ${monthLabel}`, 14, 24);
+    pdf.setFontSize(10);
+    pdf.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 31);
+
+    // Summary box
+    let y = 45;
+    pdf.setTextColor(33, 33, 33);
+    pdf.setFillColor(245, 245, 245);
+    pdf.roundedRect(10, y, pageW - 20, 22, 3, 3, "F");
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "bold");
+    const summaryItems = [
+      `Present: ${totalPresent}`,
+      `Absent: ${totalAbsent}`,
+      `Half Days: ${totalHalf}`,
+      `Overtime: ${totalOT}h`,
+      `Earnings: ₹${(effectiveDays * dailyWage).toLocaleString()}`,
+    ];
+    const colW = (pageW - 30) / summaryItems.length;
+    summaryItems.forEach((item, i) => {
+      pdf.text(item, 15 + i * colW, y + 9);
+    });
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text(`Daily Wage: ₹${dailyWage} | Effective Days: ${effectiveDays}`, 15, y + 17);
+
+    // Table header
+    y = 75;
+    pdf.setFillColor(22, 163, 74);
+    pdf.rect(10, y, pageW - 20, 10, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "bold");
+    const cols = [14, 38, 60, 82, 104, 126, 148];
+    const headers = ["Date", "Day", "Status", "Type", "OT (hrs)", "Reason", "Note"];
+    headers.forEach((h, i) => pdf.text(h, cols[i], y + 7));
+
+    // Table rows
+    y += 12;
+    pdf.setFont("helvetica", "normal");
+    const sortedRecords = [...records].sort((a, b) => a.date.localeCompare(b.date));
+
+    sortedRecords.forEach((r, idx) => {
+      if (y > 270) {
+        pdf.addPage();
+        y = 15;
+        // Re-draw header on new page
+        pdf.setFillColor(22, 163, 74);
+        pdf.rect(10, y, pageW - 20, 10, "F");
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "bold");
+        headers.forEach((h, i) => pdf.text(h, cols[i], y + 7));
+        y += 12;
+        pdf.setFont("helvetica", "normal");
+      }
+
+      // Alternate row bg
+      if (idx % 2 === 0) {
+        pdf.setFillColor(250, 250, 250);
+        pdf.rect(10, y - 3, pageW - 20, 8, "F");
+      }
+
+      pdf.setTextColor(33, 33, 33);
+      pdf.setFontSize(8);
+
+      // Status color
+      const statusColor = r.status === "present" ? [22, 163, 74] : [220, 38, 38];
+
+      pdf.text(formatDate(r.date), cols[0], y + 2);
+      pdf.text(getDayName(r.date), cols[1], y + 2);
+
+      pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+      pdf.text(r.status === "present" ? "Present" : "Absent", cols[2], y + 2);
+      pdf.setTextColor(33, 33, 33);
+
+      pdf.text(r.type === "half" ? "Half" : r.type === "full" ? "Full" : "-", cols[3], y + 2);
+      pdf.text(String(r.overtime_hours || 0), cols[4], y + 2);
+      pdf.text(r.reason ? t(r.reason) : "-", cols[5], y + 2);
+      pdf.text((r.note || "-").substring(0, 18), cols[6], y + 2);
+
+      y += 8;
+    });
+
+    // Footer
+    y += 5;
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(10, y, pageW - 10, y);
+    y += 6;
+    pdf.setTextColor(150, 150, 150);
+    pdf.setFontSize(8);
+    pdf.text("Generated by WorkDay App", 14, y);
+    pdf.text(`Total Records: ${records.length}`, pageW - 50, y);
+
+    pdf.save(`WorkDay_${userName}_${monthLabel.replace(" ", "_")}.pdf`);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -198,11 +260,8 @@ const History = () => {
 
         {/* Export buttons */}
         <div className="flex gap-2 mb-4">
-          <Button variant="outline" size="sm" onClick={exportPDF} disabled={exporting} className="flex-1 gap-1">
+          <Button variant="outline" size="sm" onClick={exportPDF} className="flex-1 gap-1">
             <FileText size={14} /> PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportImage} disabled={exporting} className="flex-1 gap-1">
-            <FileImage size={14} /> PNG
           </Button>
           <Button variant="outline" size="sm" onClick={exportCSV} className="flex-1 gap-1">
             <FileSpreadsheet size={14} /> CSV
@@ -230,7 +289,7 @@ const History = () => {
         </div>
 
         {/* Records */}
-        <div ref={tableRef}>
+        <div>
           {filteredRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
               <p className="text-muted-foreground font-medium">{t("noRecords")}</p>

@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet, User, Camera } from "lucide-react";
+import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 
 const SettingsPage = () => {
   const { user, userData, logout } = useAuth();
@@ -15,6 +16,29 @@ const SettingsPage = () => {
   const [name, setName] = useState(userData?.name || "");
   const [saved, setSaved] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
+  const [reminders, setReminders] = useState(() => localStorage.getItem("reminders") === "true");
+
+  useEffect(() => {
+    if (userData?.name) setName(userData.name);
+    if (userData?.daily_wage) setWage(String(userData.daily_wage));
+  }, [userData]);
+
+  const toggleDarkMode = (enabled: boolean) => {
+    setDarkMode(enabled);
+    if (enabled) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
+  const toggleReminders = (enabled: boolean) => {
+    setReminders(enabled);
+    localStorage.setItem("reminders", String(enabled));
+  };
 
   const saveWage = async () => {
     if (!user) return;
@@ -53,7 +77,7 @@ const SettingsPage = () => {
 
   const initials = (userData?.name || "U")
     .split(" ")
-    .map((w) => w[0])
+    .map((w: string) => w[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
@@ -106,6 +130,31 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Appearance */}
+        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {darkMode ? <Moon size={20} className="text-muted-foreground" /> : <Sun size={20} className="text-muted-foreground" />}
+              <span className="text-base font-bold text-foreground">Dark Mode</span>
+            </div>
+            <Switch checked={darkMode} onCheckedChange={toggleDarkMode} />
+          </div>
+        </div>
+
+        {/* Reminders */}
+        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Bell size={20} className="text-muted-foreground" />
+              <div>
+                <span className="text-base font-bold text-foreground">Reminders</span>
+                <p className="text-[10px] text-muted-foreground">Daily attendance reminder</p>
+              </div>
+            </div>
+            <Switch checked={reminders} onCheckedChange={toggleReminders} />
+          </div>
+        </div>
+
         {/* Language */}
         <div className="rounded-2xl bg-card border border-border p-4 mb-4">
           <div className="flex items-center gap-3 mb-3">
@@ -154,10 +203,34 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* About */}
+        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+          <div className="flex items-center gap-3 mb-2">
+            <Info size={20} className="text-muted-foreground" />
+            <span className="text-base font-bold text-foreground">About WorkDay</span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            WorkDay helps daily wage workers track attendance, earnings, overtime, and leave. 
+            Export professional reports, view analytics, and manage your work life — all in one app.
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-2">Version 1.0.0</p>
+        </div>
+
+        {/* Data & Privacy */}
+        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <Shield size={20} className="text-muted-foreground" />
+            <div>
+              <span className="text-base font-bold text-foreground">Data & Privacy</span>
+              <p className="text-[10px] text-muted-foreground">Your data is stored securely and never shared</p>
+            </div>
+          </div>
+        </div>
+
         {/* Logout */}
         <button
           onClick={logout}
-          className="w-full rounded-2xl border-2 border-destructive py-4 flex items-center justify-center gap-2 text-destructive font-bold text-base active:scale-95"
+          className="w-full rounded-2xl border-2 border-destructive py-4 flex items-center justify-center gap-2 text-destructive font-bold text-base active:scale-95 mb-4"
         >
           <LogOut size={20} />
           {t("logout")}
