@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Clock, Minus, Plus, Loader2 } from "lucide-react";
+import { Check, X, Clock, Minus, Plus, Loader2, StickyNote, Hand } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
@@ -245,7 +245,10 @@ const Dashboard = () => {
         {/* Header */}
         <div className="mb-6">
           <p className="text-muted-foreground font-medium text-sm">{t("welcome")},</p>
-          <h1 className="text-2xl font-bold text-foreground">{firstName} 👋</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground">{firstName}</h1>
+            <Hand size={24} className="text-yellow-500 origin-bottom-right rotate-12" />
+          </div>
           <p className="text-sm font-medium text-muted-foreground mt-1">
             {t("today")}: {today.getDate()} {monthNames[today.getMonth()]} {today.getFullYear()}
           </p>
@@ -348,7 +351,10 @@ const Dashboard = () => {
                 {todayStatus === "present" ? t("marked") : t("absent")}
               </span>
               {todayNote && (
-                <span className="text-xs text-muted-foreground px-4 text-center">📝 {todayNote}</span>
+                <div className="flex items-center gap-1.5 px-4 text-center text-xs text-muted-foreground">
+                  <StickyNote size={12} />
+                  <span>{todayNote}</span>
+                </div>
               )}
             </div>
 

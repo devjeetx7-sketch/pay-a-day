@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search, Download, Share2 } from "lucide-react";
+import { FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search, Download, Share2, StickyNote } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ interface AttendanceRecord {
   type?: string;
   overtime_hours?: number;
   note?: string;
+  advance_amount?: number;
 }
 
 const History = () => {
@@ -111,8 +112,11 @@ const History = () => {
   const totalAbsent = records.filter((r) => r.status === "absent").length;
   const totalOT = records.reduce((sum, r) => sum + (r.overtime_hours || 0), 0);
   const totalHalf = records.filter((r) => r.type === "half").length;
+  const totalAdvance = records.reduce((sum, r) => sum + (r.advance_amount || 0), 0);
   const dailyWage = userData?.daily_wage || 500;
   const effectiveDays = totalPresent - totalHalf * 0.5;
+  const grossEarnings = effectiveDays * dailyWage;
+  const netPayable = Math.max(0, grossEarnings - totalAdvance);
 
   const exportPDF = () => {
     const pdf = new jsPDF("p", "mm", "a4");
@@ -120,55 +124,127 @@ const History = () => {
     const userName = userData?.name || "User";
     const monthLabel = `${monthNames[selectedMonth.getMonth()]} ${selectedMonth.getFullYear()}`;
 
-    // Header
-    pdf.setFillColor(22, 163, 74);
-    pdf.rect(0, 0, pageW, 35, "F");
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(20);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("WorkDay - Attendance Report", 14, 15);
-    pdf.setFontSize(12);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(`${userName} | ${monthLabel}`, 14, 24);
-    pdf.setFontSize(10);
-    pdf.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 31);
+    // Header Background
+    pdf.setFillColor(15, 23, 42); // slate-900
+    pdf.rect(0, 0, pageW, 45, "F");
 
-    // Summary box
-    let y = 45;
-    pdf.setTextColor(33, 33, 33);
-    pdf.setFillColor(245, 245, 245);
-    pdf.roundedRect(10, y, pageW - 20, 22, 3, 3, "F");
-    pdf.setFontSize(10);
+    // Header Text
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(24);
     pdf.setFont("helvetica", "bold");
+    pdf.text("WorkDay", 14, 20);
+
+    pdf.setFontSize(14);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(148, 163, 184); // slate-400
+    pdf.text("Monthly Attendance & Earnings Report", 14, 28);
+
+    pdf.setFontSize(11);
+    pdf.setTextColor(248, 250, 252); // slate-50
+    pdf.text(`${userName} | ${monthLabel}`, 14, 38);
+
+    pdf.setFontSize(9);
+    pdf.setTextColor(148, 163, 184); // slate-400
+    pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageW - 45, 38);
+
+    // Financial Summary Box
+    let y = 55;
+    pdf.setFillColor(241, 245, 249); // slate-100
+    pdf.roundedRect(14, y, pageW - 28, 45, 4, 4, "F");
+
+    // Box Title
+    pdf.setTextColor(15, 23, 42); // slate-900
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Financial Summary", 20, y + 10);
+
+    // Line separator
+    pdf.setDrawColor(203, 213, 225); // slate-300
+    pdf.line(20, y + 14, pageW - 20, y + 14);
+
+    // Financial Stats
+    pdf.setFontSize(10);
+
+    // Col 1
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(100, 116, 139); // slate-500
+    pdf.text("Daily Wage", 20, y + 22);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(15, 23, 42);
+    pdf.text(`Rs. ${dailyWage.toLocaleString()}`, 20, y + 27);
+
+    // Col 2
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(100, 116, 139);
+    pdf.text("Gross Earnings", 60, y + 22);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(15, 23, 42);
+    pdf.text(`Rs. ${grossEarnings.toLocaleString()}`, 60, y + 27);
+
+    // Col 3
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(100, 116, 139);
+    pdf.text("Advance Deducted", 105, y + 22);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(239, 68, 68); // red-500
+    pdf.text(`- Rs. ${totalAdvance.toLocaleString()}`, 105, y + 27);
+
+    // Col 4
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(100, 116, 139);
+    pdf.text("Net Payable", 150, y + 22);
+    pdf.setFontSize(14);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(22, 163, 74); // green-600
+    pdf.text(`Rs. ${netPayable.toLocaleString()}`, 150, y + 29);
+
+    // Attendance Summary Box
+    y = 108;
+    pdf.setFillColor(248, 250, 252); // slate-50
+    pdf.roundedRect(14, y, pageW - 28, 25, 4, 4, "F");
+
+    pdf.setFontSize(11);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(15, 23, 42);
+    pdf.text("Attendance Overview", 20, y + 8);
+
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(71, 85, 105); // slate-600
+
     const summaryItems = [
+      `Effective Days: ${effectiveDays}`,
       `Present: ${totalPresent}`,
       `Absent: ${totalAbsent}`,
       `Half Days: ${totalHalf}`,
-      `Overtime: ${totalOT}h`,
-      `Earnings: ₹${(effectiveDays * dailyWage).toLocaleString()}`,
+      `Overtime: ${totalOT} hrs`
     ];
-    const colW = (pageW - 30) / summaryItems.length;
-    summaryItems.forEach((item, i) => {
-      pdf.text(item, 15 + i * colW, y + 9);
-    });
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8);
-    pdf.setTextColor(120, 120, 120);
-    pdf.text(`Daily Wage: ₹${dailyWage} | Effective Days: ${effectiveDays}`, 15, y + 17);
 
-    // Table header
-    y = 75;
-    pdf.setFillColor(22, 163, 74);
-    pdf.rect(10, y, pageW - 20, 10, "F");
-    pdf.setTextColor(255, 255, 255);
+    const colW = (pageW - 40) / summaryItems.length;
+    summaryItems.forEach((item, i) => {
+      pdf.text(item, 20 + i * colW, y + 18);
+    });
+
+    // Table Setup
+    y = 145;
+    pdf.setFontSize(14);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(15, 23, 42);
+    pdf.text("Detailed Log", 14, y);
+
+    y += 6;
+    pdf.setFillColor(241, 245, 249); // slate-100
+    pdf.rect(14, y, pageW - 28, 10, "F");
+    pdf.setTextColor(71, 85, 105); // slate-600
     pdf.setFontSize(9);
     pdf.setFont("helvetica", "bold");
-    const cols = [14, 38, 60, 82, 104, 126, 148];
-    const headers = ["Date", "Day", "Status", "Type", "OT (hrs)", "Reason", "Note"];
+
+    const cols = [18, 40, 60, 85, 105, 130, 155];
+    const headers = ["Date", "Day", "Status", "Type/OT", "Advance", "Reason", "Note"];
     headers.forEach((h, i) => pdf.text(h, cols[i], y + 7));
 
     // Table rows
-    y += 12;
+    y += 13;
     pdf.setFont("helvetica", "normal");
     const sortedRecords = [...records].sort((a, b) => a.date.localeCompare(b.date));
 
@@ -177,58 +253,84 @@ const History = () => {
         pdf.addPage();
         y = 15;
         // Re-draw header on new page
-        pdf.setFillColor(22, 163, 74);
-        pdf.rect(10, y, pageW - 20, 10, "F");
-        pdf.setTextColor(255, 255, 255);
+        pdf.setFillColor(241, 245, 249);
+        pdf.rect(14, y, pageW - 28, 10, "F");
+        pdf.setTextColor(71, 85, 105);
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
         headers.forEach((h, i) => pdf.text(h, cols[i], y + 7));
-        y += 12;
+        y += 13;
         pdf.setFont("helvetica", "normal");
       }
 
       // Alternate row bg
       if (idx % 2 === 0) {
-        pdf.setFillColor(250, 250, 250);
-        pdf.rect(10, y - 3, pageW - 20, 8, "F");
+        pdf.setFillColor(248, 250, 252); // slate-50
+        pdf.rect(14, y - 4, pageW - 28, 9, "F");
       }
 
-      pdf.setTextColor(33, 33, 33);
-      pdf.setFontSize(8);
-
-      // Status color
-      const statusColor = r.status === "present" ? [22, 163, 74] : [220, 38, 38];
+      pdf.setTextColor(51, 65, 85); // slate-700
+      pdf.setFontSize(9);
 
       pdf.text(formatDate(r.date), cols[0], y + 2);
       pdf.text(getDayName(r.date), cols[1], y + 2);
 
-      pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-      pdf.text(r.status === "present" ? "Present" : "Absent", cols[2], y + 2);
-      pdf.setTextColor(33, 33, 33);
+      // Status
+      if (r.status === "present") {
+        pdf.setTextColor(22, 163, 74);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Present", cols[2], y + 2);
+      } else if (r.status === "advance") {
+        pdf.setTextColor(249, 115, 22);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Advance", cols[2], y + 2);
+      } else {
+        pdf.setTextColor(220, 38, 38);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Absent", cols[2], y + 2);
+      }
 
-      pdf.text(r.type === "half" ? "Half" : r.type === "full" ? "Full" : "-", cols[3], y + 2);
-      pdf.text(String(r.overtime_hours || 0), cols[4], y + 2);
+      pdf.setTextColor(51, 65, 85);
+      pdf.setFont("helvetica", "normal");
+
+      // Type/OT combined
+      let typeOT = "-";
+      if (r.type === "half") typeOT = "Half Day";
+      if (r.type === "full") typeOT = "Full Day";
+      if (r.overtime_hours) typeOT += ` (+${r.overtime_hours}h OT)`;
+      if (r.status === "advance") typeOT = "-";
+      pdf.text(typeOT, cols[3], y + 2);
+
+      // Advance Amount
+      if (r.advance_amount) {
+        pdf.setTextColor(249, 115, 22);
+        pdf.text(`Rs. ${r.advance_amount}`, cols[4], y + 2);
+        pdf.setTextColor(51, 65, 85);
+      } else {
+        pdf.text("-", cols[4], y + 2);
+      }
+
       pdf.text(r.reason ? t(r.reason) : "-", cols[5], y + 2);
-      pdf.text((r.note || "-").substring(0, 18), cols[6], y + 2);
+      pdf.text((r.note || "-").substring(0, 20), cols[6], y + 2);
 
-      y += 8;
+      y += 9;
     });
 
     // Footer
-    y += 5;
-    pdf.setDrawColor(200, 200, 200);
-    pdf.line(10, y, pageW - 10, y);
-    y += 6;
-    pdf.setTextColor(150, 150, 150);
+    y += 10;
+    pdf.setDrawColor(226, 232, 240); // slate-200
+    pdf.line(14, y, pageW - 14, y);
+    y += 8;
+    pdf.setTextColor(148, 163, 184);
     pdf.setFontSize(8);
-    pdf.text("Generated by WorkDay App", 14, y);
-    pdf.text(`Total Records: ${records.length}`, pageW - 50, y);
+    pdf.text("WorkDay Attendance Tracker - Professionally Generated Report", 14, y);
+    pdf.text(`Total Document Entries: ${records.length}`, pageW - 55, y);
 
-    pdf.save(`WorkDay_${userName}_${monthLabel.replace(" ", "_")}.pdf`);
+    pdf.save(`WorkDay_Report_${userName.replace(" ", "_")}_${monthLabel.replace(" ", "_")}.pdf`);
   };
 
   const handleShare = async () => {
-    const summary = `WorkDay Attendance Report\n${userData?.name || 'User'} | ${monthNames[selectedMonth.getMonth()]} ${selectedMonth.getFullYear()}\n\nPresent: ${totalPresent}\nAbsent: ${totalAbsent}\nHalf Days: ${totalHalf}\nOvertime: ${totalOT}h\nEstimated Earnings: ₹${(effectiveDays * dailyWage).toLocaleString()}`;
+    const summary = `WorkDay Attendance Report\n${userData?.name || 'User'} | ${monthNames[selectedMonth.getMonth()]} ${selectedMonth.getFullYear()}\n\nPresent: ${totalPresent}\nAbsent: ${totalAbsent}\nOvertime: ${totalOT}h\nTotal Advance: ₹${totalAdvance.toLocaleString()}\n\nNet Payable: ₹${netPayable.toLocaleString()}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -344,10 +446,16 @@ const History = () => {
                       className={`rounded-full px-3 py-1 text-xs font-bold ${
                         r.status === "present"
                           ? "bg-primary/10 text-primary"
+                          : r.status === "advance"
+                          ? "bg-orange-500/10 text-orange-500"
                           : "bg-destructive/10 text-destructive"
                       }`}
                     >
-                      {r.status === "present" ? t("present") : t("absent")}
+                      {r.status === "present"
+                        ? t("present")
+                        : r.status === "advance"
+                        ? `₹${r.advance_amount || 0} Advance`
+                        : t("absent")}
                     </span>
                   </div>
                   {(r.reason || r.note) && (
@@ -358,8 +466,9 @@ const History = () => {
                         </span>
                       )}
                       {r.note && (
-                        <div className="w-full mt-1 rounded-lg bg-muted/50 px-3 py-2">
-                          <span className="text-[11px] text-muted-foreground">📝 {r.note}</span>
+                        <div className="w-full mt-1 rounded-lg bg-muted/50 px-3 py-2 flex items-start gap-1.5">
+                          <StickyNote size={12} className="text-muted-foreground mt-0.5 shrink-0" />
+                          <span className="text-[11px] text-muted-foreground leading-tight">{r.note}</span>
                         </div>
                       )}
                     </div>
