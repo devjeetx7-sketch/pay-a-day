@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles } from "lucide-react";
+import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -269,27 +269,39 @@ const SettingsPage = () => {
           </DialogHeader>
           <div className="space-y-5 mt-2">
             <div>
-              <h3 className="text-sm font-bold text-foreground mb-1">📅 Marking Attendance</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-2 mb-1">
+                <CalendarDays size={16} className="text-primary" />
+                <h3 className="text-sm font-bold text-foreground">Marking Attendance</h3>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
                 On the Dashboard, click <b>Full Day</b> or <b>Half Day</b> to mark today's attendance. Add overtime using the + / - buttons before saving. If you didn't work, click <b>Mark Absent</b>.
               </p>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground mb-1">💸 Net Payable & Earnings</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-2 mb-1">
+                <IndianRupee size={16} className="text-green-600" />
+                <h3 className="text-sm font-bold text-foreground">Net Payable & Earnings</h3>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
                 Your <b>Earnings</b> are automatically calculated by multiplying your working days with your Daily Wage. <b>Net Payable</b> on the dashboard and stats page shows your final take-home amount: <br/><br/>
-                <span className="font-mono bg-muted px-1 py-0.5 rounded text-primary">Net Payable = Total Earnings - Advance Payments</span>
+                <span className="font-mono bg-muted px-1 py-0.5 rounded text-primary block mt-1">Net Payable = Total Earnings - Advance</span>
               </p>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground mb-1">💳 Advance Payments</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-2 mb-1">
+                <CreditCard size={16} className="text-orange-500" />
+                <h3 className="text-sm font-bold text-foreground">Advance Payments</h3>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
                 If you receive money ahead of time, click <b>Add Advance Payment Today</b> on the Dashboard or add it directly on a specific date inside the <b>Calendar</b>. This is automatically deducted from your Net Payable.
               </p>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground mb-1">📊 Calendar & History</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-2 mb-1">
+                <BarChart2 size={16} className="text-blue-500" />
+                <h3 className="text-sm font-bold text-foreground">Calendar & History</h3>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
                 Use the <b>Calendar</b> to edit past records (e.g. if you forgot to mark attendance yesterday). Use <b>History</b> to export your monthly logs as a PDF or CSV, and click the Share button to send reports via WhatsApp or Email.
               </p>
             </div>

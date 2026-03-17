@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search, Download, Share2 } from "lucide-react";
+import { FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search, Download, Share2, StickyNote } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -446,10 +446,16 @@ const History = () => {
                       className={`rounded-full px-3 py-1 text-xs font-bold ${
                         r.status === "present"
                           ? "bg-primary/10 text-primary"
+                          : r.status === "advance"
+                          ? "bg-orange-500/10 text-orange-500"
                           : "bg-destructive/10 text-destructive"
                       }`}
                     >
-                      {r.status === "present" ? t("present") : t("absent")}
+                      {r.status === "present"
+                        ? t("present")
+                        : r.status === "advance"
+                        ? `₹${r.advance_amount || 0} Advance`
+                        : t("absent")}
                     </span>
                   </div>
                   {(r.reason || r.note) && (
@@ -460,8 +466,9 @@ const History = () => {
                         </span>
                       )}
                       {r.note && (
-                        <div className="w-full mt-1 rounded-lg bg-muted/50 px-3 py-2">
-                          <span className="text-[11px] text-muted-foreground">📝 {r.note}</span>
+                        <div className="w-full mt-1 rounded-lg bg-muted/50 px-3 py-2 flex items-start gap-1.5">
+                          <StickyNote size={12} className="text-muted-foreground mt-0.5 shrink-0" />
+                          <span className="text-[11px] text-muted-foreground leading-tight">{r.note}</span>
                         </div>
                       )}
                     </div>
