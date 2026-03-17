@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
   const { user, userData } = useAuth();
@@ -232,8 +233,35 @@ const Dashboard = () => {
 
   if (pageLoading) {
     return (
-      <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background pb-20">
+        <div className="mx-auto max-w-lg px-4 pt-6">
+          <div className="mb-6 space-y-2">
+            <Skeleton className="h-4 w-24 rounded" />
+            <Skeleton className="h-8 w-40 rounded" />
+            <Skeleton className="h-4 w-48 rounded" />
+          </div>
+
+          <div className="mb-6 space-y-3">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="h-32 w-full rounded-2xl" />
+              <Skeleton className="h-32 w-full rounded-2xl" />
+            </div>
+            <Skeleton className="h-14 w-full rounded-2xl" />
+          </div>
+
+          <Skeleton className="h-14 w-full rounded-2xl mb-6" />
+
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <Skeleton className="h-28 w-full rounded-2xl" />
+            <Skeleton className="h-28 w-full rounded-2xl" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+          </div>
+        </div>
         <BottomNav />
       </div>
     );
