@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [todayNote, setTodayNote] = useState("");
   const [advanceAmount, setAdvanceAmount] = useState("");
   const [monthlyAdvance, setMonthlyAdvance] = useState(0);
+  const [advanceRecords, setAdvanceRecords] = useState<{ date: string; amount: number; note: string }[]>([]);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
