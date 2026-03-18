@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 const SettingsPage = () => {
   const { user, userData, logout } = useAuth();
   const { t, lang, setLang, languages } = useLanguage();
+  const navigate = useNavigate();
   const [wage, setWage] = useState(String(userData?.daily_wage || 500));
   const [name, setName] = useState(userData?.name || "");
   const [saved, setSaved] = useState(false);
