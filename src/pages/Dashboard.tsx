@@ -72,6 +72,7 @@ const Dashboard = () => {
       let leaves = 0;
       let foundToday = false;
       let advanceTotal = 0;
+      const advList: { date: string; amount: number; note: string }[] = [];
 
       snap.docs.forEach((d) => {
         const data = d.data();
