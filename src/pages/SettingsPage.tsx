@@ -252,6 +252,17 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Admin Panel Link */}
+        {userData?.role === "admin" && (
+          <button
+            onClick={() => navigate("/admin")}
+            className="w-full rounded-2xl bg-primary py-4 flex items-center justify-center gap-2 text-primary-foreground font-bold text-base active:scale-95 mb-4"
+          >
+            <Shield size={20} />
+            Admin Panel
+          </button>
+        )}
+
         {/* Logout */}
         <button
           onClick={logout}
