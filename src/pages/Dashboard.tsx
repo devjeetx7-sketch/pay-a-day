@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Clock, Minus, Plus, Loader2, StickyNote, Hand } from "lucide-react";
+import { Check, X, Clock, Minus, Plus, Loader2, StickyNote, Hand, IndianRupee } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [todayNote, setTodayNote] = useState("");
   const [advanceAmount, setAdvanceAmount] = useState("");
   const [monthlyAdvance, setMonthlyAdvance] = useState(0);
+  const [advanceRecords, setAdvanceRecords] = useState<{ date: string; amount: number; note: string }[]>([]);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -71,6 +72,7 @@ const Dashboard = () => {
       let leaves = 0;
       let foundToday = false;
       let advanceTotal = 0;
+      const advList: { date: string; amount: number; note: string }[] = [];
 
       snap.docs.forEach((d) => {
         const data = d.data();
@@ -85,6 +87,7 @@ const Dashboard = () => {
         }
         if (data.advance_amount) {
           advanceTotal += data.advance_amount;
+          advList.push({ date: data.date, amount: data.advance_amount, note: data.note || "Advance Payment" });
         }
         if (data.date === todayStr && data.status !== "advance") {
           foundToday = true;
@@ -104,6 +107,7 @@ const Dashboard = () => {
       setTotalOvertime(ot);
       setLeaveDays(leaves);
       setMonthlyAdvance(advanceTotal);
+      setAdvanceRecords(advList.sort((a, b) => b.date.localeCompare(a.date)));
     } catch (err) {
       console.error("Error loading month data:", err);
     }
@@ -445,6 +449,35 @@ const Dashboard = () => {
             <p className="text-[10px] font-medium text-muted-foreground mt-1">{t("afterDeductions")}</p>
           </div>
         </div>
+
+        {/* Recent Advance Payments */}
+        {advanceRecords.length > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-foreground">Recent Advances</p>
+              <span className="text-[10px] text-muted-foreground">{advanceRecords.length} records</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {advanceRecords.slice(0, 5).map((adv, i) => {
+                const [y, m, d] = adv.date.split("-");
+                return (
+                  <div key={i} className="flex items-center justify-between rounded-xl bg-card border border-border px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-orange-500/10 flex items-center justify-center">
+                        <IndianRupee size={14} className="text-orange-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-foreground">{adv.note}</p>
+                        <p className="text-[10px] text-muted-foreground">{d}/{m}/{y}</p>
+                      </div>
+                    </div>
+                    <p className="text-sm font-bold text-orange-500">₹{adv.amount.toLocaleString()}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Advance Dialog */}
