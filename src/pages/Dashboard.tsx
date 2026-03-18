@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Clock, Minus, Plus, Loader2, StickyNote, Hand } from "lucide-react";
+import { Check, X, Clock, Minus, Plus, Loader2, StickyNote, Hand, IndianRupee } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
