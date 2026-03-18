@@ -478,6 +478,7 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+      </div>
 
       {/* Advance Dialog */}
       <Dialog open={showAdvanceDialog} onOpenChange={setShowAdvanceDialog}>
