@@ -17,6 +17,7 @@ interface DayData {
   reason?: string;
   overtime_hours?: number;
   note?: string;
+  advance_amount?: number;
 }
 
 const CalendarPage = () => {

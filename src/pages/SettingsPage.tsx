@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
@@ -14,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 const SettingsPage = () => {
   const { user, userData, logout } = useAuth();
   const { t, lang, setLang, languages } = useLanguage();
+  const navigate = useNavigate();
   const [wage, setWage] = useState(String(userData?.daily_wage || 500));
   const [name, setName] = useState(userData?.name || "");
   const [saved, setSaved] = useState(false);
@@ -171,7 +173,7 @@ const SettingsPage = () => {
             <SelectContent>
               {Object.entries(languages).map(([code, langName]) => (
                 <SelectItem key={code} value={code} className="text-base font-medium py-3">
-                  {langName}
+                  {langName as string}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -250,6 +252,17 @@ const SettingsPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Admin Panel Link */}
+        {userData?.role === "admin" && (
+          <button
+            onClick={() => navigate("/admin")}
+            className="w-full rounded-2xl bg-primary py-4 flex items-center justify-center gap-2 text-primary-foreground font-bold text-base active:scale-95 mb-4"
+          >
+            <Shield size={20} />
+            Admin Panel
+          </button>
+        )}
 
         {/* Logout */}
         <button
