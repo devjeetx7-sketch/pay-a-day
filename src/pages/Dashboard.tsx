@@ -87,6 +87,7 @@ const Dashboard = () => {
         }
         if (data.advance_amount) {
           advanceTotal += data.advance_amount;
+          advList.push({ date: data.date, amount: data.advance_amount, note: data.note || "Advance Payment" });
         }
         if (data.date === todayStr && data.status !== "advance") {
           foundToday = true;
