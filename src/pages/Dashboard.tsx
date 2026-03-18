@@ -107,6 +107,7 @@ const Dashboard = () => {
       setTotalOvertime(ot);
       setLeaveDays(leaves);
       setMonthlyAdvance(advanceTotal);
+      setAdvanceRecords(advList.sort((a, b) => b.date.localeCompare(a.date)));
     } catch (err) {
       console.error("Error loading month data:", err);
     }
