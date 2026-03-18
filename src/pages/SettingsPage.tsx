@@ -173,7 +173,7 @@ const SettingsPage = () => {
             <SelectContent>
               {Object.entries(languages).map(([code, langName]) => (
                 <SelectItem key={code} value={code} className="text-base font-medium py-3">
-                  {langName}
+                  {langName as string}
                 </SelectItem>
               ))}
             </SelectContent>
