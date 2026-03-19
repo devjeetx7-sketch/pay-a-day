@@ -357,6 +357,30 @@ const SettingsPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Change Role Confirmation Dialog */}
+      <Dialog open={showRoleChange} onOpenChange={setShowRoleChange}>
+        <DialogContent className="max-w-xs mx-auto">
+          <DialogHeader>
+            <DialogTitle>{t("changeRole")}</DialogTitle>
+            <DialogDescription>{t("changeRoleConfirm")}</DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setShowRoleChange(false)}
+              className="flex-1 rounded-xl border border-border py-3 text-sm font-bold text-foreground active:scale-95"
+            >
+              {t("cancel")}
+            </button>
+            <button
+              onClick={handleChangeRole}
+              className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground active:scale-95"
+            >
+              {t("confirm")}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );
