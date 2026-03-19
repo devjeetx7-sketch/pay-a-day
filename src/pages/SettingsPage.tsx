@@ -23,6 +23,7 @@ const SettingsPage = () => {
   const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
   const [reminders, setReminders] = useState(() => localStorage.getItem("reminders") === "true");
   const [showHowToUse, setShowHowToUse] = useState(false);
+  const [showRoleChange, setShowRoleChange] = useState(false);
 
   useEffect(() => {
     if (userData?.name) setName(userData.name);
