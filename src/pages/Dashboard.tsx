@@ -34,11 +34,13 @@ const Dashboard = () => {
   const [advanceAmount, setAdvanceAmount] = useState("");
   const [monthlyAdvance, setMonthlyAdvance] = useState(0);
   const [advanceRecords, setAdvanceRecords] = useState<{ date: string; amount: number; note: string }[]>([]);
+  const [contractorStats, setContractorStats] = useState({ totalWorkers: 0, todayPresent: 0, pendingPayment: 0 });
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const [advanceDate, setAdvanceDate] = useState(todayStr);
   const dailyWage = userData?.daily_wage || 500;
+  const isContractor = userData?.role === "contractor";
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
