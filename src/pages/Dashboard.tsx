@@ -520,6 +520,33 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Contractor Summary Cards */}
+        {isContractor && (
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="rounded-2xl bg-card p-3 border border-border text-center">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-1">
+                <Users size={14} className="text-primary" />
+              </div>
+              <p className="text-lg font-bold text-foreground">{contractorStats.totalWorkers}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("totalWorkers")}</p>
+            </div>
+            <div className="rounded-2xl bg-card p-3 border border-border text-center">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-1">
+                <UserCheck size={14} className="text-primary" />
+              </div>
+              <p className="text-lg font-bold text-foreground">{contractorStats.todayPresent}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("todayPresent")}</p>
+            </div>
+            <div className="rounded-2xl bg-card p-3 border border-border text-center">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-1">
+                <Wallet size={14} className="text-primary" />
+              </div>
+              <p className="text-lg font-bold text-foreground">₹{contractorStats.pendingPayment.toLocaleString()}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("pendingPayment")}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Advance Dialog */}
