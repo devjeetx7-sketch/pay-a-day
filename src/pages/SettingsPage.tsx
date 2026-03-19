@@ -269,6 +269,25 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Change Role */}
+        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <RefreshCw size={20} className="text-muted-foreground" />
+              <div>
+                <span className="text-base font-bold text-foreground">{t("changeRole")}</span>
+                <p className="text-[10px] text-muted-foreground">{t("currentRole")}: {roleLabels[userData?.role || ""] || userData?.role || "—"}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowRoleChange(true)}
+              className="rounded-xl bg-muted px-4 py-2 text-xs font-bold text-foreground active:scale-95"
+            >
+              {t("changeRole")}
+            </button>
+          </div>
+        </div>
+
         {/* Admin Panel Link */}
         {userData?.role === "admin" && (
           <button
