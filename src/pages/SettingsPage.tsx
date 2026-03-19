@@ -70,6 +70,21 @@ const SettingsPage = () => {
     }
   };
 
+  const handleChangeRole = async () => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), { role: "" });
+      localStorage.removeItem("workday_role");
+      window.location.href = "/select-role";
+    } catch (err) {
+      console.error("Error changing role:", err);
+    }
+  };
+
+  const roleLabels: Record<string, string> = {
+    labour: "Labour", helper: "Helper", mistry: "Mistry", contractor: "Contractor",
+  };
+
   const handleLangChange = async (newLang: string) => {
     setLang(newLang);
     if (user) {
