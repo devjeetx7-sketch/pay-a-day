@@ -82,7 +82,7 @@ const SettingsPage = () => {
   };
 
   const roleLabels: Record<string, string> = {
-    labour: "Labour", helper: "Helper", mistry: "Mistry", contractor: "Contractor",
+    contractor: "Contractor Mode", personal: "Personal Mode",
   };
 
   const handleLangChange = async (newLang: string) => {
@@ -269,21 +269,22 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* Change Role */}
+        {/* Account Settings / Change Role */}
         <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+          <h2 className="text-sm font-bold text-muted-foreground mb-3">Account Settings</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <RefreshCw size={20} className="text-muted-foreground" />
+              <RefreshCw size={20} className="text-primary" />
               <div>
-                <span className="text-base font-bold text-foreground">{t("changeRole")}</span>
-                <p className="text-[10px] text-muted-foreground">{t("currentRole")}: {roleLabels[userData?.role || ""] || userData?.role || "—"}</p>
+                <span className="text-base font-bold text-foreground">App Mode</span>
+                <p className="text-[10px] text-muted-foreground">Current: {roleLabels[userData?.role || localStorage.getItem("workday_role") || ""] || "Not Selected"}</p>
               </div>
             </div>
             <button
               onClick={() => setShowRoleChange(true)}
-              className="rounded-xl bg-muted px-4 py-2 text-xs font-bold text-foreground active:scale-95"
+              className="rounded-xl border border-primary text-primary px-4 py-2 text-xs font-bold active:scale-95"
             >
-              {t("changeRole")}
+              Switch Role
             </button>
           </div>
         </div>
