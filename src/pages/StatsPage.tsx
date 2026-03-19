@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAppData } from "@/contexts/AppDataContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { TrendingUp, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ContractorStats } from "@/pages/ContractorStats";
 
 const StatsPage = () => {
-  const { userData } = useAuth();
+  const { user, userData } = useAuth();
   const { t } = useLanguage();
-  const { personalAttendance, personalPayments } = useAppData();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-
+  const [allRecords, setAllRecords] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<{ name: string; days: number }[]>([]);
   const [currentMonthStats, setCurrentMonthStats] = useState({
     present: 0, absent: 0, halfDays: 0, overtime: 0, totalEarnings: 0, advanceTotal: 0
@@ -23,17 +24,35 @@ const StatsPage = () => {
   const [weeklyData, setWeeklyData] = useState<{ name: string; days: number }[]>([]);
 
   const dailyWage = userData?.daily_wage || 500;
-  const currentRole = userData?.role || localStorage.getItem("workday_role");
-
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+  const currentRole = userData?.role || localStorage.getItem("workday_role");
+
   useEffect(() => {
-    if (currentRole === "contractor") return;
-    computeStats();
-  }, [personalAttendance, personalPayments, selectedMonth]);
+    if (!user || currentRole === "contractor") return;
+    loadAllRecords();
+  }, [user, currentRole]);
+
+  useEffect(() => {
+    if (allRecords.length > 0 || allRecords.length === 0) {
+      computeStats();
+    }
+  }, [allRecords, selectedMonth]);
+
+  const loadAllRecords = async () => {
+    if (!user) return;
+    try {
+      const q = query(collection(db, "attendance"), where("user_id", "==", user.uid));
+      const snap = await getDocs(q);
+      setAllRecords(snap.docs.map((d) => d.data()));
+    } catch (err) {
+      console.error("Error loading stats:", err);
+    }
+  };
 
   const computeStats = () => {
+    const today = new Date();
     const cm = selectedMonth.getMonth();
     const year = selectedMonth.getFullYear();
     const startDate = `${year}-${String(cm + 1).padStart(2, "0")}-01`;
@@ -47,7 +66,7 @@ const StatsPage = () => {
       const mM = m.getMonth();
       const s = `${mY}-${String(mM + 1).padStart(2, "0")}-01`;
       const e = `${mY}-${String(mM + 1).padStart(2, "0")}-31`;
-      const count = personalAttendance.filter((r) => r.date >= s && r.date <= e && r.status === "Present").length;
+      const count = allRecords.filter((r) => r.date >= s && r.date <= e && r.status === "present").length;
       months.push({ name: monthNamesShort[mM], days: count });
     }
     setMonthlyData(months);
@@ -57,27 +76,29 @@ const StatsPage = () => {
     for (let w = 0; w < 4; w++) {
       const wStart = `${year}-${String(cm + 1).padStart(2, "0")}-${String(w * 7 + 1).padStart(2, "0")}`;
       const wEnd = `${year}-${String(cm + 1).padStart(2, "0")}-${String(Math.min((w + 1) * 7, 31)).padStart(2, "0")}`;
-      const count = personalAttendance.filter((r) => r.date >= wStart && r.date <= wEnd && r.status === "Present").length;
+      const count = allRecords.filter((r) => r.date >= wStart && r.date <= wEnd && r.status === "present").length;
       weeks.push({ name: `W${w + 1}`, days: count });
     }
     setWeeklyData(weeks);
 
     // Current month stats
     let present = 0, absent = 0, halfDays = 0, overtime = 0, advanceTotal = 0;
-    personalAttendance
+    allRecords
       .filter((r) => r.date >= startDate && r.date <= endDate)
       .forEach((data) => {
-        if (data.status === "Present") present++;
-        if (data.status === "Half Day") halfDays++;
-        if (data.status === "Absent") absent++;
-        overtime += data.overtimeHours || 0;
+        if (data.status === "present") {
+          present++;
+          if (data.type === "half") halfDays++;
+          overtime += data.overtime_hours || 0;
+        } else if (data.status === "absent" || data.status === "leave") {
+          absent++;
+        }
+        if (data.advance_amount) {
+          advanceTotal += data.advance_amount;
+        }
       });
 
-    personalPayments
-      .filter(p => p.date >= startDate && p.date <= endDate && p.type === "Advance")
-      .forEach(p => advanceTotal += p.amount);
-
-    const effectiveDays = present + halfDays * 0.5;
+    const effectiveDays = present - halfDays * 0.5;
     setCurrentMonthStats({
       present, absent, halfDays, overtime, advanceTotal,
       totalEarnings: effectiveDays * dailyWage,
@@ -85,31 +106,22 @@ const StatsPage = () => {
 
     // All-time stats
     let allTimePresent = 0, allTimeHalfDays = 0;
-    personalAttendance.forEach((data) => {
-      if (data.status === "Present") allTimePresent++;
-      if (data.status === "Half Day") allTimeHalfDays++;
+    allRecords.forEach((data) => {
+      if (data.status === "present") {
+        allTimePresent++;
+        if (data.type === "half") allTimeHalfDays++;
+      }
     });
-    const allTimeEffectiveDays = allTimePresent + allTimeHalfDays * 0.5;
+    const allTimeEffectiveDays = allTimePresent - allTimeHalfDays * 0.5;
     setAllTimeStats({
       totalDays: allTimeEffectiveDays,
       totalEarnings: allTimeEffectiveDays * dailyWage,
     });
+
   };
 
   const prevMonth = () => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1));
   const nextMonth = () => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1));
-
-  if (currentRole === "contractor") {
-    return (
-      <div className="min-h-screen bg-background pb-20 pt-6 px-4 text-center">
-        <h1 className="text-xl font-bold mb-4">Stats</h1>
-        <p className="text-muted-foreground bg-card p-6 rounded-2xl border border-border">
-          Please use the <b>Contractor Dashboard</b> to view worker-specific stats.
-        </p>
-        <BottomNav />
-      </div>
-    );
-  }
 
   const pieData = [
     { name: t("present"), value: currentMonthStats.present, color: "hsl(160, 81%, 40%)" },
@@ -119,6 +131,19 @@ const StatsPage = () => {
   const attendanceRate = currentMonthStats.present + currentMonthStats.absent > 0
     ? Math.round((currentMonthStats.present / (currentMonthStats.present + currentMonthStats.absent)) * 100)
     : 0;
+
+  if (currentRole === "contractor") {
+    return (
+      <div className="min-h-screen bg-background pb-20 pt-6 px-4 max-w-lg mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Global Statistics</h1>
+          <p className="text-sm text-muted-foreground mt-1">Worker performance & costs</p>
+        </div>
+        <ContractorStats />
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
