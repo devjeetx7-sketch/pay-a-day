@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, userData } = useAuth();
 
   if (loading) {
     return (
@@ -13,6 +13,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/login" replace />;
+
+  // If user has no role set, redirect to role selection
+  if (userData && (!userData.role || userData.role === "user")) {
+    return <Navigate to="/select-role" replace />;
+  }
+
   return <>{children}</>;
 };
 
