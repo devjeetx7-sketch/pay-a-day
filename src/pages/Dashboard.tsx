@@ -110,6 +110,46 @@ const Dashboard = () => {
       setLeaveDays(leaves);
       setMonthlyAdvance(advanceTotal);
       setAdvanceRecords(advList.sort((a, b) => b.date.localeCompare(a.date)));
+
+      // Load contractor stats if applicable
+      if (isContractor) {
+        try {
+          const workersSnap = await getDocs(collection(db, "contractors", user.uid, "workers"));
+          const workerCount = workersSnap.size;
+          
+          // Check today's attendance for workers
+          let presentToday = 0;
+          let totalPending = 0;
+          
+          for (const wDoc of workersSnap.docs) {
+            const wData = wDoc.data();
+            const wAttQ = query(
+              collection(db, "attendance"),
+              where("user_id", "==", `worker_${wDoc.id}`),
+            );
+            const wAttSnap = await getDocs(wAttQ);
+            let wDays = 0;
+            let wAdvance = 0;
+            
+            wAttSnap.docs.forEach((ad) => {
+              const aData = ad.data();
+              if (aData.date === todayStr && aData.status === "present") presentToday++;
+              if (aData.date >= startDate && aData.date <= endDate) {
+                if (aData.status === "present") {
+                  wDays += aData.type === "half" ? 0.5 : 1;
+                }
+                if (aData.advance_amount) wAdvance += aData.advance_amount;
+              }
+            });
+            
+            totalPending += Math.max(0, (wDays * (wData.wage || 0)) - wAdvance);
+          }
+          
+          setContractorStats({ totalWorkers: workerCount, todayPresent: presentToday, pendingPayment: totalPending });
+        } catch (cErr) {
+          console.error("Error loading contractor stats:", cErr);
+        }
+      }
     } catch (err) {
       console.error("Error loading month data:", err);
     }
