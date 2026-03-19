@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2 } from "lucide-react";
+import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
