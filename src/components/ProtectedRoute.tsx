@@ -14,10 +14,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const currentRole = userData?.role || localStorage.getItem("workday_role");
-
   // If user has no role set, redirect to role selection
-  if (!currentRole || currentRole === "user") {
+  if (userData && (!userData.role || userData.role === "user")) {
     return <Navigate to="/select-role" replace />;
   }
 

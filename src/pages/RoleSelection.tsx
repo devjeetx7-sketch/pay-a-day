@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { Building2, User } from "lucide-react";
+import { Building2, User as UserIcon } from "lucide-react";
 
 const roles = [
   {
@@ -17,7 +17,7 @@ const roles = [
   },
   {
     id: "personal",
-    icon: User,
+    icon: UserIcon,
     title: "Personal Mode",
     desc: "Track your own daily work & earnings",
     color: "text-blue-500",

@@ -4,13 +4,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw } from "lucide-react";
+import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw, Briefcase } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useWorkTypes } from "@/hooks/useWorkTypes";
 
 const SettingsPage = () => {
   const { user, userData, logout } = useAuth();
@@ -24,10 +26,16 @@ const SettingsPage = () => {
   const [reminders, setReminders] = useState(() => localStorage.getItem("reminders") === "true");
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [showRoleChange, setShowRoleChange] = useState(false);
+  const { workTypes, addWorkType } = useWorkTypes();
+  const [workType, setWorkType] = useState(userData?.workType || "");
+  const [customType, setCustomType] = useState("");
+  const [isAddingType, setIsAddingType] = useState(false);
+  const [workTypeSaved, setWorkTypeSaved] = useState(false);
 
   useEffect(() => {
     if (userData?.name) setName(userData.name);
     if (userData?.daily_wage) setWage(String(userData.daily_wage));
+    if (userData?.workType) setWorkType(userData.workType);
   }, [userData]);
 
   const toggleDarkMode = (enabled: boolean) => {
@@ -67,6 +75,27 @@ const SettingsPage = () => {
       setTimeout(() => setNameSaved(false), 2000);
     } catch (err) {
       console.error("Error saving name:", err);
+    }
+  };
+
+  const saveWorkType = async () => {
+    if (!user || !workType) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), { workType });
+      setWorkTypeSaved(true);
+      setTimeout(() => setWorkTypeSaved(false), 2000);
+    } catch (err) {
+      console.error("Error saving work type:", err);
+    }
+  };
+
+  const handleAddCustomType = async () => {
+    if (!customType.trim()) return;
+    const added = await addWorkType(customType);
+    if (added) {
+      setWorkType(added.name);
+      setIsAddingType(false);
+      setCustomType("");
     }
   };
 
@@ -202,7 +231,7 @@ const SettingsPage = () => {
             <Wallet size={20} className="text-muted-foreground" />
             <span className="text-base font-bold text-foreground">{t("dailyWage")}</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-4">
             <div className="flex-1 relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
               <input
@@ -219,6 +248,50 @@ const SettingsPage = () => {
               {saved ? t("saved") : t("save")}
             </button>
           </div>
+
+          {/* Work Type (Only for Personal Mode) */}
+          {userData?.role !== "contractor" && (
+             <div className="pt-4 border-t border-border">
+              <div className="flex items-center gap-3 mb-3">
+                <Briefcase size={20} className="text-muted-foreground" />
+                <span className="text-base font-bold text-foreground">Work Type</span>
+              </div>
+
+              {isAddingType ? (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="E.g., Welder"
+                    value={customType}
+                    onChange={(e) => setCustomType(e.target.value)}
+                    className="flex-1 rounded-xl"
+                  />
+                  <Button onClick={handleAddCustomType} className="rounded-xl">Add</Button>
+                  <Button variant="outline" onClick={() => setIsAddingType(false)} className="rounded-xl">Cancel</Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select value={workType} onValueChange={(v) => setWorkType(v)}>
+                    <SelectTrigger className="w-full h-12 rounded-xl text-base font-semibold">
+                      <SelectValue placeholder="Select Work Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workTypes.map(t => (
+                        <SelectItem key={t.id} value={t.name} className="text-base font-medium py-3">{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" onClick={() => setIsAddingType(true)} className="h-12 rounded-xl border-dashed">New</Button>
+                  <button
+                    onClick={saveWorkType}
+                    disabled={!workType}
+                    className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground active:scale-95 disabled:opacity-50 shrink-0"
+                  >
+                    {workTypeSaved ? t("saved") : t("save")}
+                  </button>
+                </div>
+              )}
+             </div>
+          )}
         </div>
 
         {/* Premium */}
@@ -269,12 +342,11 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* Account Settings / Change Role */}
+        {/* Change Role */}
         <div className="rounded-2xl bg-card border border-border p-4 mb-4">
-          <h2 className="text-sm font-bold text-muted-foreground mb-3">Account Settings</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <RefreshCw size={20} className="text-primary" />
+              <RefreshCw size={20} className="text-muted-foreground" />
               <div>
                 <span className="text-base font-bold text-foreground">App Mode</span>
                 <p className="text-[10px] text-muted-foreground">Current: {roleLabels[userData?.role || localStorage.getItem("workday_role") || ""] || "Not Selected"}</p>
