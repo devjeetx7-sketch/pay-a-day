@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { Check, X, Clock, Plus, Minus, StickyNote, IndianRupee } from "lucide-react";
+import { Check, X, Clock, Plus, Minus, StickyNote, IndianRupee, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 export const PersonalDashboard = () => {
+  const navigate = useNavigate();
   const { user, userData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [marked, setMarked] = useState(false);
@@ -189,7 +191,7 @@ export const PersonalDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-card p-4 rounded-2xl border border-border">
           <p className="text-xs font-medium text-muted-foreground mb-1">Today's Earnings</p>
           <p className="text-3xl font-bold text-primary">₹{stats.todayEarned}</p>
@@ -199,6 +201,14 @@ export const PersonalDashboard = () => {
           <p className="text-3xl font-bold text-green-600">₹{stats.monthEarned}</p>
         </div>
       </div>
+
+      <button
+        onClick={() => navigate('/passbook')}
+        className="w-full bg-primary/10 border border-primary/20 text-primary py-4 rounded-2xl flex items-center justify-center gap-2 font-bold mb-6 active:scale-95 transition-transform"
+      >
+        <FileText size={20} />
+        View My Passbook
+      </button>
 
       {/* Mark Attendance Section */}
       <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-2">Daily Log</h2>

@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import BottomNav from "@/components/BottomNav";
+
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -200,13 +200,13 @@ const CalendarPage = () => {
 
   if (currentRole === "contractor") {
     return (
-      <div className="min-h-screen bg-background pb-20 pt-6 px-4 max-w-lg mx-auto">
+      <div className="min-h-screen bg-background pb-20 md:pb-6 pt-6 px-4 max-w-3xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Mark Attendance</h1>
           <p className="text-sm text-muted-foreground mt-1">Daily attendance for all workers</p>
         </div>
         <ContractorCalendar />
-        <BottomNav />
+
       </div>
     );
   }
@@ -215,7 +215,7 @@ const CalendarPage = () => {
   const absentCount = Object.values(dayMap).filter((d) => d.status === "absent").length;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 md:pb-6">
       <div className="mx-auto max-w-lg px-4 pt-6">
         <h1 className="text-xl font-bold text-foreground mb-4">{t("calendar")}</h1>
 
@@ -416,7 +416,7 @@ const CalendarPage = () => {
         </DialogContent>
       </Dialog>
 
-      <BottomNav />
+
     </div>
   );
 };

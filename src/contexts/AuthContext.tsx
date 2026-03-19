@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { User, onAuthStateChanged, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
 
@@ -7,6 +7,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, pass: string) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   userData: UserData | null;
   refreshUserData: () => Promise<void>;
@@ -78,13 +80,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signInWithPopup(auth, googleProvider);
   };
 
+  const loginWithEmail = async (email: string, pass: string) => {
+    await signInWithEmailAndPassword(auth, email, pass);
+  };
+
+  const registerWithEmail = async (email: string, pass: string, name: string) => {
+    const res = await createUserWithEmailAndPassword(auth, email, pass);
+    const ref = doc(db, "users", res.user.uid);
+    const newUser: UserData = {
+      uid: res.user.uid,
+      name: name,
+      email: res.user.email || "",
+      role: "",
+      daily_wage: 500,
+      language: "en",
+    };
+    await setDoc(ref, { ...newUser, created_at: serverTimestamp() });
+    setUserData(newUser);
+  };
+
   const logout = async () => {
     await signOut(auth);
     localStorage.removeItem("dailywork_role");
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout, userData, refreshUserData }}>
+    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginWithEmail, registerWithEmail, logout, userData, refreshUserData }}>
       {children}
     </AuthContext.Provider>
   );

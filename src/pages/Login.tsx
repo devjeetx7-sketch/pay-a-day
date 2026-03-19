@@ -1,11 +1,18 @@
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate } from "react-router-dom";
 import { Briefcase } from "lucide-react";
 
 const Login = () => {
-  const { user, loginWithGoogle, loading } = useAuth();
+  const { user, loginWithGoogle, loginWithEmail, registerWithEmail, loading } = useAuth();
   const { t } = useLanguage();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
 
   if (loading) {
     return (
@@ -41,6 +48,77 @@ const Login = () => {
         </svg>
         {t("loginWith")}
       </button>
+
+      <div className="mt-6 w-full max-w-xs relative flex items-center justify-center">
+        <span className="absolute bg-background px-2 text-xs font-medium text-muted-foreground">OR</span>
+        <div className="h-px w-full bg-border" />
+      </div>
+
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setError("");
+          setAuthLoading(true);
+          try {
+            if (isRegistering) {
+              await registerWithEmail(email, password, name || email.split("@")[0]);
+            } else {
+              await loginWithEmail(email, password);
+            }
+          } catch (err: any) {
+            setError(err.message || "An error occurred");
+          }
+          setAuthLoading(false);
+        }}
+        className="mt-6 flex w-full max-w-xs flex-col gap-3"
+      >
+        {isRegistering && (
+          <input
+            type="text"
+            placeholder="Name (optional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-semibold text-foreground focus:border-primary focus:outline-none"
+          />
+        )}
+        <input
+          type="email"
+          required
+          placeholder="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-semibold text-foreground focus:border-primary focus:outline-none"
+        />
+        <input
+          type="password"
+          required
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-semibold text-foreground focus:border-primary focus:outline-none"
+        />
+        {error && <p className="text-xs text-destructive text-center">{error}</p>}
+        <button
+          type="submit"
+          disabled={authLoading}
+          className="mt-2 w-full rounded-lg bg-primary px-4 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-all active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+        >
+          {authLoading ? "Loading..." : isRegistering ? "Sign Up" : "Log In"}
+        </button>
+      </form>
+
+      <div className="mt-4 text-sm text-muted-foreground">
+        {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
+        <button
+          onClick={() => {
+            setIsRegistering(!isRegistering);
+            setError("");
+          }}
+          className="font-bold text-primary hover:underline"
+        >
+          {isRegistering ? "Log In" : "Sign Up"}
+        </button>
+      </div>
     </div>
   );
 };

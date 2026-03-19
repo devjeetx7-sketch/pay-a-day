@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { TrendingUp, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContractorStats } from "@/pages/ContractorStats";
 
@@ -134,19 +134,19 @@ const StatsPage = () => {
 
   if (currentRole === "contractor") {
     return (
-      <div className="min-h-screen bg-background pb-20 pt-6 px-4 max-w-lg mx-auto">
+      <div className="min-h-screen bg-background pb-20 md:pb-6 pt-6 px-4 max-w-3xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Global Statistics</h1>
           <p className="text-sm text-muted-foreground mt-1">Worker performance & costs</p>
         </div>
         <ContractorStats />
-        <BottomNav />
+
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 md:pb-6">
       <div className="mx-auto max-w-lg px-4 pt-6">
         <h1 className="text-xl font-bold text-foreground mb-4">{t("stats")}</h1>
 
@@ -301,7 +301,7 @@ const StatsPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-      <BottomNav />
+
     </div>
   );
 };
