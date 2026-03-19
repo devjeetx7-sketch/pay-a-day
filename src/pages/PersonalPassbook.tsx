@@ -9,12 +9,10 @@ import { Progress } from "@/components/ui/progress";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export const WorkerDetail = () => {
-  const { id } = useParams<{ id: string }>();
+export const PersonalPassbook = () => {
   const navigate = useNavigate();
   const { user, userData } = useAuth();
 
-  const [worker, setWorker] = useState<any>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7)); // YYYY-MM
   const [loading, setLoading] = useState(true);
@@ -22,38 +20,47 @@ export const WorkerDetail = () => {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   useEffect(() => {
-    if (user && id) loadWorkerData();
-  }, [user, id, selectedMonth]);
+    if (user) loadWorkerData();
+  }, [user, selectedMonth]);
 
   const loadWorkerData = async () => {
-    if (!user || !id) return;
+    if (!user) return;
     setLoading(true);
     try {
-      const wRef = doc(db, "workers", id);
-      const wSnap = await getDoc(wRef);
-      if (wSnap.exists()) {
-        setWorker({ id: wSnap.id, ...wSnap.data() });
-      }
-
       const attQ = query(
         collection(db, "attendance"),
-        where("user_id", "==", `worker_${id}`),
-        where("contractorId", "==", user.uid)
+        where("user_id", "==", user.uid)
       );
       const attSnap = await getDocs(attQ);
 
-      const rList: any[] = [];
+      const mergedMap: Record<string, any> = {};
+
       attSnap.docs.forEach(doc => {
         const data = doc.data();
         if (data.date.startsWith(selectedMonth)) {
-            rList.push({ id: doc.id, ...data });
+          if (!mergedMap[data.date]) {
+            mergedMap[data.date] = { id: doc.id, ...data };
+          } else {
+            // Merge logic for multiple entries on same day (e.g., attendance + advance)
+            if (data.status === "advance") {
+               mergedMap[data.date].advance_amount = (mergedMap[data.date].advance_amount || 0) + (data.advance_amount || 0);
+               if (data.note && data.note !== "Advance Payment") {
+                 mergedMap[data.date].note = mergedMap[data.date].note
+                   ? `${mergedMap[data.date].note} | ${data.note}`
+                   : data.note;
+               }
+            } else {
+               const prevAdvance = mergedMap[data.date].advance_amount || 0;
+               mergedMap[data.date] = { id: doc.id, ...data, advance_amount: prevAdvance + (data.advance_amount || 0) };
+            }
+          }
         }
       });
 
-      rList.sort((a, b) => b.date.localeCompare(a.date));
+      const rList = Object.values(mergedMap).sort((a, b) => b.date.localeCompare(a.date));
       setRecords(rList);
     } catch (err) {
-      console.error("Error loading worker details:", err);
+      console.error("Error loading passbook details:", err);
     }
     setLoading(false);
   };
@@ -62,9 +69,13 @@ export const WorkerDetail = () => {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground text-sm font-bold">Loading Worker Passbook...</div>;
   }
 
-  if (!worker) {
-    return <div className="p-6 text-center text-red-500 font-bold">Worker not found</div>;
-  }
+  const worker = {
+    name: userData?.name || "User",
+    workType: userData?.workType || "Worker",
+    wage: userData?.daily_wage || 500,
+    phone: userData?.email || "",
+    created_at: { toDate: () => new Date() }
+  };
 
   // Calculate Stats
   let presentDays = 0;
@@ -133,12 +144,12 @@ export const WorkerDetail = () => {
     pdf.setTextColor(203, 213, 225);
     pdf.text(`Role: ${worker.workType || 'Labour'}`, 14, 50);
 
-    // Month & Contractor Info on Right
+    // Month Info on Right
     pdf.setFontSize(10);
     pdf.setTextColor(248, 250, 252);
     pdf.text(`Month: ${monthNameStr} ${yearStr}`, pageW - 65, 44);
     pdf.setTextColor(148, 163, 184);
-    pdf.text(`Contractor: ${userData?.name || "Admin"}`, pageW - 65, 50);
+    pdf.text(`Mode: Personal Passbook`, pageW - 65, 50);
 
     // Financial Summary Title
     let y = 65;
@@ -214,7 +225,6 @@ export const WorkerDetail = () => {
       `👤 *Name:* ${worker.name}\n` +
       `🛠️ *Role:* ${worker.workType || 'Labour'}\n` +
       `📅 *Month:* ${monthNameStr} ${yearStr}\n` +
-      `🏢 *Contractor:* ${userData?.name || "Admin"}\n\n` +
       `📊 *Attendance Summary:*\n` +
       `✅ Present: ${presentDays} days\n` +
       `🕒 Half Days: ${halfDays} days\n` +

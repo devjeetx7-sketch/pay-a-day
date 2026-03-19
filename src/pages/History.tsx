@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { FileText, FileSpreadsheet, ChevronLeft, ChevronRight, Search, Download, Share2, StickyNote } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import jsPDF from "jspdf";
@@ -359,13 +359,13 @@ const History = () => {
 
   if (currentRole === "contractor") {
     return (
-      <div className="min-h-screen bg-background pb-20 pt-6 px-4 max-w-lg mx-auto">
+      <div className="min-h-screen bg-background pb-20 md:pb-6 pt-6 px-4 max-w-3xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Global Log</h1>
           <p className="text-sm text-muted-foreground mt-1">All worker records</p>
         </div>
         <ContractorHistory />
-        <BottomNav />
+
       </div>
     );
   }
@@ -388,7 +388,7 @@ const History = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 md:pb-6">
       <div className="mx-auto max-w-lg px-4 pt-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-foreground">{t("history")}</h1>
@@ -528,7 +528,7 @@ const History = () => {
           )}
         </div>
       </div>
-      <BottomNav />
+
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw, Briefcase } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -133,7 +133,7 @@ const SettingsPage = () => {
     .slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 md:pb-6">
       <div className="mx-auto max-w-lg px-4 pt-6">
         <h1 className="text-xl font-bold text-foreground mb-6">{t("settings")}</h1>
 
@@ -454,7 +454,7 @@ const SettingsPage = () => {
         </DialogContent>
       </Dialog>
 
-      <BottomNav />
+
     </div>
   );
 };

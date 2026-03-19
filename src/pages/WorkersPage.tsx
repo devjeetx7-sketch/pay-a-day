@@ -6,7 +6,7 @@ import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, serverTimestamp,
 } from "firebase/firestore";
 import { Plus, Pencil, Trash2, Phone, CreditCard, Search, Users, X } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -164,7 +164,7 @@ const WorkersPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 md:pb-6">
       <div className="mx-auto max-w-lg px-4 pt-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -329,7 +329,7 @@ const WorkersPage = () => {
         </DialogContent>
       </Dialog>
 
-      <BottomNav />
+
     </div>
   );
 };
