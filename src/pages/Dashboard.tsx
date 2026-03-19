@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Clock, Minus, Plus, Loader2, StickyNote, Hand, IndianRupee } from "lucide-react";
+import { Check, X, Clock, Minus, Plus, Loader2, StickyNote, Hand, IndianRupee, Users, UserCheck, Wallet } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
@@ -34,11 +34,13 @@ const Dashboard = () => {
   const [advanceAmount, setAdvanceAmount] = useState("");
   const [monthlyAdvance, setMonthlyAdvance] = useState(0);
   const [advanceRecords, setAdvanceRecords] = useState<{ date: string; amount: number; note: string }[]>([]);
+  const [contractorStats, setContractorStats] = useState({ totalWorkers: 0, todayPresent: 0, pendingPayment: 0 });
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const [advanceDate, setAdvanceDate] = useState(todayStr);
   const dailyWage = userData?.daily_wage || 500;
+  const isContractor = userData?.role === "contractor";
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -108,6 +110,46 @@ const Dashboard = () => {
       setLeaveDays(leaves);
       setMonthlyAdvance(advanceTotal);
       setAdvanceRecords(advList.sort((a, b) => b.date.localeCompare(a.date)));
+
+      // Load contractor stats if applicable
+      if (isContractor) {
+        try {
+          const workersSnap = await getDocs(collection(db, "contractors", user.uid, "workers"));
+          const workerCount = workersSnap.size;
+          
+          // Check today's attendance for workers
+          let presentToday = 0;
+          let totalPending = 0;
+          
+          for (const wDoc of workersSnap.docs) {
+            const wData = wDoc.data();
+            const wAttQ = query(
+              collection(db, "attendance"),
+              where("user_id", "==", `worker_${wDoc.id}`),
+            );
+            const wAttSnap = await getDocs(wAttQ);
+            let wDays = 0;
+            let wAdvance = 0;
+            
+            wAttSnap.docs.forEach((ad) => {
+              const aData = ad.data();
+              if (aData.date === todayStr && aData.status === "present") presentToday++;
+              if (aData.date >= startDate && aData.date <= endDate) {
+                if (aData.status === "present") {
+                  wDays += aData.type === "half" ? 0.5 : 1;
+                }
+                if (aData.advance_amount) wAdvance += aData.advance_amount;
+              }
+            });
+            
+            totalPending += Math.max(0, (wDays * (wData.wage || 0)) - wAdvance);
+          }
+          
+          setContractorStats({ totalWorkers: workerCount, todayPresent: presentToday, pendingPayment: totalPending });
+        } catch (cErr) {
+          console.error("Error loading contractor stats:", cErr);
+        }
+      }
     } catch (err) {
       console.error("Error loading month data:", err);
     }
@@ -475,6 +517,33 @@ const Dashboard = () => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Contractor Summary Cards */}
+        {isContractor && (
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="rounded-2xl bg-card p-3 border border-border text-center">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-1">
+                <Users size={14} className="text-primary" />
+              </div>
+              <p className="text-lg font-bold text-foreground">{contractorStats.totalWorkers}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("totalWorkers")}</p>
+            </div>
+            <div className="rounded-2xl bg-card p-3 border border-border text-center">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-1">
+                <UserCheck size={14} className="text-primary" />
+              </div>
+              <p className="text-lg font-bold text-foreground">{contractorStats.todayPresent}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("todayPresent")}</p>
+            </div>
+            <div className="rounded-2xl bg-card p-3 border border-border text-center">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-1">
+                <Wallet size={14} className="text-primary" />
+              </div>
+              <p className="text-lg font-bold text-foreground">₹{contractorStats.pendingPayment.toLocaleString()}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">{t("pendingPayment")}</p>
             </div>
           </div>
         )}

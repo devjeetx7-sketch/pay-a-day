@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2 } from "lucide-react";
+import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +23,7 @@ const SettingsPage = () => {
   const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
   const [reminders, setReminders] = useState(() => localStorage.getItem("reminders") === "true");
   const [showHowToUse, setShowHowToUse] = useState(false);
+  const [showRoleChange, setShowRoleChange] = useState(false);
 
   useEffect(() => {
     if (userData?.name) setName(userData.name);
@@ -67,6 +68,21 @@ const SettingsPage = () => {
     } catch (err) {
       console.error("Error saving name:", err);
     }
+  };
+
+  const handleChangeRole = async () => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), { role: "" });
+      localStorage.removeItem("workday_role");
+      window.location.href = "/select-role";
+    } catch (err) {
+      console.error("Error changing role:", err);
+    }
+  };
+
+  const roleLabels: Record<string, string> = {
+    labour: "Labour", helper: "Helper", mistry: "Mistry", contractor: "Contractor",
   };
 
   const handleLangChange = async (newLang: string) => {
@@ -253,6 +269,25 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Change Role */}
+        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <RefreshCw size={20} className="text-muted-foreground" />
+              <div>
+                <span className="text-base font-bold text-foreground">{t("changeRole")}</span>
+                <p className="text-[10px] text-muted-foreground">{t("currentRole")}: {roleLabels[userData?.role || ""] || userData?.role || "—"}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowRoleChange(true)}
+              className="rounded-xl bg-muted px-4 py-2 text-xs font-bold text-foreground active:scale-95"
+            >
+              {t("changeRole")}
+            </button>
+          </div>
+        </div>
+
         {/* Admin Panel Link */}
         {userData?.role === "admin" && (
           <button
@@ -318,6 +353,30 @@ const SettingsPage = () => {
                 Use the <b>Calendar</b> to edit past records (e.g. if you forgot to mark attendance yesterday). Use <b>History</b> to export your monthly logs as a PDF or CSV, and click the Share button to send reports via WhatsApp or Email.
               </p>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Role Confirmation Dialog */}
+      <Dialog open={showRoleChange} onOpenChange={setShowRoleChange}>
+        <DialogContent className="max-w-xs mx-auto">
+          <DialogHeader>
+            <DialogTitle>{t("changeRole")}</DialogTitle>
+            <DialogDescription>{t("changeRoleConfirm")}</DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setShowRoleChange(false)}
+              className="flex-1 rounded-xl border border-border py-3 text-sm font-bold text-foreground active:scale-95"
+            >
+              {t("cancel")}
+            </button>
+            <button
+              onClick={handleChangeRole}
+              className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground active:scale-95"
+            >
+              {t("confirm")}
+            </button>
           </div>
         </DialogContent>
       </Dialog>

@@ -9,6 +9,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   userData: UserData | null;
+  refreshUserData: () => Promise<void>;
 }
 
 export interface UserData {
@@ -34,33 +35,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUserData = async (u: User) => {
+    const ref = doc(db, "users", u.uid);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const data = snap.data() as UserData;
+      setUserData(data);
+      if (data.role) localStorage.setItem("workday_role", data.role);
+    } else {
+      const newUser: UserData = {
+        uid: u.uid,
+        name: u.displayName || "",
+        email: u.email || "",
+        role: "",
+        daily_wage: 500,
+        language: "en",
+      };
+      await setDoc(ref, { ...newUser, created_at: serverTimestamp() });
+      setUserData(newUser);
+    }
+  };
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
-        const ref = doc(db, "users", u.uid);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          setUserData(snap.data() as UserData);
-        } else {
-          const newUser: UserData = {
-            uid: u.uid,
-            name: u.displayName || "",
-            email: u.email || "",
-            role: "user",
-            daily_wage: 500,
-            language: "en",
-          };
-          await setDoc(ref, { ...newUser, created_at: serverTimestamp() });
-          setUserData(newUser);
-        }
+        await fetchUserData(u);
       } else {
         setUserData(null);
+        localStorage.removeItem("workday_role");
       }
       setLoading(false);
     });
     return unsub;
   }, []);
+
+  const refreshUserData = async () => {
+    if (user) await fetchUserData(user);
+  };
 
   const loginWithGoogle = async () => {
     await signInWithPopup(auth, googleProvider);
@@ -68,10 +80,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await signOut(auth);
+    localStorage.removeItem("workday_role");
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout, userData }}>
+    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout, userData, refreshUserData }}>
       {children}
     </AuthContext.Provider>
   );
