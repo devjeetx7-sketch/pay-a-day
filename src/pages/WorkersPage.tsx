@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkTypes } from "@/hooks/useWorkTypes";
+import { useNavigate } from "react-router-dom";
 
 interface Worker {
   id: string;
@@ -33,6 +34,7 @@ const emptyWorker = { name: "", phone: "", aadhar: "", age: "", workType: "Labou
 const WorkersPage = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { workTypes, addWorkType } = useWorkTypes();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,7 +211,8 @@ const WorkersPage = () => {
             {filtered.map((w) => (
               <div
                 key={w.id}
-                className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3"
+                onClick={() => navigate(`/worker/${w.id}`)}
+                className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all hover:shadow-sm"
               >
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
                   {w.name.charAt(0).toUpperCase()}
@@ -222,15 +225,15 @@ const WorkersPage = () => {
                     <span className="text-primary font-bold">₹{w.wage}/day</span>
                   </div>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex flex-col gap-2 shrink-0">
                   <button
-                    onClick={() => openEdit(w)}
+                    onClick={(e) => { e.stopPropagation(); openEdit(w); }}
                     className="h-8 w-8 rounded-full bg-muted flex items-center justify-center active:scale-90"
                   >
                     <Pencil size={14} className="text-foreground" />
                   </button>
                   <button
-                    onClick={() => setShowDelete(w.id)}
+                    onClick={(e) => { e.stopPropagation(); setShowDelete(w.id); }}
                     className="h-8 w-8 rounded-full bg-destructive/10 flex items-center justify-center active:scale-90"
                   >
                     <Trash2 size={14} className="text-destructive" />

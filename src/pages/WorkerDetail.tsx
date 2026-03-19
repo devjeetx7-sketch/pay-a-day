@@ -3,8 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { ArrowLeft, Phone, IndianRupee, Calendar, Briefcase, Calculator, FileText, Share2, Plus, Minus, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Phone, IndianRupee, Calendar, Briefcase, Calculator, FileText, Share2, Plus, Minus, FileSpreadsheet, TrendingUp, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -88,6 +89,16 @@ export const WorkerDetail = () => {
   const grossEarned = totalDailyWorks * (worker.wage || 500);
   const finalBalance = grossEarned - totalAdvance;
 
+  // Calculate attendance rate for the current month
+  const totalDaysInMonth = new Date(parseInt(selectedMonth.split("-")[0]), parseInt(selectedMonth.split("-")[1]), 0).getDate();
+  // We should only count days up to today if it's the current month, else total days
+  const today = new Date();
+  const isCurrentMonth = today.toISOString().substring(0, 7) === selectedMonth;
+  const passedDays = isCurrentMonth ? today.getDate() : totalDaysInMonth;
+
+  const totalMarkedDays = presentDays + halfDays + absentDays;
+  const attendanceRate = passedDays > 0 ? Math.min(100, Math.round((totalDailyWorks / passedDays) * 100)) : 0;
+
   const [yearStr, monthStr] = selectedMonth.split("-");
   const monthNameStr = monthNames[parseInt(monthStr, 10) - 1];
 
@@ -95,47 +106,64 @@ export const WorkerDetail = () => {
     const pdf = new jsPDF("p", "mm", "a4");
     const pageW = pdf.internal.pageSize.getWidth();
 
-    // Header
-    pdf.setFillColor(15, 23, 42); // slate-900
-    pdf.rect(0, 0, pageW, 45, "F");
+    // Header section
+    pdf.setFillColor(15, 23, 42); // deep blue/slate
+    pdf.rect(0, 0, pageW, 55, "F");
 
+    // Logo Placeholder or Title
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(24);
+    pdf.setFontSize(28);
     pdf.setFont("helvetica", "bold");
-    pdf.text("DailyWork Pro", 14, 20);
+    pdf.text("DailyWork Pro", 14, 22);
 
-    pdf.setFontSize(14);
+    // Subtitle
+    pdf.setFontSize(12);
     pdf.setFont("helvetica", "normal");
-    pdf.setTextColor(148, 163, 184); // slate-400
-    pdf.text("Worker Monthly Passbook", 14, 28);
-
-    pdf.setFontSize(11);
-    pdf.setTextColor(248, 250, 252);
-    pdf.text(`${worker.name} (${worker.workType || 'Labour'}) | ${monthNameStr} ${yearStr}`, 14, 38);
-
-    pdf.setFontSize(9);
     pdf.setTextColor(148, 163, 184);
-    pdf.text(`Contractor: ${userData?.name || "Admin"}`, pageW - 65, 38);
+    pdf.text("Official Worker Passbook", 14, 32);
 
-    // Summary Stats
-    pdf.setTextColor(0, 0, 0);
+    // Worker Info
+    pdf.setFontSize(12);
+    pdf.setTextColor(248, 250, 252);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(`Name: ${worker.name}`, 14, 44);
+
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(203, 213, 225);
+    pdf.text(`Role: ${worker.workType || 'Labour'}`, 14, 50);
+
+    // Month & Contractor Info on Right
+    pdf.setFontSize(10);
+    pdf.setTextColor(248, 250, 252);
+    pdf.text(`Month: ${monthNameStr} ${yearStr}`, pageW - 65, 44);
+    pdf.setTextColor(148, 163, 184);
+    pdf.text(`Contractor: ${userData?.name || "Admin"}`, pageW - 65, 50);
+
+    // Financial Summary Title
+    let y = 65;
+    pdf.setTextColor(15, 23, 42);
     pdf.setFontSize(14);
     pdf.setFont("helvetica", "bold");
-    pdf.text("Financial Summary", 14, 55);
+    pdf.text("Monthly Financial Summary", 14, y);
 
+    // Stats Table
     autoTable(pdf, {
-      startY: 60,
-      head: [['Daily Wage', 'Work Days', 'Total Earned', 'Total Advance', 'Net Payable']],
+      startY: y + 5,
+      head: [['Daily Wage', 'Total Man Days', 'Gross Earned', 'Advance Deducted', 'Net Payable']],
       body: [[
         `Rs. ${worker.wage || 500}`,
-        totalDailyWorks.toString(),
-        `Rs. ${grossEarned}`,
-        `Rs. ${totalAdvance}`,
-        `Rs. ${finalBalance}`
+        `${totalDailyWorks} Days`,
+        `Rs. ${grossEarned.toLocaleString()}`,
+        `Rs. ${totalAdvance.toLocaleString()}`,
+        `Rs. ${finalBalance.toLocaleString()}`
       ]],
       theme: 'grid',
-      headStyles: { fillColor: [30, 64, 175], textColor: [255, 255, 255] },
-      styles: { fontSize: 10, halign: 'center' },
+      headStyles: { fillColor: [30, 64, 175], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 10, halign: 'center', cellPadding: 6 },
+      columnStyles: {
+        4: { fontStyle: 'bold', textColor: finalBalance >= 0 ? [22, 163, 74] : [220, 38, 38] }
+      }
     });
 
     // Attendance & Advance Table
@@ -182,7 +210,25 @@ export const WorkerDetail = () => {
   };
 
   const handleWhatsAppShare = () => {
-    const text = `*Worker Passbook: ${worker.name}*\n*Month:* ${monthNameStr} ${yearStr}\n*Contractor:* ${userData?.name || "Admin"}\n\n*Summary:*\n• Daily Wage: ₹${worker.wage || 500}\n• Total Days Worked: ${totalDailyWorks}\n• Gross Earned: ₹${grossEarned}\n• Total Advance: ₹${totalAdvance}\n\n*Net Payable Balance: ₹${finalBalance}*\n\nGenerated via DailyWork Pro App`;
+    const text = `👷 *Official Worker Passbook*\n\n` +
+      `👤 *Name:* ${worker.name}\n` +
+      `🛠️ *Role:* ${worker.workType || 'Labour'}\n` +
+      `📅 *Month:* ${monthNameStr} ${yearStr}\n` +
+      `🏢 *Contractor:* ${userData?.name || "Admin"}\n\n` +
+      `📊 *Attendance Summary:*\n` +
+      `✅ Present: ${presentDays} days\n` +
+      `🕒 Half Days: ${halfDays} days\n` +
+      `❌ Absent: ${absentDays} days\n` +
+      `📈 *Total Man Days:* ${totalDailyWorks}\n\n` +
+      `💰 *Financial Summary:*\n` +
+      `💵 Daily Wage: ₹${worker.wage || 500}\n` +
+      `💸 Gross Earned: ₹${grossEarned.toLocaleString()}\n` +
+      `📉 Advance Deducted: ₹${totalAdvance.toLocaleString()}\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `🏆 *Net Payable: ₹${finalBalance.toLocaleString()}*\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `_Generated automatically via DailyWork Pro App_ 📱`;
+
     const encodedText = encodeURIComponent(text);
     window.open(`https://wa.me/?text=${encodedText}`, "_blank");
   };
@@ -224,8 +270,18 @@ export const WorkerDetail = () => {
         </div>
       </div>
 
+      {/* Quick Actions Bar */}
+      <div className="flex items-center gap-3 mb-6 bg-primary/5 p-3 rounded-2xl border border-primary/20">
+        <Button onClick={() => navigate('/calendar')} variant="ghost" className="flex-1 rounded-xl bg-background border border-border h-11 text-xs font-bold shadow-sm hover:border-primary hover:text-primary">
+          <CheckCircle2 size={16} className="mr-2 text-green-500" /> Mark Today
+        </Button>
+        <Button onClick={() => navigate('/')} variant="ghost" className="flex-1 rounded-xl bg-background border border-border h-11 text-xs font-bold shadow-sm hover:border-primary hover:text-primary">
+          <Plus size={16} className="mr-2 text-orange-500" /> Advance
+        </Button>
+      </div>
+
       {/* Stats Selector */}
-      <div className="flex items-center justify-between mb-4 bg-muted/50 p-1.5 rounded-xl border border-border">
+      <div className="flex items-center justify-between mb-4 bg-muted/50 p-1.5 rounded-xl border border-border shadow-sm">
         <h2 className="text-sm font-bold text-foreground ml-2">Passbook Month</h2>
         <input
           type="month"
@@ -243,6 +299,19 @@ export const WorkerDetail = () => {
         <Button onClick={handleWhatsAppShare} className="h-12 rounded-xl flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#25D366]/90 shadow-sm">
             <Share2 size={18} /> WhatsApp
         </Button>
+      </div>
+
+      {/* Attendance Performance */}
+      <div className="bg-card border border-border p-5 rounded-2xl shadow-sm mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+             <TrendingUp size={16} className="text-primary" />
+             <h3 className="font-bold text-sm text-foreground">Attendance Rate</h3>
+          </div>
+          <span className="text-lg font-bold text-primary">{attendanceRate}%</span>
+        </div>
+        <Progress value={attendanceRate} className="h-3 rounded-full bg-muted" />
+        <p className="text-[10px] text-muted-foreground mt-2 text-center font-medium">Worked {totalDailyWorks} out of {passedDays} passed days this month</p>
       </div>
 
       {/* Stats Grid */}
