@@ -47,7 +47,7 @@ const CalendarPage = () => {
   const dayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
   const absenceReasons = ["sick", "personal", "holiday", "weather", "other"];
 
-  const currentRole = userData?.role || localStorage.getItem("workday_role");
+  const currentRole = userData?.role || localStorage.getItem("dailywork_role");
 
   useEffect(() => {
     if (!user || currentRole === "contractor") return;

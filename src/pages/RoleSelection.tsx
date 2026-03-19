@@ -37,7 +37,7 @@ const RoleSelection = () => {
     setSaving(true);
     try {
       await updateDoc(doc(db, "users", user.uid), { role: selected });
-      localStorage.setItem("workday_role", selected);
+      localStorage.setItem("dailywork_role", selected);
       await refreshUserData();
       navigate("/", { replace: true });
     } catch (err) {

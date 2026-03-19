@@ -177,7 +177,7 @@ const AdminUserDetail = () => {
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
     pdf.setFont("helvetica", "bold");
-    pdf.text("WorkDay Admin Report", 14, 20);
+    pdf.text("DailyWork Admin Report", 14, 20);
     pdf.setFontSize(12);
     pdf.setTextColor(148, 163, 184);
     pdf.text(`Worker: ${userName} | ${monthLabel}`, 14, 30);

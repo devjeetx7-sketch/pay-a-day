@@ -93,7 +93,7 @@ export const ContractorHistory = () => {
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
     pdf.setFont("helvetica", "bold");
-    pdf.text("WorkDay", 14, 20);
+    pdf.text("DailyWork", 14, 20);
 
     pdf.setFontSize(11);
     pdf.setFont("helvetica", "normal");
