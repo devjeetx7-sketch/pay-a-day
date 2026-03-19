@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (snap.exists()) {
       const data = snap.data() as UserData;
       setUserData(data);
-      if (data.role) localStorage.setItem("workday_role", data.role);
+      if (data.role) localStorage.setItem("dailywork_role", data.role);
     } else {
       const newUser: UserData = {
         uid: u.uid,
@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await fetchUserData(u);
       } else {
         setUserData(null);
-        localStorage.removeItem("workday_role");
+        localStorage.removeItem("dailywork_role");
       }
       setLoading(false);
     });
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await signOut(auth);
-    localStorage.removeItem("workday_role");
+    localStorage.removeItem("dailywork_role");
   };
 
   return (

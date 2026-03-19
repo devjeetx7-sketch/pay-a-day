@@ -6,6 +6,7 @@ import AdminRoute from "@/components/AdminRoute";
 import Login from "@/pages/Login";
 import RoleSelection from "@/pages/RoleSelection";
 import Dashboard from "@/pages/Dashboard";
+import { WorkerDetail } from "@/pages/WorkerDetail";
 import CalendarPage from "@/pages/CalendarPage";
 import History from "@/pages/History";
 import StatsPage from "@/pages/StatsPage";
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/select-role" element={<RoleSelection />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/worker/:id" element={<ProtectedRoute><WorkerDetail /></ProtectedRoute>} />
           <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
           <Route path="/stats" element={<ProtectedRoute><StatsPage /></ProtectedRoute>} />

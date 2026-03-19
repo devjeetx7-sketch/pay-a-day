@@ -22,7 +22,7 @@ interface AttendanceRecord {
 
 const History = () => {
   const { user, userData } = useAuth();
-  const currentRole = userData?.role || localStorage.getItem("workday_role");
+  const currentRole = userData?.role || localStorage.getItem("dailywork_role");
   const { t } = useLanguage();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<AttendanceRecord[]>([]);
@@ -160,7 +160,7 @@ const History = () => {
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
     pdf.setFont("helvetica", "bold");
-    pdf.text("WorkDay", 14, 20);
+    pdf.text("DailyWork", 14, 20);
 
     pdf.setFontSize(14);
     pdf.setFont("helvetica", "normal");
@@ -351,10 +351,10 @@ const History = () => {
     y += 8;
     pdf.setTextColor(148, 163, 184);
     pdf.setFontSize(8);
-    pdf.text("WorkDay Attendance Tracker - Professionally Generated Report", 14, y);
+    pdf.text("DailyWork Attendance Tracker - Professionally Generated Report", 14, y);
     pdf.text(`Total Document Entries: ${records.length}`, pageW - 55, y);
 
-    pdf.save(`WorkDay_Report_${userName.replace(" ", "_")}_${monthLabel.replace(" ", "_")}.pdf`);
+    pdf.save(`DailyWork_Report_${userName.replace(" ", "_")}_${monthLabel.replace(" ", "_")}.pdf`);
   };
 
   if (currentRole === "contractor") {
@@ -371,7 +371,7 @@ const History = () => {
   }
 
   const handleShare = async () => {
-    const summary = `WorkDay Attendance Report\n${userData?.name || 'User'} | ${monthNames[selectedMonth.getMonth()]} ${selectedMonth.getFullYear()}\n\nPresent: ${totalPresent}\nAbsent: ${totalAbsent}\nOvertime: ${totalOT}h\nTotal Advance: ₹${totalAdvance.toLocaleString()}\n\nNet Payable: ₹${netPayable.toLocaleString()}`;
+    const summary = `DailyWork Attendance Report\n${userData?.name || 'User'} | ${monthNames[selectedMonth.getMonth()]} ${selectedMonth.getFullYear()}\n\nPresent: ${totalPresent}\nAbsent: ${totalAbsent}\nOvertime: ${totalOT}h\nTotal Advance: ₹${totalAdvance.toLocaleString()}\n\nNet Payable: ₹${netPayable.toLocaleString()}`;
     if (navigator.share) {
       try {
         await navigator.share({

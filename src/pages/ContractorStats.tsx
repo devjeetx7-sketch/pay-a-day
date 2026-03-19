@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 export const ContractorStats = () => {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [stats, setStats] = useState({ totalCost: 0, avgWorkerCost: 0, totalWorkDays: 0 });
+  const [stats, setStats] = useState({ totalCost: 0, avgWorkerCost: 0, totalDailyWorks: 0 });
   const [workerData, setWorkerData] = useState<any[]>([]);
 
   const monthNames = [
@@ -70,7 +70,7 @@ export const ContractorStats = () => {
 
       setStats({
           totalCost,
-          totalWorkDays: totalDays,
+          totalDailyWorks: totalDays,
           avgWorkerCost: workerPerf.length > 0 ? Math.round(totalCost / workerPerf.length) : 0
       });
 
@@ -106,7 +106,7 @@ export const ContractorStats = () => {
             </div>
             <div className="bg-card p-4 rounded-2xl border border-border">
                 <p className="text-xs text-muted-foreground font-medium mb-1">Total Man Days</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalWorkDays}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.totalDailyWorks}</p>
             </div>
         </div>
 

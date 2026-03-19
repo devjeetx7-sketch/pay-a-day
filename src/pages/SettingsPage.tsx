@@ -103,7 +103,7 @@ const SettingsPage = () => {
     if (!user) return;
     try {
       await updateDoc(doc(db, "users", user.uid), { role: "" });
-      localStorage.removeItem("workday_role");
+      localStorage.removeItem("dailywork_role");
       window.location.href = "/select-role";
     } catch (err) {
       console.error("Error changing role:", err);
@@ -300,7 +300,7 @@ const SettingsPage = () => {
             <div className="flex items-center gap-3">
               <Sparkles size={20} className="text-yellow-500" />
               <div>
-                <span className="text-base font-bold text-foreground">WorkDay Premium</span>
+                <span className="text-base font-bold text-foreground">DailyWork Premium</span>
                 <p className="text-[10px] text-muted-foreground">Unlock custom themes and PDF exports</p>
               </div>
             </div>
@@ -315,10 +315,10 @@ const SettingsPage = () => {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Info size={20} className="text-muted-foreground" />
-              <span className="text-base font-bold text-foreground">About WorkDay</span>
+              <span className="text-base font-bold text-foreground">About DailyWork</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              WorkDay helps daily wage workers seamlessly track attendance, earnings, overtime, and leaves.
+              DailyWork helps daily wage workers seamlessly track attendance, earnings, overtime, and leaves.
               Export professional reports, view analytics, and manage your work life entirely in one app.
             </p>
           </div>
@@ -326,7 +326,7 @@ const SettingsPage = () => {
             onClick={() => setShowHowToUse(true)}
             className="w-full rounded-xl bg-muted/50 border border-border py-3 text-sm font-bold text-foreground active:scale-95 transition-all"
           >
-            How to Use WorkDay
+            How to Use DailyWork
           </button>
           <p className="text-[10px] text-muted-foreground">Version 1.0.0</p>
         </div>
@@ -349,7 +349,7 @@ const SettingsPage = () => {
               <RefreshCw size={20} className="text-muted-foreground" />
               <div>
                 <span className="text-base font-bold text-foreground">App Mode</span>
-                <p className="text-[10px] text-muted-foreground">Current: {roleLabels[userData?.role || localStorage.getItem("workday_role") || ""] || "Not Selected"}</p>
+                <p className="text-[10px] text-muted-foreground">Current: {roleLabels[userData?.role || localStorage.getItem("dailywork_role") || ""] || "Not Selected"}</p>
               </div>
             </div>
             <button
@@ -385,7 +385,7 @@ const SettingsPage = () => {
       <Dialog open={showHowToUse} onOpenChange={setShowHowToUse}>
         <DialogContent className="max-w-sm mx-auto max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>How to Use WorkDay</DialogTitle>
+            <DialogTitle>How to Use DailyWork</DialogTitle>
             <DialogDescription>A quick guide to tracking your work effectively</DialogDescription>
           </DialogHeader>
           <div className="space-y-5 mt-2">
