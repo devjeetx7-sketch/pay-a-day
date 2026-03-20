@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export const PersonalDashboard = () => {
   const navigate = useNavigate();
@@ -179,26 +180,38 @@ export const PersonalDashboard = () => {
     setLoading(false);
   };
 
+  const initials = (userData?.name || "U")
+    .split(" ")
+    .map((w: string) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="space-y-6 animate-in fade-in max-w-4xl mx-auto md:max-w-7xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">My Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track your work & earnings</p>
-        </div>
-        <div className="bg-blue-500/10 text-blue-500 px-3 py-1.5 rounded-full text-xs font-bold border border-blue-500/20">
-          Personal Mode
+        <div className="flex items-center gap-3">
+          <Avatar className="h-12 w-12 border-2 border-primary/20">
+            <AvatarImage src={user?.photoURL || ""} alt={userData?.name || "User"} />
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Hi, {userData?.name?.split(" ")[0] || "User"} 👋</h1>
+            <p className="text-sm text-muted-foreground mt-1">Track your work & earnings</p>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-card p-4 rounded-2xl border border-border">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Today's Earnings</p>
-          <p className="text-3xl font-bold text-primary">₹{stats.todayEarned}</p>
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Today's Earnings</p>
+          <p className="text-3xl font-bold text-primary">{loading ? <div className="h-8 w-16 bg-muted animate-pulse rounded"></div> : `₹${stats.todayEarned}`}</p>
         </div>
-        <div className="bg-card p-4 rounded-2xl border border-border">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Monthly Earnings</p>
-          <p className="text-3xl font-bold text-green-600">₹{stats.monthEarned}</p>
+        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Monthly Earnings</p>
+          <p className="text-3xl font-bold text-green-600">{loading ? <div className="h-8 w-20 bg-muted animate-pulse rounded"></div> : `₹${stats.monthEarned}`}</p>
         </div>
       </div>
 
