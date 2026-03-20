@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export const ContractorDashboard = () => {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ totalWorkers: 0, todayPresent: 0, totalPaid: 0, pendingAmount: 0 });
   const [workers, setWorkers] = useState<any[]>([]);
@@ -126,92 +127,104 @@ export const ContractorDashboard = () => {
     setSavingPayment(false);
   };
 
+  const initials = (userData?.name || "C")
+    .split(" ")
+    .map((w: string) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="space-y-6 animate-in fade-in max-w-4xl mx-auto md:max-w-7xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Contractor Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage your workforce</p>
-        </div>
-        <div className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-bold border border-primary/20">
-          Contractor Mode
+        <div className="flex items-center gap-3">
+          <Avatar className="h-12 w-12 border-2 border-primary/20">
+            <AvatarImage src={user?.photoURL || ""} alt={userData?.name || "Contractor"} />
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Hi, {userData?.name?.split(" ")[0] || "Contractor"} 👋</h1>
+            <p className="text-sm text-muted-foreground mt-1">Manage your workforce</p>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-card p-4 rounded-2xl border border-border">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-            <Users size={16} className="text-primary" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+            <Users size={20} className="text-primary" />
           </div>
-          <p className="text-3xl font-bold text-foreground">{loading ? "-" : stats.totalWorkers}</p>
+          <p className="text-3xl font-bold text-foreground">{loading ? <div className="h-8 w-16 bg-muted animate-pulse rounded"></div> : stats.totalWorkers}</p>
           <p className="text-xs font-medium text-muted-foreground mt-1">Total Workers</p>
         </div>
 
-        <div className="bg-card p-4 rounded-2xl border border-border">
-          <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
-            <UserCheck size={16} className="text-green-500" />
+        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+          <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
+            <UserCheck size={20} className="text-green-500" />
           </div>
-          <p className="text-3xl font-bold text-foreground">{loading ? "-" : stats.todayPresent}</p>
+          <p className="text-3xl font-bold text-foreground">{loading ? <div className="h-8 w-16 bg-muted animate-pulse rounded"></div> : stats.todayPresent}</p>
           <p className="text-xs font-medium text-muted-foreground mt-1">Today's Attendance</p>
         </div>
 
-        <div className="bg-card p-4 rounded-2xl border border-border">
-          <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
-            <Wallet size={16} className="text-blue-500" />
+        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+          <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-3">
+            <Wallet size={20} className="text-blue-500" />
           </div>
-          <p className="text-xl font-bold text-foreground">₹{loading ? "-" : stats.totalPaid.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-foreground">{loading ? <div className="h-8 w-20 bg-muted animate-pulse rounded"></div> : `₹${stats.totalPaid.toLocaleString()}`}</p>
           <p className="text-xs font-medium text-muted-foreground mt-1">Total Paid (Month)</p>
         </div>
 
-        <div className="bg-card p-4 rounded-2xl border border-border">
-          <div className="h-8 w-8 rounded-full bg-orange-500/10 flex items-center justify-center mb-2">
-            <Wallet size={16} className="text-orange-500" />
+        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+          <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center mb-3">
+            <Wallet size={20} className="text-orange-500" />
           </div>
-          <p className="text-xl font-bold text-primary">₹{loading ? "-" : stats.pendingAmount.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-primary">{loading ? <div className="h-8 w-20 bg-muted animate-pulse rounded"></div> : `₹${stats.pendingAmount.toLocaleString()}`}</p>
           <p className="text-xs font-medium text-muted-foreground mt-1">Pending Amount</p>
         </div>
       </div>
 
-      <div className="space-y-3 mt-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Quick Actions</h2>
 
-        <button onClick={() => navigate('/workers')} className="w-full bg-card border border-border p-4 rounded-2xl flex items-center justify-between active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users size={18} className="text-primary" />
+        <button onClick={() => navigate('/workers')} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover:shadow-md active:scale-[0.98] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users size={20} className="text-primary" />
             </div>
             <div className="text-left">
-              <p className="font-bold text-sm text-foreground">Manage Workers</p>
-              <p className="text-xs text-muted-foreground">Add, edit or remove workers</p>
+              <p className="font-bold text-base text-foreground">Manage Workers</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Add, edit or remove workers</p>
             </div>
           </div>
-          <ArrowRight size={18} className="text-muted-foreground" />
+          <ArrowRight size={20} className="text-muted-foreground" />
         </button>
 
-        <button onClick={() => navigate('/calendar')} className="w-full bg-card border border-border p-4 rounded-2xl flex items-center justify-between active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-              <UserCheck size={18} className="text-green-500" />
+        <button onClick={() => navigate('/calendar')} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover:shadow-md active:scale-[0.98] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
+              <UserCheck size={20} className="text-green-500" />
             </div>
             <div className="text-left">
-              <p className="font-bold text-sm text-foreground">Mark Attendance</p>
-              <p className="text-xs text-muted-foreground">Daily attendance for all workers</p>
+              <p className="font-bold text-base text-foreground">Mark Attendance</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Daily attendance for all workers</p>
             </div>
           </div>
-          <ArrowRight size={18} className="text-muted-foreground" />
+          <ArrowRight size={20} className="text-muted-foreground" />
         </button>
 
-        <button onClick={() => setShowPaymentModal(true)} className="w-full bg-card border border-border p-4 rounded-2xl flex items-center justify-between active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <IndianRupee size={18} className="text-orange-500" />
+        <button onClick={() => setShowPaymentModal(true)} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover:shadow-md active:scale-[0.98] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+              <IndianRupee size={20} className="text-orange-500" />
             </div>
             <div className="text-left">
-              <p className="font-bold text-sm text-foreground">Add Advance Payment</p>
-              <p className="text-xs text-muted-foreground">Record payments for workers</p>
+              <p className="font-bold text-base text-foreground">Add Advance Payment</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Record payments for workers</p>
             </div>
           </div>
-          <Plus size={18} className="text-muted-foreground" />
+          <Plus size={20} className="text-muted-foreground" />
         </button>
       </div>
 

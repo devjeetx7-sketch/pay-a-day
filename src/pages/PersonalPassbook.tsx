@@ -152,7 +152,7 @@ export const PersonalPassbook = () => {
     pdf.text(`Mode: Personal Passbook`, pageW - 65, 50);
 
     // Financial Summary Title
-    let y = 65;
+    const y = 65;
     pdf.setTextColor(15, 23, 42);
     pdf.setFontSize(14);
     pdf.setFont("helvetica", "bold");

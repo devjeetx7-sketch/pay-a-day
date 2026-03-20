@@ -85,48 +85,50 @@ export const ContractorStats = () => {
   const nextMonth = () => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1));
 
   return (
-    <div className="space-y-4 animate-in fade-in">
+    <div className="space-y-6 animate-in fade-in">
         {/* Month selector */}
-        <div className="flex items-center justify-between mb-6 bg-card border border-border rounded-xl p-2">
-          <button onClick={prevMonth} className="p-2 rounded-lg active:bg-muted">
+        <div className="flex items-center justify-between mb-6 bg-card border border-border rounded-xl p-2 max-w-sm">
+          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-muted active:bg-muted transition-colors">
             <ChevronLeft size={20} />
           </button>
           <span className="text-sm font-bold text-foreground">
             {monthNames[selectedMonth.getMonth()]} {selectedMonth.getFullYear()}
           </span>
-          <button onClick={nextMonth} className="p-2 rounded-lg active:bg-muted">
+          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted active:bg-muted transition-colors">
             <ChevronRight size={20} />
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-card p-4 rounded-2xl border border-border">
-                <p className="text-xs text-muted-foreground font-medium mb-1">Total Labour Cost</p>
-                <p className="text-2xl font-bold text-primary">₹{stats.totalCost.toLocaleString()}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">Total Labour Cost</p>
+                <p className="text-4xl font-bold text-primary">₹{stats.totalCost.toLocaleString()}</p>
             </div>
-            <div className="bg-card p-4 rounded-2xl border border-border">
-                <p className="text-xs text-muted-foreground font-medium mb-1">Total Man Days</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalDailyWorks}</p>
+            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">Total Man Days</p>
+                <p className="text-4xl font-bold text-foreground">{stats.totalDailyWorks}</p>
             </div>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
         {/* Worker Performance Chart */}
-        <div className="rounded-2xl bg-card border border-border p-4 mb-4">
-            <div className="flex items-center justify-between mb-4">
+        <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <TrendingUp size={16} className="text-primary" />
-                <p className="text-sm font-bold text-foreground">Top Workers by Days</p>
+                <TrendingUp size={20} className="text-primary" />
+                <p className="text-base font-bold text-foreground">Top Workers by Days</p>
               </div>
             </div>
-            <div className="h-48">
+            <div className="h-64">
               {workerData.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-xs text-muted-foreground">No data for this month</div>
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground bg-muted/30 rounded-xl">No data for this month</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={workerData.slice(0, 5)} layout="vertical" margin={{ left: -20, right: 10 }}>
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <Bar dataKey="days" radius={[0, 4, 4, 0]} barSize={20}>
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fill: "currentColor" }} axisLine={false} tickLine={false} />
+                    <Bar dataKey="days" radius={[0, 4, 4, 0]} barSize={24}>
                       {workerData.slice(0, 5).map((_, i) => (
                         <Cell key={i} fill={`hsl(160, 81%, ${40 + i * 5}%)`} />
                       ))}
@@ -138,26 +140,30 @@ export const ContractorStats = () => {
         </div>
 
         {/* Worker List Details */}
-        <div className="space-y-2">
-            <h3 className="text-sm font-bold text-muted-foreground mb-2">Cost Breakdown</h3>
+        <div className="space-y-3">
+            <h3 className="text-base font-bold text-foreground flex items-center gap-2">Cost Breakdown</h3>
             {workerData.length === 0 ? (
-                <p className="text-xs text-center py-4 bg-muted rounded-xl">No active workers this month.</p>
+                <p className="text-sm text-center py-10 bg-muted/50 rounded-2xl border border-dashed text-muted-foreground">No active workers this month.</p>
             ) : (
-                workerData.map((w, i) => (
-                    <div key={i} className="flex justify-between items-center p-3 bg-card border border-border rounded-xl">
-                        <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm divide-y divide-border">
+                {workerData.map((w, i) => (
+                    <div key={i} className="flex justify-between items-center p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
                                 {w.name.charAt(0)}
                             </div>
                             <div>
-                                <p className="font-bold text-sm">{w.name}</p>
-                                <p className="text-[10px] text-muted-foreground">{w.days} Days worked</p>
+                                <p className="font-bold text-base">{w.name}</p>
+                                <p className="text-xs text-muted-foreground">{w.days} Days worked</p>
                             </div>
                         </div>
-                        <span className="font-bold text-sm text-foreground">₹{w.cost.toLocaleString()}</span>
+                        <span className="font-bold text-base text-foreground">₹{w.cost.toLocaleString()}</span>
                     </div>
-                ))
+                ))}
+                </div>
             )}
+        </div>
+
         </div>
     </div>
   );
