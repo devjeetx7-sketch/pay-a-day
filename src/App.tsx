@@ -12,6 +12,7 @@ import CalendarPage from "@/pages/CalendarPage";
 import History from "@/pages/History";
 import StatsPage from "@/pages/StatsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import PremiumPage from "@/pages/PremiumPage";
 import WorkersPage from "@/pages/WorkersPage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminUserDetail from "@/pages/admin/AdminUserDetail";
