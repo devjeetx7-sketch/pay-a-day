@@ -36,7 +36,7 @@ const SettingsPage = () => {
   useEffect(() => {
     if (userData?.name) setName(userData.name);
     if (userData?.daily_wage) setWage(String(userData.daily_wage));
-    if (userData?.workType) setWorkType(userData.workType);
+    if ((userData as any)?.workType) setWorkType((userData as any).workType);
   }, [userData]);
 
   const toggleDarkMode = (enabled: boolean) => {
