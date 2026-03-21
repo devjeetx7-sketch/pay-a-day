@@ -8,20 +8,36 @@ import { Building2, User as UserIcon } from "lucide-react";
 
 const roles = [
   {
+    id: "labour",
+    icon: UserIcon,
+    title: "Labour",
+    desc: "Daily wage worker",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10"
+  },
+  {
+    id: "helper",
+    icon: UserIcon,
+    title: "Helper",
+    desc: "Assistant worker",
+    color: "text-green-500",
+    bg: "bg-green-500/10"
+  },
+  {
+    id: "mistry",
+    icon: UserIcon,
+    title: "Mistry",
+    desc: "Skilled worker / Foreman",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10"
+  },
+  {
     id: "contractor",
     icon: Building2,
-    title: "Contractor Mode",
+    title: "Contractor",
     desc: "Manage workers, attendance & payments",
     color: "text-orange-500",
     bg: "bg-orange-500/10"
-  },
-  {
-    id: "personal",
-    icon: UserIcon,
-    title: "Personal Mode",
-    desc: "Track your own daily work & earnings",
-    color: "text-blue-500",
-    bg: "bg-blue-500/10"
   },
 ];
 
