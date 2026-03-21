@@ -112,7 +112,7 @@ const SettingsPage = () => {
   };
 
   const roleLabels: Record<string, string> = {
-    contractor: "Contractor Mode", personal: "Personal Mode",
+    contractor: "Contractor", personal: "Personal", labour: "Labour", helper: "Helper", mistry: "Mistry",
   };
 
   const handleLangChange = async (newLang: string) => {
