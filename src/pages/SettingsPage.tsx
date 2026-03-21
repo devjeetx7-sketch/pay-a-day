@@ -28,7 +28,7 @@ const SettingsPage = () => {
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [showRoleChange, setShowRoleChange] = useState(false);
   const { workTypes, addWorkType } = useWorkTypes();
-  const [workType, setWorkType] = useState(userData?.workType || "");
+  const [workType, setWorkType] = useState((userData as any)?.workType || "");
   const [customType, setCustomType] = useState("");
   const [isAddingType, setIsAddingType] = useState(false);
   const [workTypeSaved, setWorkTypeSaved] = useState(false);
