@@ -1,4 +1,4 @@
-import { Home, CalendarDays, Clock, BarChart3, Settings, Users } from "lucide-react";
+import { Home, CalendarDays, Clock, BarChart3, Settings, Users, Crown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
