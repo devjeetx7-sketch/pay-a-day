@@ -28,7 +28,7 @@ const SettingsPage = () => {
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [showRoleChange, setShowRoleChange] = useState(false);
   const { workTypes, addWorkType } = useWorkTypes();
-  const [workType, setWorkType] = useState(userData?.workType || "");
+  const [workType, setWorkType] = useState((userData as any)?.workType || "");
   const [customType, setCustomType] = useState("");
   const [isAddingType, setIsAddingType] = useState(false);
   const [workTypeSaved, setWorkTypeSaved] = useState(false);
@@ -36,7 +36,7 @@ const SettingsPage = () => {
   useEffect(() => {
     if (userData?.name) setName(userData.name);
     if (userData?.daily_wage) setWage(String(userData.daily_wage));
-    if (userData?.workType) setWorkType(userData.workType);
+    if ((userData as any)?.workType) setWorkType((userData as any).workType);
   }, [userData]);
 
   const toggleDarkMode = (enabled: boolean) => {
@@ -112,7 +112,7 @@ const SettingsPage = () => {
   };
 
   const roleLabels: Record<string, string> = {
-    contractor: "Contractor Mode", personal: "Personal Mode",
+    contractor: "Contractor", personal: "Personal", labour: "Labour", helper: "Helper", mistry: "Mistry",
   };
 
   const handleLangChange = async (newLang: string) => {

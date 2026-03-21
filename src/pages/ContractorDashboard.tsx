@@ -135,7 +135,7 @@ export const ContractorDashboard = () => {
     .slice(0, 2);
 
   return (
-    <div className="space-y-6 animate-in fade-in max-w-4xl mx-auto md:max-w-7xl">
+    <div className="space-y-6 animate-in fade-in w-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12 border-2 border-primary/20">
