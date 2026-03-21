@@ -34,6 +34,7 @@ const App = () => (
           <Route path="/stats" element={<ProtectedRoute><AppLayout><StatsPage /></AppLayout></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
           <Route path="/workers" element={<ProtectedRoute><AppLayout><WorkersPage /></AppLayout></ProtectedRoute>} />
+          <Route path="/premium" element={<ProtectedRoute><AppLayout><PremiumPage /></AppLayout></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/user/:userId" element={<AdminRoute><AdminUserDetail /></AdminRoute>} />
           <Route path="*" element={<NotFound />} />
