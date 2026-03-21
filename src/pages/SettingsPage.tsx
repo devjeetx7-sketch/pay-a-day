@@ -7,6 +7,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw, Briefcase, Settings2, Lock, FileText, CheckCircle2, Phone } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { PremiumModal } from "@/components/PremiumModal";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
@@ -32,6 +33,7 @@ const SettingsPage = () => {
   const [customType, setCustomType] = useState("");
   const [isAddingType, setIsAddingType] = useState(false);
   const [workTypeSaved, setWorkTypeSaved] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     if (userData?.name) setName(userData.name);
@@ -159,10 +161,7 @@ const SettingsPage = () => {
               <RefreshCw size={18} className={activeTab === 'role' ? 'text-primary' : 'text-muted-foreground'} />
               Role Management
             </button>
-            <button onClick={() => setActiveTab('premium')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'premium' ? 'bg-amber-500/10 text-amber-600 font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
-              <Sparkles size={18} className={activeTab === 'premium' ? 'text-amber-500' : 'text-muted-foreground'} />
-              Premium Plan
-            </button>
+
             <button onClick={() => setActiveTab('data')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'data' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
               <FileText size={18} className={activeTab === 'data' ? 'text-primary' : 'text-muted-foreground'} />
               Data & Export
@@ -186,7 +185,7 @@ const SettingsPage = () => {
           {/* Details Panel */}
           <div className="flex-1 space-y-6 md:space-y-0">
             {/* Account Settings */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block md:${activeTab === 'account' ? 'block' : 'hidden'}`}>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block ${activeTab === 'account' ? 'md:block' : 'md:hidden'}`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
               <div className="flex items-center gap-4 mb-5">
                 <Avatar className="h-16 w-16 shadow-sm">
@@ -219,7 +218,7 @@ const SettingsPage = () => {
             </div>
 
             {/* App Preferences */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block md:${activeTab === 'preferences' ? 'block' : 'hidden'}`}>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block ${activeTab === 'preferences' ? 'md:block' : 'md:hidden'}`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">App Preferences</h2>
 
               <div className="flex items-center justify-between pb-4 border-b border-border">
@@ -322,7 +321,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Role Management */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block md:${activeTab === 'role' ? 'block' : 'hidden'}`}>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block ${activeTab === 'role' ? 'md:block' : 'md:hidden'}`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Role Management</h2>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border">
                 <div className="flex items-center gap-4">
@@ -340,85 +339,11 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Premium Section */}
-            <div className={`rounded-2xl bg-card border border-border shadow-md overflow-hidden block md:${activeTab === 'premium' ? 'block' : 'hidden'}`}>
-              <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-red-500/20 p-6 pb-8">
-                <div className="flex items-center gap-3 mb-2">
-                  <Sparkles size={28} className="text-amber-500" fill="currentColor" />
-                  <h2 className="text-xl font-bold text-foreground">DailyWork Premium</h2>
-                </div>
-                <p className="text-sm text-muted-foreground font-medium">Unlock the full potential of your work tracking.</p>
-              </div>
-
-              <div className="px-6 pt-0 pb-6 -mt-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Personal Plan */}
-                  <div className={`bg-background border-2 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden transition-all ${userData?.role !== 'contractor' ? 'border-primary ring-4 ring-primary/10' : 'border-border opacity-70 scale-[0.98]'}`}>
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full opacity-50"></div>
-                    {userData?.role === 'contractor' && <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center backdrop-blur-[1px]"><span className="bg-background text-xs font-bold px-3 py-1 rounded-full border border-border shadow-sm">Switch role to view</span></div>}
-                    <p className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">Personal Role</p>
-                    <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-3xl font-black text-foreground">₹99</span>
-                    </div>
-                    <ul className="text-xs text-muted-foreground text-left space-y-2 mb-5 w-full font-medium">
-                      <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-primary" /> Basic tracking</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-primary" /> Daily wage logs</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-primary" /> Basic analytics</li>
-                    </ul>
-                    <button className="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold rounded-xl transition-all active:scale-95 mt-auto">
-                      Upgrade Personal
-                    </button>
-                  </div>
-
-                  {/* Contractor Plan */}
-                  <div className={`bg-background border-2 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-md relative overflow-hidden transition-all ${userData?.role === 'contractor' ? 'border-amber-500 ring-4 ring-amber-500/10' : 'border-border opacity-70 scale-[0.98]'}`}>
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/20 to-transparent rounded-bl-full opacity-50"></div>
-                    <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">40% OFF</div>
-                    {userData?.role !== 'contractor' && <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center backdrop-blur-[1px]"><span className="bg-background text-xs font-bold px-3 py-1 rounded-full border border-border shadow-sm">Switch role to view</span></div>}
-                    <p className="text-xs font-bold text-amber-600 mb-1 uppercase tracking-wider mt-2">Contractor Role</p>
-                    <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-3xl font-black text-foreground">₹199</span>
-                    </div>
-                    <ul className="text-xs text-muted-foreground text-left space-y-2 mb-5 w-full font-medium">
-                      <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-amber-500" /> Unlimited Workers</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-amber-500" /> PDF Export + Share</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-amber-500" /> Advanced Analytics</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-amber-500" /> Backup & Restore</li>
-                    </ul>
-                    <button className="w-full py-3 bg-amber-500 text-white hover:bg-amber-600 text-sm font-bold rounded-xl transition-all shadow-md active:scale-95 mt-auto">
-                      Upgrade Contractor
-                    </button>
-                  </div>
-                </div>
-
-                {/* Combo Plan */}
-                <div className="mt-4 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-2 border-indigo-500/30 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden shadow-sm">
-                  <div className="absolute right-0 bottom-0 w-32 h-32 bg-gradient-to-tl from-indigo-500/20 to-transparent rounded-tl-full opacity-50"></div>
-                  <div className="z-10 text-center sm:text-left">
-                    <div className="flex items-center gap-2 mb-1 justify-center sm:justify-start">
-                      <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">BEST VALUE</span>
-                      <p className="text-sm font-bold text-foreground">Combo Plan</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-medium">Personal + Contractor Premium</p>
-                  </div>
-                  <div className="z-10 flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground line-through">₹599</p>
-                      <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">₹399<span className="text-[10px] text-muted-foreground font-medium">/mo</span></p>
-                    </div>
-                    <button className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95">
-                      Get Combo
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Data & Export */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-4 block md:${activeTab === 'data' ? 'block' : 'hidden'}`}>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-4 block ${activeTab === 'data' ? 'md:block' : 'md:hidden'}`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Data & Export</h2>
 
-              <button onClick={() => navigate('/history')} className="w-full rounded-xl bg-background hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98] shadow-sm relative overflow-hidden group">
+              <button onClick={() => { if (userData?.role !== 'contractor') { setShowPremiumModal(true); } else { navigate('/history'); } }} className="w-full rounded-xl bg-background hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98] shadow-sm relative overflow-hidden group">
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                     <FileText size={20} className="text-primary" />
@@ -450,7 +375,7 @@ const SettingsPage = () => {
                 <div>
                   <h3 className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-1">Cloud Backup & Restore</h3>
                   <p className="text-xs text-muted-foreground font-medium mb-3">Keep your data safe across devices. Available in Premium.</p>
-                  <button className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors">
+                  <button onClick={() => setShowPremiumModal(true)} className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors active:scale-95">
                     Enable Auto-Backup
                   </button>
                 </div>
@@ -458,7 +383,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Support & Privacy */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block md:${activeTab === 'support' ? 'block' : 'hidden'}`}>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block ${activeTab === 'support' ? 'md:block' : 'md:hidden'}`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Support & Privacy</h2>
 
               <button onClick={() => setShowHowToUse(true)} className="w-full rounded-xl bg-muted/30 hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98]">
@@ -561,6 +486,7 @@ const SettingsPage = () => {
         </DialogContent>
       </Dialog>
 
+      <PremiumModal open={showPremiumModal} onOpenChange={setShowPremiumModal} />
       {/* Change Role Confirmation Dialog */}
       <Dialog open={showRoleChange} onOpenChange={setShowRoleChange}>
         <DialogContent className="max-w-xs mx-auto">
