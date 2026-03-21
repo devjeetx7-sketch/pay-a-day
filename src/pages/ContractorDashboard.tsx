@@ -154,8 +154,7 @@ export const ContractorDashboard = () => {
           <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-destructive border-2 border-card animate-pulse"></span>
         </button>
       </div>
-
-      {/* Mini Analytics Preview */}
+            {/* Mini Analytics Preview */}
       <div className="bg-gradient-to-r from-primary/10 to-indigo-500/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
