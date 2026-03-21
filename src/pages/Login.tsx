@@ -152,7 +152,6 @@ const Login = () => {
                     />
                 </div>
                 {error && <p className="text-xs text-destructive text-center font-medium bg-destructive/10 p-2 rounded-lg">{error}</p>}
-
                 <button
                 type="submit"
                 disabled={authLoading}
