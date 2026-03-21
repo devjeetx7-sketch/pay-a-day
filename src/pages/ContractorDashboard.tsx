@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { Users, UserCheck, Wallet, ArrowRight, IndianRupee, Plus } from "lucide-react";
+import { Users, UserCheck, Wallet, ArrowRight, IndianRupee, Plus, Bell, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -149,6 +149,26 @@ export const ContractorDashboard = () => {
             <p className="text-sm text-muted-foreground mt-1">Manage your workforce</p>
           </div>
         </div>
+        <button className="relative h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted active:scale-95 transition-all shadow-sm">
+          <Bell size={22} className="text-foreground" />
+          <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-destructive border-2 border-card animate-pulse"></span>
+        </button>
+      </div>
+
+      {/* Mini Analytics Preview */}
+      <div className="bg-gradient-to-r from-primary/10 to-indigo-500/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+             <TrendingUp size={20} className="text-primary" />
+          </div>
+          <div>
+             <h3 className="text-sm font-bold text-foreground">Weekly Performance</h3>
+             <p className="text-xs text-muted-foreground font-medium mt-0.5"><span className="text-green-600 font-bold">+12%</span> active workers vs last week</p>
+          </div>
+        </div>
+        <button onClick={() => navigate('/stats')} className="text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-xl transition-colors">
+          View
+        </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
