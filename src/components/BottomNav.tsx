@@ -16,7 +16,6 @@ const BottomNav = () => {
     { path: "/calendar", icon: CalendarDays, label: t("calendar") },
     ...(isContractor ? [{ path: "/workers", icon: Users, label: t("workers") }] : []),
     { path: "/stats", icon: BarChart3, label: t("stats") },
-    { path: "/premium", icon: Crown, label: t("premium") },
     { path: "/settings", icon: Settings, label: t("settings") },
   ];
 
