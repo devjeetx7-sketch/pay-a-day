@@ -71,7 +71,7 @@ export const PersonalPassbook = () => {
 
   const worker = {
     name: userData?.name || "User",
-    workType: userData?.workType || "Worker",
+    workType: (userData as any)?.workType || "Worker",
     wage: userData?.daily_wage || 500,
     phone: userData?.email || "",
     created_at: { toDate: () => new Date() }

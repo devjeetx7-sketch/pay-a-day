@@ -29,7 +29,7 @@ const SettingsPage = () => {
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [showRoleChange, setShowRoleChange] = useState(false);
   const { workTypes, addWorkType } = useWorkTypes();
-  const [workType, setWorkType] = useState(userData?.workType || "");
+  const [workType, setWorkType] = useState((userData as any)?.workType || "");
   const [customType, setCustomType] = useState("");
   const [isAddingType, setIsAddingType] = useState(false);
   const [workTypeSaved, setWorkTypeSaved] = useState(false);
@@ -38,7 +38,7 @@ const SettingsPage = () => {
   useEffect(() => {
     if (userData?.name) setName(userData.name);
     if (userData?.daily_wage) setWage(String(userData.daily_wage));
-    if (userData?.workType) setWorkType(userData.workType);
+    if ((userData as any)?.workType) setWorkType((userData as any).workType);
   }, [userData]);
 
   const toggleDarkMode = (enabled: boolean) => {
@@ -114,7 +114,7 @@ const SettingsPage = () => {
   };
 
   const roleLabels: Record<string, string> = {
-    contractor: "Contractor Mode", personal: "Personal Mode",
+    contractor: "Contractor", personal: "Personal", labour: "Labour", helper: "Helper", mistry: "Mistry",
   };
 
   const handleLangChange = async (newLang: string) => {
@@ -146,8 +146,7 @@ const SettingsPage = () => {
 
         {/* Settings Layout */}
         <div className="flex flex-col md:flex-row gap-8">
-
-          {/* Sidebar Menu (Desktop only) */}
+                    {/* Sidebar Menu (Desktop only) */}
           <div className="hidden md:flex flex-col gap-2 w-64 shrink-0 sticky top-6 self-start">
             <button onClick={() => setActiveTab('account')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'account' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
               <User size={18} className={activeTab === 'account' ? 'text-primary' : 'text-muted-foreground'} />
@@ -161,8 +160,7 @@ const SettingsPage = () => {
               <RefreshCw size={18} className={activeTab === 'role' ? 'text-primary' : 'text-muted-foreground'} />
               Role Management
             </button>
-
-            <button onClick={() => setActiveTab('data')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'data' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+                        <button onClick={() => setActiveTab('data')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'data' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
               <FileText size={18} className={activeTab === 'data' ? 'text-primary' : 'text-muted-foreground'} />
               Data & Export
             </button>
@@ -185,8 +183,7 @@ const SettingsPage = () => {
           {/* Details Panel */}
           <div className="flex-1 space-y-6 md:space-y-0">
             {/* Account Settings */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block ${activeTab === 'account' ? 'md:block' : 'md:hidden'}`}>
-              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block ${activeTab === 'account' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
               <div className="flex items-center gap-4 mb-5">
                 <Avatar className="h-16 w-16 shadow-sm">
                   <AvatarImage src={user?.photoURL || ""} alt={userData?.name || ""} />
@@ -218,8 +215,7 @@ const SettingsPage = () => {
             </div>
 
             {/* App Preferences */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block ${activeTab === 'preferences' ? 'md:block' : 'md:hidden'}`}>
-              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">App Preferences</h2>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block ${activeTab === 'preferences' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">App Preferences</h2>
 
               <div className="flex items-center justify-between pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -321,8 +317,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Role Management */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block ${activeTab === 'role' ? 'md:block' : 'md:hidden'}`}>
-              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Role Management</h2>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block ${activeTab === 'role' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Role Management</h2>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -377,14 +372,12 @@ const SettingsPage = () => {
                   <p className="text-xs text-muted-foreground font-medium mb-3">Keep your data safe across devices. Available in Premium.</p>
                   <button onClick={() => setShowPremiumModal(true)} className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors active:scale-95">
                     Enable Auto-Backup
-                  </button>
-                </div>
+                  </button>                </div>
               </div>
             </div>
 
             {/* Support & Privacy */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block ${activeTab === 'support' ? 'md:block' : 'md:hidden'}`}>
-              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Support & Privacy</h2>
+            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block ${activeTab === 'support' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Support & Privacy</h2>
 
               <button onClick={() => setShowHowToUse(true)} className="w-full rounded-xl bg-muted/30 hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98]">
                 <div className="flex items-center gap-4">
@@ -407,8 +400,7 @@ const SettingsPage = () => {
                   <p className="text-[11px] text-muted-foreground font-medium">Your data is stored securely in the cloud.</p>
                 </div>
               </div>
-
-              <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background">
+                            <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background">
                 <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
                   <Phone size={20} className="text-green-600" />
                 </div>

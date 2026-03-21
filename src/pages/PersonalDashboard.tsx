@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { Check, X, Clock, Plus, Minus, StickyNote, IndianRupee, FileText } from "lucide-react";
+import { Check, X, Clock, Plus, Minus, StickyNote, IndianRupee, FileText, Bell, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -188,7 +188,7 @@ export const PersonalDashboard = () => {
     .slice(0, 2);
 
   return (
-    <div className="space-y-6 animate-in fade-in max-w-4xl mx-auto md:max-w-7xl">
+    <div className="space-y-6 animate-in fade-in w-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12 border-2 border-primary/20">
@@ -208,8 +208,7 @@ export const PersonalDashboard = () => {
           <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-destructive border-2 border-card animate-pulse"></span>
         </button>
       </div>
-
-      {/* Mini Analytics Preview */}
+            {/* Mini Analytics Preview */}
       <div className="bg-gradient-to-r from-primary/10 to-green-500/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">

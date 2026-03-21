@@ -14,14 +14,34 @@ const languageEmojis: Record<string, string> = {
 
 const roles = [
   {
-    id: "personal",
+    id: "labour",
     icon: UserIcon,
     emoji: "👷",
-    title: "Labour / Helper / Mistry",
-    desc: "Track your own daily work & earnings",
+    title: "Labour",
+    desc: "Daily wage worker",
     color: "text-blue-500",
     bg: "bg-blue-500/10",
     borderColor: "border-blue-500"
+  },
+  {
+    id: "helper",
+    icon: UserIcon,
+    emoji: "🤝",
+    title: "Helper",
+    desc: "Assistant worker",
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+    borderColor: "border-green-500"
+  },
+  {
+    id: "mistry",
+    icon: UserIcon,
+    emoji: "🧱",
+    title: "Mistry",
+    desc: "Skilled worker",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
+    borderColor: "border-purple-500"
   },
   {
     id: "contractor",
@@ -32,7 +52,7 @@ const roles = [
     color: "text-orange-500",
     bg: "bg-orange-500/10",
     borderColor: "border-orange-500"
-  },
+  }
 ];
 
 const RoleSelection = () => {
