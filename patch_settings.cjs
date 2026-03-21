@@ -1,183 +1,44 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw, Briefcase, Settings2, Lock, FileText, CheckCircle2, Phone } from "lucide-react";
+const fs = require('fs');
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useWorkTypes } from "@/hooks/useWorkTypes";
+let code = fs.readFileSync('src/pages/SettingsPage.tsx', 'utf-8');
 
-const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState('account');
-  const { user, userData, logout } = useAuth();
-  const { t, lang, setLang, languages } = useLanguage();
-  const navigate = useNavigate();
-  const [wage, setWage] = useState(String(userData?.daily_wage || 500));
-  const [name, setName] = useState(userData?.name || "");
-  const [saved, setSaved] = useState(false);
-  const [nameSaved, setNameSaved] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
-  const [reminders, setReminders] = useState(() => localStorage.getItem("reminders") === "true");
-  const [showHowToUse, setShowHowToUse] = useState(false);
-  const [showRoleChange, setShowRoleChange] = useState(false);
-  const { workTypes, addWorkType } = useWorkTypes();
-  const [workType, setWorkType] = useState(userData?.workType || "");
-  const [customType, setCustomType] = useState("");
-  const [isAddingType, setIsAddingType] = useState(false);
-  const [workTypeSaved, setWorkTypeSaved] = useState(false);
-
-  useEffect(() => {
-    if (userData?.name) setName(userData.name);
-    if (userData?.daily_wage) setWage(String(userData.daily_wage));
-    if (userData?.workType) setWorkType(userData.workType);
-  }, [userData]);
-
-  const toggleDarkMode = (enabled: boolean) => {
-    setDarkMode(enabled);
-    if (enabled) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
-
-  const toggleReminders = (enabled: boolean) => {
-    setReminders(enabled);
-    localStorage.setItem("reminders", String(enabled));
-  };
-
-  const saveWage = async () => {
-    if (!user) return;
-    const val = parseInt(wage, 10);
-    if (isNaN(val) || val <= 0) return;
-    try {
-      await updateDoc(doc(db, "users", user.uid), { daily_wage: val });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      console.error("Error saving wage:", err);
-    }
-  };
-
-  const saveName = async () => {
-    if (!user || !name.trim()) return;
-    try {
-      await updateDoc(doc(db, "users", user.uid), { name: name.trim() });
-      setNameSaved(true);
-      setTimeout(() => setNameSaved(false), 2000);
-    } catch (err) {
-      console.error("Error saving name:", err);
-    }
-  };
-
-  const saveWorkType = async () => {
-    if (!user || !workType) return;
-    try {
-      await updateDoc(doc(db, "users", user.uid), { workType });
-      setWorkTypeSaved(true);
-      setTimeout(() => setWorkTypeSaved(false), 2000);
-    } catch (err) {
-      console.error("Error saving work type:", err);
-    }
-  };
-
-  const handleAddCustomType = async () => {
-    if (!customType.trim()) return;
-    const added = await addWorkType(customType);
-    if (added) {
-      setWorkType(added.name);
-      setIsAddingType(false);
-      setCustomType("");
-    }
-  };
-
-  const handleChangeRole = async () => {
-    if (!user) return;
-    try {
-      await updateDoc(doc(db, "users", user.uid), { role: "" });
-      localStorage.removeItem("dailywork_role");
-      window.location.href = "/select-role";
-    } catch (err) {
-      console.error("Error changing role:", err);
-    }
-  };
-
-  const roleLabels: Record<string, string> = {
-    contractor: "Contractor Mode", personal: "Personal Mode",
-  };
-
-  const handleLangChange = async (newLang: string) => {
-    setLang(newLang);
-    if (user) {
-      try {
-        await updateDoc(doc(db, "users", user.uid), { language: newLang });
-      } catch (err) {
-        console.error("Error saving language:", err);
-      }
-    }
-  };
-
-  const initials = (userData?.name || "U")
-    .split(" ")
-    .map((w: string) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
-  return (
-    <div className="min-h-screen bg-background pb-20 md:pb-6">
-      <div className="mx-auto max-w-lg md:max-w-4xl lg:max-w-5xl px-4 pt-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Settings2 size={24} className="text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">{t("settings")}</h1>
-        </div>
-
-
+const replacement = `
         {/* Settings Layout */}
         <div className="flex flex-col md:flex-row gap-8">
 
           {/* Sidebar Menu (Desktop only) */}
           <div className="hidden md:flex flex-col gap-2 w-64 shrink-0 sticky top-6 self-start">
-            <button onClick={() => setActiveTab('account')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'account' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('account')} className={\`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all \${activeTab === 'account' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}\`}>
               <User size={18} className={activeTab === 'account' ? 'text-primary' : 'text-muted-foreground'} />
               Account
             </button>
-            <button onClick={() => setActiveTab('preferences')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'preferences' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('preferences')} className={\`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all \${activeTab === 'preferences' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}\`}>
               <Settings2 size={18} className={activeTab === 'preferences' ? 'text-primary' : 'text-muted-foreground'} />
               App Preferences
             </button>
-            <button onClick={() => setActiveTab('role')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'role' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('role')} className={\`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all \${activeTab === 'role' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}\`}>
               <RefreshCw size={18} className={activeTab === 'role' ? 'text-primary' : 'text-muted-foreground'} />
               Role Management
             </button>
-            <button onClick={() => setActiveTab('premium')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'premium' ? 'bg-amber-500/10 text-amber-600 font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('premium')} className={\`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all \${activeTab === 'premium' ? 'bg-amber-500/10 text-amber-600 font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}\`}>
               <Sparkles size={18} className={activeTab === 'premium' ? 'text-amber-500' : 'text-muted-foreground'} />
               Premium Plan
             </button>
-            <button onClick={() => setActiveTab('data')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'data' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('data')} className={\`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all \${activeTab === 'data' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}\`}>
               <FileText size={18} className={activeTab === 'data' ? 'text-primary' : 'text-muted-foreground'} />
               Data & Export
             </button>
-            <button onClick={() => setActiveTab('support')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'support' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('support')} className={\`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all \${activeTab === 'support' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}\`}>
               <Shield size={18} className={activeTab === 'support' ? 'text-primary' : 'text-muted-foreground'} />
               Support & Privacy
             </button>
             {userData?.role === "admin" && (
-              <button onClick={() => navigate("/admin")} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all hover:bg-muted text-muted-foreground font-semibold`}>
+              <button onClick={() => navigate("/admin")} className={\`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all hover:bg-muted text-muted-foreground font-semibold\`}>
                 <Shield size={18} className="text-muted-foreground" />
                 Admin Panel
               </button>
             )}
-            <button onClick={logout} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all hover:bg-destructive/10 text-destructive font-semibold mt-4`}>
+            <button onClick={logout} className={\`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all hover:bg-destructive/10 text-destructive font-semibold mt-4\`}>
               <LogOut size={18} />
               {t("logout")}
             </button>
@@ -186,7 +47,7 @@ const SettingsPage = () => {
           {/* Details Panel */}
           <div className="flex-1 space-y-6 md:space-y-0">
             {/* Account Settings */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block md:${activeTab === 'account' ? 'block' : 'hidden'}`}>
+            <div className={\`rounded-2xl bg-card border border-border p-5 shadow-sm \${activeTab === 'account' ? 'block' : 'hidden md:hidden'} md:\${activeTab === 'account' ? 'block' : 'hidden'}\`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
               <div className="flex items-center gap-4 mb-5">
                 <Avatar className="h-16 w-16 shadow-sm">
@@ -219,7 +80,7 @@ const SettingsPage = () => {
             </div>
 
             {/* App Preferences */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block md:${activeTab === 'preferences' ? 'block' : 'hidden'}`}>
+            <div className={\`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 \${activeTab === 'preferences' ? 'block' : 'hidden md:hidden'} md:\${activeTab === 'preferences' ? 'block' : 'hidden'}\`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">App Preferences</h2>
 
               <div className="flex items-center justify-between pb-4 border-b border-border">
@@ -322,7 +183,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Role Management */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block md:${activeTab === 'role' ? 'block' : 'hidden'}`}>
+            <div className={\`rounded-2xl bg-card border border-border p-5 shadow-sm \${activeTab === 'role' ? 'block' : 'hidden md:hidden'} md:\${activeTab === 'role' ? 'block' : 'hidden'}\`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Role Management</h2>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border">
                 <div className="flex items-center gap-4">
@@ -341,7 +202,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Premium Section */}
-            <div className={`rounded-2xl bg-card border border-border shadow-md overflow-hidden block md:${activeTab === 'premium' ? 'block' : 'hidden'}`}>
+            <div className={\`rounded-2xl bg-card border border-border shadow-md overflow-hidden \${activeTab === 'premium' ? 'block' : 'hidden md:hidden'} md:\${activeTab === 'premium' ? 'block' : 'hidden'}\`}>
               <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-red-500/20 p-6 pb-8">
                 <div className="flex items-center gap-3 mb-2">
                   <Sparkles size={28} className="text-amber-500" fill="currentColor" />
@@ -353,7 +214,7 @@ const SettingsPage = () => {
               <div className="px-6 pt-0 pb-6 -mt-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Personal Plan */}
-                  <div className={`bg-background border-2 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden transition-all ${userData?.role !== 'contractor' ? 'border-primary ring-4 ring-primary/10' : 'border-border opacity-70 scale-[0.98]'}`}>
+                  <div className={\`bg-background border-2 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden transition-all \${userData?.role !== 'contractor' ? 'border-primary ring-4 ring-primary/10' : 'border-border opacity-70 scale-[0.98]'}\`}>
                     <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full opacity-50"></div>
                     {userData?.role === 'contractor' && <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center backdrop-blur-[1px]"><span className="bg-background text-xs font-bold px-3 py-1 rounded-full border border-border shadow-sm">Switch role to view</span></div>}
                     <p className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">Personal Role</p>
@@ -371,7 +232,7 @@ const SettingsPage = () => {
                   </div>
 
                   {/* Contractor Plan */}
-                  <div className={`bg-background border-2 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-md relative overflow-hidden transition-all ${userData?.role === 'contractor' ? 'border-amber-500 ring-4 ring-amber-500/10' : 'border-border opacity-70 scale-[0.98]'}`}>
+                  <div className={\`bg-background border-2 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-md relative overflow-hidden transition-all \${userData?.role === 'contractor' ? 'border-amber-500 ring-4 ring-amber-500/10' : 'border-border opacity-70 scale-[0.98]'}\`}>
                     <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/20 to-transparent rounded-bl-full opacity-50"></div>
                     <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">40% OFF</div>
                     {userData?.role !== 'contractor' && <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center backdrop-blur-[1px]"><span className="bg-background text-xs font-bold px-3 py-1 rounded-full border border-border shadow-sm">Switch role to view</span></div>}
@@ -415,7 +276,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Data & Export */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-4 block md:${activeTab === 'data' ? 'block' : 'hidden'}`}>
+            <div className={\`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-4 \${activeTab === 'data' ? 'block' : 'hidden md:hidden'} md:\${activeTab === 'data' ? 'block' : 'hidden'}\`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Data & Export</h2>
 
               <button onClick={() => navigate('/history')} className="w-full rounded-xl bg-background hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98] shadow-sm relative overflow-hidden group">
@@ -458,7 +319,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Support & Privacy */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block md:${activeTab === 'support' ? 'block' : 'hidden'}`}>
+            <div className={\`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 \${activeTab === 'support' ? 'block' : 'hidden md:hidden'} md:\${activeTab === 'support' ? 'block' : 'hidden'}\`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Support & Privacy</h2>
 
               <button onClick={() => setShowHowToUse(true)} className="w-full rounded-xl bg-muted/30 hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98]">
@@ -494,7 +355,7 @@ const SettingsPage = () => {
               </div>
 
               {/* Mobile Logout */}
-              <div className="pt-4 border-t border-border md:hidden space-y-4 mt-8">
+              <div className="pt-4 border-t border-border md:hidden space-y-4">
                 {userData?.role === "admin" && (
                   <button onClick={() => navigate("/admin")} className="w-full rounded-xl bg-muted py-4 flex items-center justify-center gap-2 text-foreground font-bold text-base active:scale-[0.98] transition-all">
                     <Shield size={20} />
@@ -508,86 +369,21 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            <div className={`md:hidden text-center text-[10px] text-muted-foreground mt-6 ${activeTab === 'support' ? 'block' : 'hidden'}`}>DailyWork Version 1.0.0</div>
+            <div className={\`md:hidden text-center text-[10px] text-muted-foreground mt-6 \${activeTab === 'support' ? 'block' : 'hidden'}\`}>DailyWork Version 1.0.0</div>
           </div>
         </div>
-</div>
-      {/* How to Use Dialog */}
-      <Dialog open={showHowToUse} onOpenChange={setShowHowToUse}>
-        <DialogContent className="max-w-sm mx-auto max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>How to Use DailyWork</DialogTitle>
-            <DialogDescription>A quick guide to tracking your work effectively</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5 mt-2">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <CalendarDays size={16} className="text-primary" />
-                <h3 className="text-sm font-bold text-foreground">Marking Attendance</h3>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                On the Dashboard, click <b>Full Day</b> or <b>Half Day</b> to mark today's attendance. Add overtime using the + / - buttons before saving. If you didn't work, click <b>Mark Absent</b>.
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <IndianRupee size={16} className="text-green-600" />
-                <h3 className="text-sm font-bold text-foreground">Net Payable & Earnings</h3>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                Your <b>Earnings</b> are automatically calculated by multiplying your working days with your Daily Wage. <b>Net Payable</b> on the dashboard and stats page shows your final take-home amount: <br/><br/>
-                <span className="font-mono bg-muted px-1 py-0.5 rounded text-primary block mt-1">Net Payable = Total Earnings - Advance</span>
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <CreditCard size={16} className="text-orange-500" />
-                <h3 className="text-sm font-bold text-foreground">Advance Payments</h3>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                If you receive money ahead of time, click <b>Add Advance Payment Today</b> on the Dashboard or add it directly on a specific date inside the <b>Calendar</b>. This is automatically deducted from your Net Payable.
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <BarChart2 size={16} className="text-blue-500" />
-                <h3 className="text-sm font-bold text-foreground">Calendar & History</h3>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                Use the <b>Calendar</b> to edit past records (e.g. if you forgot to mark attendance yesterday). Use <b>History</b> to export your monthly logs as a PDF or CSV, and click the Share button to send reports via WhatsApp or Email.
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+`;
 
-      {/* Change Role Confirmation Dialog */}
-      <Dialog open={showRoleChange} onOpenChange={setShowRoleChange}>
-        <DialogContent className="max-w-xs mx-auto">
-          <DialogHeader>
-            <DialogTitle>{t("changeRole")}</DialogTitle>
-            <DialogDescription>{t("changeRoleConfirm")}</DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 mt-4">
-            <button
-              onClick={() => setShowRoleChange(false)}
-              className="flex-1 rounded-xl border border-border py-3 text-sm font-bold text-foreground active:scale-95"
-            >
-              {t("cancel")}
-            </button>
-            <button
-              onClick={handleChangeRole}
-              className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground active:scale-95"
-            >
-              {t("confirm")}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+let beginIdx = code.indexOf('<div className="flex flex-col md:flex-row gap-6">');
+if (beginIdx === -1) {
+    beginIdx = code.indexOf('<div className="grid grid-cols-1 md:grid-cols-2 gap-6">');
+}
+const endMarker = '</div>\n      {/* How to Use Dialog */}';
+const endIdx = code.lastIndexOf(endMarker);
 
+code = code.substring(0, beginIdx) + replacement + code.substring(endIdx);
+// Add CheckCircle2, Phone import
+code = code.replace('LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw, Briefcase, Settings2, Lock, FileText } from "lucide-react";',
+'LogOut, Globe, Wallet, User, Shield, Info, Bell, Moon, Sun, Sparkles, CalendarDays, IndianRupee, CreditCard, BarChart2, RefreshCw, Briefcase, Settings2, Lock, FileText, CheckCircle2, Phone } from "lucide-react";');
 
-    </div>
-  );
-};
-
-export default SettingsPage;
+fs.writeFileSync('src/pages/SettingsPage.tsx', code);
