@@ -60,9 +60,45 @@ A dedicated dashboard tailored for tracking your own self-employed daily wages.
 
 ---
 
-## ⚙️ Installation & Setup
+## 📱 Android App (Native)
 
-Follow these steps to run the application locally.
+A fully native Android app matching the web application's UI and features is included in the `/android-app` directory. It is built using **Kotlin** and **Jetpack Compose**.
+
+### Running the Android App
+
+1. Open Android Studio.
+2. Select **Open an existing project**.
+3. Navigate to and select the `/android-app` directory.
+4. Let Gradle sync and build the project.
+5. Run the app on an emulator or physical device.
+
+### Android Build & Signing
+
+The Android project is pre-configured with a keystore for signing Release builds.
+
+- **Keystore Path**: `android-app/keystore/release.jks`
+- **Keystore Password**: `android`
+- **Key Alias**: `my-key-alias`
+- **Key Password**: `android`
+
+To build a signed APK or AAB from the command line:
+
+```bash
+cd android-app
+# Build APK
+./gradlew assembleRelease
+# Build AAB (App Bundle)
+./gradlew bundleRelease
+```
+
+### CI/CD for Android
+A GitHub Actions workflow is set up in `.github/workflows/android-build.yml`. It automatically builds a signed APK and AAB on every push to the `main` or `master` branch. The output artifacts can be downloaded directly from the GitHub Actions run summary.
+
+---
+
+## ⚙️ Installation & Setup (Web)
+
+Follow these steps to run the web application locally.
 
 ### Prerequisites
 - Node.js (v18 or higher recommended)
