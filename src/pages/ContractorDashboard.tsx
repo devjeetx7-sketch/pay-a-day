@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { Users, UserCheck, Wallet, ArrowRight, IndianRupee, Plus, Bell, TrendingUp } from "lucide-react";
+import { Users, UserCheck, Wallet, ArrowRight, IndianRupee, Plus, Bell, TrendingUp, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -145,17 +145,16 @@ export const ContractorDashboard = () => {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Hi, {userData?.name?.split(" ")[0] || "Contractor"} 👋</h1>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">Hi, {userData?.name?.split(" ")[0] || "Contractor"} <span className="animate-bounce">👋</span></h1>
             <p className="text-sm text-muted-foreground mt-1">Manage your workforce</p>
           </div>
         </div>
-        <button className="relative h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted active:scale-95 transition-all shadow-sm">
-          <Bell size={22} className="text-foreground" />
-          <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-destructive border-2 border-card animate-pulse"></span>
+        <button onClick={() => navigate('/premium')} className="relative h-12 w-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center hover: active:scale-95 transition-all ">
+          <Crown size={22} className="text-amber-600 dark:text-amber-500" />
         </button>
       </div>
             {/* Mini Analytics Preview */}
-      <div className="bg-gradient-to-r from-primary/10 to-indigo-500/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+      <div className="bg-gradient-to-r from-primary/10 to-indigo-500/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between ">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
              <TrendingUp size={20} className="text-primary" />
@@ -171,7 +170,7 @@ export const ContractorDashboard = () => {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card p-5 rounded-2xl border border-border  hover: transition-shadow">
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mb-3">
             <Users size={20} className="text-primary" />
           </div>
@@ -179,7 +178,7 @@ export const ContractorDashboard = () => {
           <p className="text-xs font-medium text-muted-foreground mt-1">Total Workers</p>
         </div>
 
-        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card p-5 rounded-2xl border border-border  hover: transition-shadow">
           <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
             <UserCheck size={20} className="text-green-500" />
           </div>
@@ -187,7 +186,7 @@ export const ContractorDashboard = () => {
           <p className="text-xs font-medium text-muted-foreground mt-1">Today's Attendance</p>
         </div>
 
-        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card p-5 rounded-2xl border border-border  hover: transition-shadow">
           <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-3">
             <Wallet size={20} className="text-blue-500" />
           </div>
@@ -195,7 +194,7 @@ export const ContractorDashboard = () => {
           <p className="text-xs font-medium text-muted-foreground mt-1">Total Paid (Month)</p>
         </div>
 
-        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card p-5 rounded-2xl border border-border  hover: transition-shadow">
           <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center mb-3">
             <Wallet size={20} className="text-orange-500" />
           </div>
@@ -207,7 +206,7 @@ export const ContractorDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Quick Actions</h2>
 
-        <button onClick={() => navigate('/workers')} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover:shadow-md active:scale-[0.98] transition-all">
+        <button onClick={() => navigate('/workers')} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover: active:scale-[0.98] transition-all">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
               <Users size={20} className="text-primary" />
@@ -220,7 +219,7 @@ export const ContractorDashboard = () => {
           <ArrowRight size={20} className="text-muted-foreground" />
         </button>
 
-        <button onClick={() => navigate('/calendar')} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover:shadow-md active:scale-[0.98] transition-all">
+        <button onClick={() => navigate('/calendar')} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover: active:scale-[0.98] transition-all">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
               <UserCheck size={20} className="text-green-500" />
@@ -233,7 +232,7 @@ export const ContractorDashboard = () => {
           <ArrowRight size={20} className="text-muted-foreground" />
         </button>
 
-        <button onClick={() => setShowPaymentModal(true)} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover:shadow-md active:scale-[0.98] transition-all">
+        <button onClick={() => setShowPaymentModal(true)} className="w-full bg-card border border-border p-5 rounded-2xl flex items-center justify-between hover: active:scale-[0.98] transition-all">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-orange-500/10 flex items-center justify-center">
               <IndianRupee size={20} className="text-orange-500" />

@@ -150,7 +150,7 @@ const RoleSelection = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="w-full max-w-md bg-card border-none sm:border sm:border-border shadow-none sm:shadow-sm rounded-3xl p-4 sm:p-8 relative z-10"
+            className="w-full max-w-md bg-card border-none sm:border sm:border-border shadow-none sm: rounded-3xl p-4 sm:p-8 relative z-10"
           >
             <div className="flex justify-center mb-6">
               <motion.div
@@ -165,42 +165,46 @@ const RoleSelection = () => {
             <p className="text-sm font-medium text-muted-foreground text-center mb-8">{t("languageDesc")}</p>
 
             <div className="space-y-4 mb-8">
-              {Object.entries(languages).map(([code, title]) => {
-                const IconComponent = languageIcons[code] || languageIcons['en'];
-                return (
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    key={code}
-                    onClick={() => setSelectedLang(code)}
-                    className={`w-full rounded-2xl border-2 p-5 flex items-center justify-between transition-colors shadow-sm ${
-                      selectedLang === code
-                        ? "border-primary bg-primary/10 ring-4 ring-primary/5"
-                        : "border-border bg-background hover:border-primary/30"
-                    }`}
-                  >
-                    <div className="flex items-center gap-4 text-foreground/80">
-                      <IconComponent />
-                      <span className="text-lg font-bold text-foreground">{title}</span>
-                    </div>
-                    {selectedLang === code && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="h-8 w-8 rounded-full bg-primary flex items-center justify-center"
-                      >
-                        <Check size={16} className="text-white" />
-                      </motion.div>
-                    )}
-                  </motion.button>
-                )
-              })}
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(languages).map(([code, title]) => {
+                  const IconComponent = languageIcons[code] || languageIcons['en'];
+                  return (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      key={code}
+                      onClick={() => setSelectedLang(code)}
+                      className={`relative rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-2 transition-colors ${
+                        selectedLang === code
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-transparent hover:border-primary/30"
+                      }`}
+                    >
+                      <div className={`text-foreground/80 ${selectedLang === code ? 'text-primary' : ''}`}>
+                        <IconComponent />
+                      </div>
+                      <span className={`text-sm font-bold ${selectedLang === code ? 'text-primary' : 'text-foreground'}`}>
+                        {title as string}
+                      </span>
+                      {selectedLang === code && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-2 right-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center"
+                        >
+                          <Check size={12} className="text-white" />
+                        </motion.div>
+                      )}
+                    </motion.button>
+                  )
+                })}
+              </div>
             </div>
 
             <motion.button
               whileTap={selectedLang ? { scale: 0.95 } : {}}
               onClick={handleNextStep}
               disabled={!selectedLang}
-              className="w-full rounded-2xl bg-primary py-4 text-primary-foreground font-bold text-lg disabled:opacity-50 transition-all shadow-sm flex items-center justify-center gap-2"
+              className="w-full rounded-2xl bg-primary py-4 text-primary-foreground font-bold text-lg disabled:opacity-50 transition-all  flex items-center justify-center gap-2"
             >
               {t("continue")} <ArrowRight size={20} />
             </motion.button>
@@ -212,37 +216,35 @@ const RoleSelection = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="w-full max-w-md bg-card border-none sm:border sm:border-border shadow-none sm:shadow-sm rounded-3xl p-4 sm:p-8 relative z-10"
+            className="w-full max-w-md bg-card border-none sm:border sm:border-border shadow-none sm: rounded-3xl p-4 sm:p-8 relative z-10"
           >
             <h1 className="text-3xl font-black text-foreground text-center mb-2">{t("selectRole")}</h1>
             <p className="text-sm font-medium text-muted-foreground text-center mb-8">{t("selectRoleDesc")}</p>
 
             <div className="space-y-4 mb-8">
-              {roles.map(({ id, animatedIcon: AnimatedIcon, titleKey, descKey, color, bg, borderColor }) => (
+              {roles.map(({ id, animatedIcon: AnimatedIcon, titleKey, descKey, color }) => (
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   key={id}
                   onClick={() => setSelectedRole(id)}
-                  className={`w-full rounded-2xl border-2 p-5 flex items-start gap-4 transition-colors shadow-sm relative overflow-hidden group ${
+                  className={`w-full rounded-2xl border-2 p-4 flex items-center gap-4 transition-colors ${
                     selectedRole === id
-                      ? `${borderColor} ${bg} ring-4 ring-primary/5`
-                      : "border-border bg-background hover:border-border/80"
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-transparent hover:border-primary/30"
                   }`}
                 >
-                  {selectedRole === id && <div className="absolute inset-0 bg-white/5 opacity-50 pointer-events-none"></div>}
-
-                  <div className={`shrink-0 mt-1 p-2 rounded-xl flex items-center justify-center w-14 h-14 ${selectedRole === id ? 'bg-background shadow-sm' : bg}`}>
+                  <div className="shrink-0 flex items-center justify-center w-12 h-12">
                     <AnimatedIcon />
                   </div>
-                  <div className="text-left flex-1 relative z-10">
-                    <p className={`text-lg font-bold mb-1 ${selectedRole === id ? color : 'text-foreground'}`}>{t(titleKey)}</p>
-                    <p className="text-xs font-medium text-muted-foreground leading-snug">{t(descKey)}</p>
+                  <div className="text-left flex-1">
+                    <p className={`text-base font-bold mb-0.5 ${selectedRole === id ? color : 'text-foreground'}`}>{t(titleKey)}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t(descKey)}</p>
                   </div>
                   {selectedRole === id && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className={`absolute top-4 right-4 h-6 w-6 rounded-full ${bg.replace('/10', '')} flex items-center justify-center`}
+                      className="h-6 w-6 rounded-full bg-primary flex items-center justify-center shrink-0"
                     >
                       <Check size={14} className="text-white" />
                     </motion.div>
@@ -255,7 +257,7 @@ const RoleSelection = () => {
               whileTap={(!selectedRole || saving) ? {} : { scale: 0.95 }}
               onClick={handleSave}
               disabled={!selectedRole || saving}
-              className="w-full rounded-2xl bg-primary py-4 text-primary-foreground font-bold text-lg disabled:opacity-50 transition-all shadow-sm flex items-center justify-center"
+              className="w-full rounded-2xl bg-primary py-4 text-primary-foreground font-bold text-lg disabled:opacity-50 transition-all  flex items-center justify-center"
             >
               {saving ? t("settingUp") : t("getStarted")}
             </motion.button>

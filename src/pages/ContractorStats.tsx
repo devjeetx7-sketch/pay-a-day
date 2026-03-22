@@ -100,11 +100,11 @@ export const ContractorStats = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+            <div className="bg-card p-6 rounded-2xl border border-border ">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">Total Labour Cost</p>
                 <p className="text-4xl font-bold text-primary">₹{stats.totalCost.toLocaleString()}</p>
             </div>
-            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+            <div className="bg-card p-6 rounded-2xl border border-border ">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">Total Man Days</p>
                 <p className="text-4xl font-bold text-foreground">{stats.totalDailyWorks}</p>
             </div>
@@ -113,7 +113,7 @@ export const ContractorStats = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Worker Performance Chart */}
-        <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
+        <div className="rounded-2xl bg-card border border-border p-6 ">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <TrendingUp size={20} className="text-primary" />
@@ -145,7 +145,7 @@ export const ContractorStats = () => {
             {workerData.length === 0 ? (
                 <p className="text-sm text-center py-10 bg-muted/50 rounded-2xl border border-dashed text-muted-foreground">No active workers this month.</p>
             ) : (
-                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm divide-y divide-border">
+                <div className="bg-card border border-border rounded-2xl overflow-hidden  divide-y divide-border">
                 {workerData.map((w, i) => (
                     <div key={i} className="flex justify-between items-center p-4 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4">

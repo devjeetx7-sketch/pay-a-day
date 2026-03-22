@@ -37,7 +37,7 @@ const Sidebar = () => {
               onClick={() => navigate(path)}
               className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${
                 active
-                  ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                  ? "bg-primary text-primary-foreground font-bold "
                   : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
               }`}
             >

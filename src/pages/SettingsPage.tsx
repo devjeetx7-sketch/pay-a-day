@@ -148,23 +148,23 @@ const SettingsPage = () => {
         <div className="flex flex-col md:flex-row gap-8">
                     {/* Sidebar Menu (Desktop only) */}
           <div className="hidden md:flex flex-col gap-2 w-64 shrink-0 sticky top-6 self-start">
-            <button onClick={() => setActiveTab('account')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'account' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('account')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'account' ? 'bg-primary/10 text-primary font-bold ' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
               <User size={18} className={activeTab === 'account' ? 'text-primary' : 'text-muted-foreground'} />
               Account
             </button>
-            <button onClick={() => setActiveTab('preferences')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'preferences' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('preferences')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'preferences' ? 'bg-primary/10 text-primary font-bold ' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
               <Settings2 size={18} className={activeTab === 'preferences' ? 'text-primary' : 'text-muted-foreground'} />
               App Preferences
             </button>
-            <button onClick={() => setActiveTab('role')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'role' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('role')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'role' ? 'bg-primary/10 text-primary font-bold ' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
               <RefreshCw size={18} className={activeTab === 'role' ? 'text-primary' : 'text-muted-foreground'} />
               Role Management
             </button>
-            <button onClick={() => setActiveTab('data')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'data' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('data')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'data' ? 'bg-primary/10 text-primary font-bold ' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
               <FileText size={18} className={activeTab === 'data' ? 'text-primary' : 'text-muted-foreground'} />
               Data & Export
             </button>
-            <button onClick={() => setActiveTab('support')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'support' ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
+            <button onClick={() => setActiveTab('support')} className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${activeTab === 'support' ? 'bg-primary/10 text-primary font-bold ' : 'hover:bg-muted text-muted-foreground font-semibold'}`}>
               <Shield size={18} className={activeTab === 'support' ? 'text-primary' : 'text-muted-foreground'} />
               Support & Privacy
             </button>
@@ -183,9 +183,9 @@ const SettingsPage = () => {
           {/* Details Panel */}
           <div className="flex-1 space-y-6 md:space-y-0">
             {/* Account Settings */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block ${activeTab === 'account' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
+            <div className={`rounded-2xl bg-card border border-border p-5  block ${activeTab === 'account' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
               <div className="flex items-center gap-4 mb-5">
-                <Avatar className="h-16 w-16 shadow-sm">
+                <Avatar className="h-16 w-16 ">
                   <AvatarImage src={user?.photoURL || ""} alt={userData?.name || ""} />
                   <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
                     {initials}
@@ -202,7 +202,7 @@ const SettingsPage = () => {
                   <label className="text-xs text-muted-foreground font-medium mb-1.5 block">{t("name")}</label>
                   <div className="flex gap-2">
                     <Input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 rounded-xl" />
-                    <button onClick={saveName} className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 shadow-sm">
+                    <button onClick={saveName} className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 ">
                       {nameSaved ? t("saved") : t("save")}
                     </button>
                   </div>
@@ -215,7 +215,7 @@ const SettingsPage = () => {
             </div>
 
             {/* App Preferences */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block ${activeTab === 'preferences' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">App Preferences</h2>
+            <div className={`rounded-2xl bg-card border border-border p-5  space-y-5 block ${activeTab === 'preferences' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">App Preferences</h2>
 
               <div className="flex items-center justify-between pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -274,7 +274,7 @@ const SettingsPage = () => {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
                     <input type="number" value={wage} onChange={(e) => setWage(e.target.value)} className="w-full rounded-xl border border-border bg-background px-8 py-3 text-lg font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all" />
                   </div>
-                  <button onClick={saveWage} className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 shadow-sm">
+                  <button onClick={saveWage} className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 ">
                     {saved ? t("saved") : t("save")}
                   </button>
                 </div>
@@ -306,7 +306,7 @@ const SettingsPage = () => {
                           </SelectContent>
                         </Select>
                         <Button variant="outline" onClick={() => setIsAddingType(true)} className="h-12 rounded-xl border-dashed">New</Button>
-                        <button onClick={saveWorkType} disabled={!workType} className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shrink-0 shadow-sm">
+                        <button onClick={saveWorkType} disabled={!workType} className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shrink-0 ">
                           {workTypeSaved ? t("saved") : t("save")}
                         </button>
                       </div>
@@ -317,7 +317,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Role Management */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm block ${activeTab === 'role' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Role Management</h2>
+            <div className={`rounded-2xl bg-card border border-border p-5  block ${activeTab === 'role' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Role Management</h2>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -328,17 +328,17 @@ const SettingsPage = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">Current: <span className="font-bold text-primary">{roleLabels[userData?.role || localStorage.getItem("dailywork_role") || ""] || "Not Selected"}</span></p>
                   </div>
                 </div>
-                <button onClick={() => setShowRoleChange(true)} className="rounded-xl bg-background border-2 border-primary text-primary hover:bg-primary/5 px-6 py-2.5 text-sm font-bold transition-all active:scale-95 shadow-sm">
+                <button onClick={() => setShowRoleChange(true)} className="rounded-xl bg-background border-2 border-primary text-primary hover:bg-primary/5 px-6 py-2.5 text-sm font-bold transition-all active:scale-95 ">
                   Switch Role
                 </button>
               </div>
             </div>
 
             {/* Data & Export */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-4 block ${activeTab === 'data' ? 'md:block' : 'md:hidden'}`}>
+            <div className={`rounded-2xl bg-card border border-border p-5  space-y-4 block ${activeTab === 'data' ? 'md:block' : 'md:hidden'}`}>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Data & Export</h2>
 
-              <button onClick={() => { if (userData?.role !== 'contractor') { setShowPremiumModal(true); } else { navigate('/history'); } }} className="w-full rounded-xl bg-background hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98] shadow-sm relative overflow-hidden group">
+              <button onClick={() => { if (userData?.role !== 'contractor') { setShowPremiumModal(true); } else { navigate('/history'); } }} className="w-full rounded-xl bg-background hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98]  relative overflow-hidden group">
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                     <FileText size={20} className="text-primary" />
@@ -351,7 +351,7 @@ const SettingsPage = () => {
                 {userData?.role !== 'contractor' && <Lock size={16} className="text-muted-foreground" />}
               </button>
 
-              <button onClick={() => navigate('/passbook')} className="w-full rounded-xl bg-background hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98] shadow-sm relative overflow-hidden group">
+              <button onClick={() => navigate('/passbook')} className="w-full rounded-xl bg-background hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98]  relative overflow-hidden group">
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
                     <CreditCard size={20} className="text-green-600" />
@@ -363,25 +363,26 @@ const SettingsPage = () => {
                 </div>
               </button>
 
-              <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Shield size={14} className="text-blue-600 dark:text-blue-400" />
+              <div className="flex items-center justify-between pb-4 border-b border-border mt-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <Shield size={20} className="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <span className="text-base font-semibold text-foreground">Auto Backup</span>
+                    <p className="text-[11px] text-muted-foreground">Premium feature</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-1">Cloud Backup & Restore</h3>
-                  <p className="text-xs text-muted-foreground font-medium mb-3">Keep your data safe across devices. Available in Premium.</p>
-                  <button onClick={() => setShowPremiumModal(true)} className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors active:scale-95">
-                    Enable Auto-Backup
-                  </button>                </div>
+                <Switch checked={false} onCheckedChange={() => setShowPremiumModal(true)} />
               </div>
             </div>
 
             {/* Support & Privacy */}
-            <div className={`rounded-2xl bg-card border border-border p-5 shadow-sm space-y-5 block ${activeTab === 'support' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Support & Privacy</h2>
+            <div className={`rounded-2xl bg-card border border-border p-5  space-y-5 block ${activeTab === 'support' ? 'md:block' : 'md:hidden'}`}>              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Support & Privacy</h2>
 
               <button onClick={() => setShowHowToUse(true)} className="w-full rounded-xl bg-muted/30 hover:bg-muted border border-border py-4 px-5 flex items-center justify-between text-sm font-bold text-foreground transition-all active:scale-[0.98]">
                 <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-background border border-border flex items-center justify-center shadow-sm">
+                  <div className="h-10 w-10 rounded-full bg-background border border-border flex items-center justify-center ">
                     <Info size={20} className="text-foreground" />
                   </div>
                   <div className="text-left">

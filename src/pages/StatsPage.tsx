@@ -176,7 +176,7 @@ const StatsPage = () => {
           {/* MONTHLY STATS */}
           <TabsContent value="month" className="mt-0">
             {/* Attendance Rate */}
-            <div className="rounded-2xl bg-card border border-border p-6 mb-6 flex items-center gap-6 shadow-sm">
+            <div className="rounded-2xl bg-card border border-border p-6 mb-6 flex items-center gap-6 ">
               <div className="h-20 w-20">
                 {pieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -202,22 +202,22 @@ const StatsPage = () => {
 
             {/* Quick stats grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="rounded-2xl bg-card border border-border p-5 shadow-sm">
+              <div className="rounded-2xl bg-card border border-border p-5 ">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">{t("earnings")}</p>
                 <p className="text-3xl font-bold text-primary">₹{currentMonthStats.totalEarnings.toLocaleString()}</p>
                 <p className="text-[11px] text-muted-foreground mt-1">{monthNames[selectedMonth.getMonth()]}</p>
               </div>
-              <div className="rounded-2xl bg-card border border-border p-5 shadow-sm">
+              <div className="rounded-2xl bg-card border border-border p-5 ">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">{t("totalOvertime")}</p>
                 <p className="text-3xl font-bold text-foreground">{currentMonthStats.overtime} <span className="text-base font-medium">{t("hours")}</span></p>
                 <p className="text-[11px] text-muted-foreground mt-1">{monthNames[selectedMonth.getMonth()]}</p>
               </div>
-              <div className="rounded-2xl bg-card border border-border p-5 shadow-sm">
+              <div className="rounded-2xl bg-card border border-border p-5 ">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">{t("advanceDeductions")}</p>
                 <p className="text-3xl font-bold text-orange-500">₹{currentMonthStats.advanceTotal.toLocaleString()}</p>
                 <p className="text-[11px] text-muted-foreground mt-1">{monthNames[selectedMonth.getMonth()]}</p>
               </div>
-              <div className="rounded-2xl bg-card border border-border p-5 shadow-sm border-l-4 border-l-green-500">
+              <div className="rounded-2xl bg-card border border-border p-5  border-l-4 border-l-green-500">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">{t("netPayable")}</p>
                 <p className="text-3xl font-bold text-green-600">
                   ₹{Math.max(0, currentMonthStats.totalEarnings - currentMonthStats.advanceTotal).toLocaleString()}
@@ -246,7 +246,7 @@ const StatsPage = () => {
             </div>
 
             {/* Weekly breakdown */}
-            <div className="rounded-2xl bg-card border border-border p-6 shadow-sm md:col-span-2">
+            <div className="rounded-2xl bg-card border border-border p-6  md:col-span-2">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp size={16} className="text-primary" />
                 <p className="text-sm font-bold text-foreground">{t("weeklyAvg")} - {monthNames[selectedMonth.getMonth()]}</p>
@@ -272,18 +272,18 @@ const StatsPage = () => {
           <TabsContent value="allTime" className="mt-0">
             {/* All Time Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
+              <div className="rounded-2xl bg-card border border-border p-6 ">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">{t("totalEarningsAllTime") || "Total Earnings"}</p>
                 <p className="text-4xl font-bold text-primary">₹{allTimeStats.totalEarnings.toLocaleString()}</p>
               </div>
-              <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
+              <div className="rounded-2xl bg-card border border-border p-6 ">
                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2">{t("totalDaysAllTime") || "Total Days"}</p>
                 <p className="text-4xl font-bold text-foreground">{allTimeStats.totalDays}</p>
               </div>
             </div>
 
             {/* Monthly chart */}
-            <div className="rounded-2xl bg-card border border-border p-6 shadow-sm mb-6">
+            <div className="rounded-2xl bg-card border border-border p-6  mb-6">
               <p className="text-sm font-bold text-foreground mb-3">{t("totalDays")} - 6 Months</p>
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
