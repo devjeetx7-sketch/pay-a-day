@@ -174,14 +174,14 @@ const WorkersPage = () => {
           </div>
           <button
             onClick={openAdd}
-            className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-primary flex items-center justify-center active:scale-[0.92] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+            className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-primary flex items-center justify-center active:scale-[0.92] transition-all  hover: hover:-translate-y-0.5"
           >
             <Plus size={20} className="text-primary-foreground" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="relative mb-8 shadow-sm">
+        <div className="relative mb-8 ">
           <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t("searchWorkers")}
@@ -212,7 +212,7 @@ const WorkersPage = () => {
               <div
                 key={w.id}
                 onClick={() => navigate(`/worker/${w.id}`)}
-                className="rounded-3xl bg-card border-2 border-transparent hover:border-primary/20 p-5 flex items-center gap-4 cursor-pointer active:scale-[0.97] transition-all shadow-sm hover:shadow-md relative overflow-hidden group"
+                className="rounded-3xl bg-card border-2 border-transparent hover:border-primary/20 p-5 flex items-center gap-4 cursor-pointer active:scale-[0.97] transition-all  hover: relative overflow-hidden group"
               >
                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-black text-xl shadow-inner z-10 shrink-0">
@@ -229,13 +229,13 @@ const WorkersPage = () => {
                 <div className="flex flex-col gap-2 shrink-0 z-10">
                   <button
                     onClick={(e) => { e.stopPropagation(); openEdit(w); }}
-                    className="h-9 w-9 rounded-full bg-background border border-border flex items-center justify-center hover:bg-muted active:scale-90 transition-all shadow-sm"
+                    className="h-9 w-9 rounded-full bg-background border border-border flex items-center justify-center hover:bg-muted active:scale-90 transition-all "
                   >
                     <Pencil size={16} className="text-foreground" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowDelete(w.id); }}
-                    className="h-9 w-9 rounded-full bg-destructive/10 border border-destructive/20 flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground active:scale-90 transition-all shadow-sm"
+                    className="h-9 w-9 rounded-full bg-destructive/10 border border-destructive/20 flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground active:scale-90 transition-all "
                   >
                     <Trash2 size={16} className="text-destructive" />
                   </button>

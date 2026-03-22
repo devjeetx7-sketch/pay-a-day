@@ -11,71 +11,38 @@ interface PremiumModalProps {
 }
 
 export const PremiumModal = ({ open, onOpenChange }: PremiumModalProps) => {
-  const { userData } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  // Role-based pricing
-  // Labour / Helper / Mistry -> ₹49
-  // Contractor -> ₹99
-  // Combo -> ₹399
-
-  const role = userData?.role || 'personal';
-  const roleName = role === 'contractor' ? t("contractorPremium") : t("workerPremium");
-  const basePrice = role === 'contractor' ? 99 : 49;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-auto p-0 overflow-hidden bg-card border-border rounded-3xl">
-        <div className="bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-red-500/20 p-6 pb-8 text-center relative overflow-hidden">
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[150%] bg-gradient-to-br from-amber-500/10 to-transparent rounded-full blur-3xl opacity-50 pointer-events-none transform -rotate-45"></div>
-          <div className="flex justify-center mb-4 relative z-10">
-            <div className="h-16 w-16 bg-white dark:bg-card rounded-2xl shadow-xl flex items-center justify-center transform rotate-12">
-               <Sparkles size={32} className="text-amber-500" fill="currentColor" />
-            </div>
+      <DialogContent className="w-[85%] max-w-sm mx-auto p-6 bg-card border border-border rounded-2xl text-center flex flex-col items-center ">
+        <div className="flex justify-center mb-4 mt-2">
+          <div className="h-14 w-14 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+             <Sparkles size={28} className="text-amber-500" fill="currentColor" />
           </div>
-          <DialogTitle className="text-2xl font-black text-foreground relative z-10">{t("upgradePremium")}</DialogTitle>
-          <DialogDescription className="text-sm font-medium text-muted-foreground mt-2 relative z-10">
-            {t("unlockAdvancedFeatures")}
-          </DialogDescription>
         </div>
+        <DialogTitle className="text-xl font-bold text-foreground mb-2">
+          {t("upgradePremium")}
+        </DialogTitle>
+        <DialogDescription className="text-sm text-muted-foreground mb-6">
+          Unlock unlimited workers, cloud backup, and PDF exports.
+        </DialogDescription>
 
-        <div className="p-6 space-y-4 -mt-4 relative z-10">
-          {/* Individual Plan */}
-          <div className="bg-background border-2 border-border/50 rounded-2xl p-5 shadow-sm hover:border-primary/30 transition-all relative overflow-hidden group">
-            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <p className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">{roleName}</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-foreground">₹{basePrice}</span>
-                  <span className="text-xs text-muted-foreground font-medium">{t("perMonthShort")}</span>
-                </div>
-              </div>
-            </div>
-            <ul className="text-xs text-muted-foreground space-y-2.5 font-medium mt-4">
-              <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-primary" /> {t("advancedTrackingTools")}</li>
-              {role === 'contractor' ? (
-                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-primary" /> {t("pf_unlimitedWorkers")}</li>
-              ) : (
-                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-primary" /> {t("detailedWageLogs")}</li>
-              )}
-              <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-primary" /> {t("pdfExportAndBackup")}</li>
-            </ul>
-            <button className="w-full mt-5 py-3 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold rounded-xl transition-all active:scale-95">
-              {t("selectPlan")}
-            </button>
-          </div>
+        <button
+           onClick={() => { onOpenChange(false); navigate("/premium"); }}
+           className="w-full py-3.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+        >
+          <Zap size={18} />
+          View Plans
+        </button>
 
-          {/* See Full Premium Page Link */}
-          <button
-             onClick={() => { onOpenChange(false); navigate("/premium"); }}
-             className="w-full py-4 mt-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold rounded-2xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
-          >
-            <Zap size={18} />
-            View Premium Page
-          </button>
-        </div>
+        <button
+           onClick={() => onOpenChange(false)}
+           className="mt-3 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Maybe Later
+        </button>
       </DialogContent>
     </Dialog>
   );

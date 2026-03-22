@@ -237,7 +237,7 @@ export const WorkerDetail = () => {
     <div className="pb-20 md:pb-6 pt-6 px-4 max-w-3xl mx-auto min-h-screen bg-background animate-in fade-in slide-in-from-bottom-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="p-2 bg-card border border-border rounded-full active:scale-90 shadow-sm"><ArrowLeft size={20} className="text-foreground" /></button>
+        <button onClick={() => navigate(-1)} className="p-2 bg-card border border-border rounded-full active:scale-90 "><ArrowLeft size={20} className="text-foreground" /></button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">{worker.name}</h1>
           <p className="text-sm font-medium text-muted-foreground">{worker.workType || "Labour"}</p>
@@ -245,7 +245,7 @@ export const WorkerDetail = () => {
       </div>
 
       {/* Info Card */}
-      <div className="bg-card p-5 rounded-2xl border border-border mb-6 shadow-sm flex items-center justify-between">
+      <div className="bg-card p-5 rounded-2xl border border-border mb-6  flex items-center justify-between">
         <div className="space-y-3">
           <div className="flex items-center gap-2.5 text-sm">
             <Briefcase size={16} className="text-primary" />
@@ -272,37 +272,37 @@ export const WorkerDetail = () => {
 
       {/* Quick Actions Bar */}
       <div className="flex items-center gap-3 mb-6 bg-primary/5 p-3 rounded-2xl border border-primary/20">
-        <Button onClick={() => navigate('/calendar')} variant="ghost" className="flex-1 rounded-xl bg-background border border-border h-11 text-xs font-bold shadow-sm hover:border-primary hover:text-primary">
+        <Button onClick={() => navigate('/calendar')} variant="ghost" className="flex-1 rounded-xl bg-background border border-border h-11 text-xs font-bold  hover:border-primary hover:text-primary">
           <CheckCircle2 size={16} className="mr-2 text-green-500" /> Mark Today
         </Button>
-        <Button onClick={() => navigate('/')} variant="ghost" className="flex-1 rounded-xl bg-background border border-border h-11 text-xs font-bold shadow-sm hover:border-primary hover:text-primary">
+        <Button onClick={() => navigate('/')} variant="ghost" className="flex-1 rounded-xl bg-background border border-border h-11 text-xs font-bold  hover:border-primary hover:text-primary">
           <Plus size={16} className="mr-2 text-orange-500" /> Advance
         </Button>
       </div>
 
       {/* Stats Selector */}
-      <div className="flex items-center justify-between mb-4 bg-muted/50 p-1.5 rounded-xl border border-border shadow-sm">
+      <div className="flex items-center justify-between mb-4 bg-muted/50 p-1.5 rounded-xl border border-border ">
         <h2 className="text-sm font-bold text-foreground ml-2">Passbook Month</h2>
         <input
           type="month"
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="bg-card px-3 py-1.5 rounded-lg text-sm font-bold border border-border text-primary shadow-sm"
+          className="bg-card px-3 py-1.5 rounded-lg text-sm font-bold border border-border text-primary "
         />
       </div>
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <Button onClick={exportPDF} variant="outline" className="h-12 rounded-xl flex items-center justify-center gap-2 border-primary text-primary hover:bg-primary/5 shadow-sm">
+        <Button onClick={exportPDF} variant="outline" className="h-12 rounded-xl flex items-center justify-center gap-2 border-primary text-primary hover:bg-primary/5 ">
             <FileText size={18} /> Export PDF
         </Button>
-        <Button onClick={handleWhatsAppShare} className="h-12 rounded-xl flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#25D366]/90 shadow-sm">
+        <Button onClick={handleWhatsAppShare} className="h-12 rounded-xl flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#25D366]/90 ">
             <Share2 size={18} /> WhatsApp
         </Button>
       </div>
 
       {/* Attendance Performance */}
-      <div className="bg-card border border-border p-5 rounded-2xl shadow-sm mb-6">
+      <div className="bg-card border border-border p-5 rounded-2xl  mb-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
              <TrendingUp size={16} className="text-primary" />
@@ -316,26 +316,26 @@ export const WorkerDetail = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-4 gap-2 mb-6 text-center">
-        <div className="bg-card border border-border p-2.5 rounded-xl shadow-sm">
+        <div className="bg-card border border-border p-2.5 rounded-xl ">
           <p className="text-xl font-bold text-green-600">{presentDays}</p>
           <p className="text-[9px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">Present</p>
         </div>
-        <div className="bg-card border border-border p-2.5 rounded-xl shadow-sm">
+        <div className="bg-card border border-border p-2.5 rounded-xl ">
           <p className="text-xl font-bold text-red-600">{absentDays}</p>
           <p className="text-[9px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">Absent</p>
         </div>
-        <div className="bg-card border border-border p-2.5 rounded-xl shadow-sm">
+        <div className="bg-card border border-border p-2.5 rounded-xl ">
           <p className="text-xl font-bold text-orange-500">{halfDays}</p>
           <p className="text-[9px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">Half</p>
         </div>
-        <div className="bg-card border border-border p-2.5 rounded-xl shadow-sm">
+        <div className="bg-card border border-border p-2.5 rounded-xl ">
           <p className="text-xl font-bold text-primary">{totalDailyWorks}</p>
           <p className="text-[9px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">Man Days</p>
         </div>
       </div>
 
       {/* Earnings Logic */}
-      <div className="bg-card p-5 rounded-2xl border border-border mb-6 shadow-sm">
+      <div className="bg-card p-5 rounded-2xl border border-border mb-6 ">
         <div className="flex items-center gap-2.5 mb-4 border-b border-border pb-3">
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
             <Calculator size={16} className="text-primary" />
@@ -373,7 +373,7 @@ export const WorkerDetail = () => {
         ) : (
             <div className="space-y-2.5">
                 {records.map((r, idx) => (
-                    <div key={idx} className="bg-card p-3.5 rounded-xl border border-border flex justify-between items-center shadow-sm">
+                    <div key={idx} className="bg-card p-3.5 rounded-xl border border-border flex justify-between items-center ">
                         <div>
                             <p className="font-bold text-sm text-foreground">{r.date.split("-").reverse().join("/")}</p>
                             {r.note && <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[200px] truncate">{r.note}</p>}

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { Check, X, Clock, Plus, Minus, StickyNote, IndianRupee, FileText, Bell, TrendingUp } from "lucide-react";
+import { Check, X, Clock, Plus, Minus, StickyNote, IndianRupee, FileText, Bell, TrendingUp, Crown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -198,18 +198,16 @@ export const PersonalDashboard = () => {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Hi, {userData?.name?.split(" ")[0] || "User"} 👋</h1>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">Hi, {userData?.name?.split(" ")[0] || "User"} <span className="animate-bounce">👋</span></h1>
             <p className="text-sm text-muted-foreground mt-1">Track your work & earnings</p>
           </div>
         </div>
-        <button className="relative h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted active:scale-95 transition-all shadow-sm">
-          <Bell size={22} className="text-foreground" />
-          {/* Example notification indicator */}
-          <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-destructive border-2 border-card animate-pulse"></span>
+        <button onClick={() => navigate('/premium')} className="relative h-12 w-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center hover: active:scale-95 transition-all ">
+          <Crown size={22} className="text-amber-600 dark:text-amber-500" />
         </button>
       </div>
             {/* Mini Analytics Preview */}
-      <div className="bg-gradient-to-r from-primary/10 to-green-500/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+      <div className="bg-gradient-to-r from-primary/10 to-green-500/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between ">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
              <TrendingUp size={20} className="text-primary" />
@@ -225,11 +223,11 @@ export const PersonalDashboard = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card p-5 rounded-2xl border border-border  hover: transition-shadow">
           <p className="text-xs font-medium text-muted-foreground mb-2">Today's Earnings</p>
           <p className="text-3xl font-bold text-primary">{loading ? <div className="h-8 w-16 bg-muted animate-pulse rounded"></div> : `₹${stats.todayEarned}`}</p>
         </div>
-        <div className="bg-card p-5 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card p-5 rounded-2xl border border-border  hover: transition-shadow">
           <p className="text-xs font-medium text-muted-foreground mb-2">Monthly Earnings</p>
           <p className="text-3xl font-bold text-green-600">{loading ? <div className="h-8 w-20 bg-muted animate-pulse rounded"></div> : `₹${stats.monthEarned}`}</p>
         </div>
@@ -290,7 +288,7 @@ export const PersonalDashboard = () => {
             <button
               onClick={() => markAttendance("full")}
               disabled={loading}
-              className="rounded-2xl bg-primary text-primary-foreground py-6 flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
+              className="rounded-2xl bg-primary text-primary-foreground py-6 flex flex-col items-center justify-center gap-2 transition-all active:scale-95 "
             >
               <div className="h-12 w-12 rounded-full bg-primary-foreground/20 flex items-center justify-center">
                 <Check size={28} strokeWidth={3} className="text-primary-foreground" />
@@ -300,7 +298,7 @@ export const PersonalDashboard = () => {
             <button
               onClick={() => markAttendance("half")}
               disabled={loading}
-              className="rounded-2xl bg-accent text-accent-foreground py-6 flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg border border-border"
+              className="rounded-2xl bg-accent text-accent-foreground py-6 flex flex-col items-center justify-center gap-2 transition-all active:scale-95  border border-border"
             >
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <Clock size={28} strokeWidth={2} className="text-primary" />
