@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .env
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties
