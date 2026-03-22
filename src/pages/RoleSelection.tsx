@@ -5,50 +5,83 @@ import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { Building2, User as UserIcon, Globe, ArrowRight, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import Lottie from "lottie-react";
 
-const languageEmojis: Record<string, string> = {
-  en: "🇬🇧", hi: "🇮🇳", bn: "🇧🇩", pa: "🌾",
-  mr: "🚩", ta: "🛕", te: "🌶️", gu: "🦁",
-  kn: "🐘", ml: "🌴"
+const languageIcons: Record<string, React.FC<any>> = {
+  en: () => <span className="text-3xl">Aa</span>,
+  hi: () => <span className="text-3xl">अ</span>,
+  bn: () => <span className="text-3xl">অ</span>,
+  pa: () => <span className="text-3xl">ਅ</span>,
+  mr: () => <span className="text-3xl">अ</span>,
+  ta: () => <span className="text-3xl">அ</span>,
+  te: () => <span className="text-3xl">అ</span>,
+  gu: () => <span className="text-3xl">અ</span>,
+  kn: () => <span className="text-3xl">ಅ</span>,
+  ml: () => <span className="text-3xl">അ</span>
 };
+
+// Minimal lottie-compatible mock objects for basic animation shapes if we don't have external json
+// Ideally we'd load JSON files, but as a fallback we can use colored divs or lucide icons if lottie JSONs aren't available locally.
+// However, since the requirement states "Replace all emoji-based visuals with: Animated icons (Lottie or similar)", we will provide a basic shape.
+
+// A helper for fallback animated icons using Framer Motion since we don't have Lottie JSON files on hand
+import { Hammer, Handshake, BrickWall, Building2 as BuildingIcon } from "lucide-react";
+
+const AnimatedHammer = () => (
+  <motion.div animate={{ rotate: [0, -20, 0] }} transition={{ repeat: Infinity, duration: 1 }}>
+    <Hammer size={32} className="text-blue-500" />
+  </motion.div>
+);
+const AnimatedHandshake = () => (
+  <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+    <Handshake size={32} className="text-green-500" />
+  </motion.div>
+);
+const AnimatedBrick = () => (
+  <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
+    <BrickWall size={32} className="text-purple-500" />
+  </motion.div>
+);
+const AnimatedBuilding = () => (
+  <motion.div animate={{ opacity: [0.8, 1, 0.8] }} transition={{ repeat: Infinity, duration: 2 }}>
+    <BuildingIcon size={32} className="text-orange-500" />
+  </motion.div>
+);
 
 const roles = [
   {
     id: "labour",
-    icon: UserIcon,
-    emoji: "👷",
-    title: "Labour",
-    desc: "Daily wage worker",
+    animatedIcon: AnimatedHammer,
+    titleKey: "role_labour",
+    descKey: "role_labour_desc",
     color: "text-blue-500",
     bg: "bg-blue-500/10",
     borderColor: "border-blue-500"
   },
   {
     id: "helper",
-    icon: UserIcon,
-    emoji: "🤝",
-    title: "Helper",
-    desc: "Assistant worker",
+    animatedIcon: AnimatedHandshake,
+    titleKey: "role_helper",
+    descKey: "role_helper_desc",
     color: "text-green-500",
     bg: "bg-green-500/10",
     borderColor: "border-green-500"
   },
   {
     id: "mistry",
-    icon: UserIcon,
-    emoji: "🧱",
-    title: "Mistry",
-    desc: "Skilled worker",
+    animatedIcon: AnimatedBrick,
+    titleKey: "role_mistry",
+    descKey: "role_mistry_desc",
     color: "text-purple-500",
     bg: "bg-purple-500/10",
     borderColor: "border-purple-500"
   },
   {
     id: "contractor",
-    icon: Building2,
-    emoji: "🏗️",
-    title: "Contractor Mode",
-    desc: "Manage workers, attendance & payments",
+    animatedIcon: AnimatedBuilding,
+    titleKey: "role_contractor",
+    descKey: "role_contractor_desc",
     color: "text-orange-500",
     bg: "bg-orange-500/10",
     borderColor: "border-orange-500"
@@ -68,8 +101,9 @@ const RoleSelection = () => {
   const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
-    // If language is already explicitly set and role is what's missing, skip to step 2
-    if (userData?.language && !userData?.role) {
+    // If language is explicitly set in localStorage and role is missing, skip to step 2
+    const langSet = localStorage.getItem("langSet");
+    if (langSet === "true" && !userData?.role) {
       setStep(2);
     }
   }, [userData]);
@@ -77,6 +111,7 @@ const RoleSelection = () => {
   const handleNextStep = () => {
     if (step === 1 && selectedLang) {
       setLang(selectedLang);
+      localStorage.setItem("langSet", "true");
       setAnimating(true);
       setTimeout(() => {
         setStep(2);
@@ -107,99 +142,126 @@ const RoleSelection = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Decorative background blur blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-
-      <div className={`w-full max-w-md transition-all duration-500 ${animating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} relative z-10`}>
-
+      <AnimatePresence mode="wait">
         {step === 1 ? (
-          <div className="bg-card/80 backdrop-blur-md border border-border shadow-xl rounded-3xl p-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-md bg-card border-none sm:border sm:border-border shadow-none sm:shadow-sm rounded-3xl p-4 sm:p-8 relative z-10"
+          >
             <div className="flex justify-center mb-6">
-              <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center animate-bounce">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center"
+              >
                  <Globe size={40} className="text-primary" />
-              </div>
+              </motion.div>
             </div>
             <h1 className="text-3xl font-black text-foreground text-center mb-2">{t("selectLanguage")}</h1>
             <p className="text-sm font-medium text-muted-foreground text-center mb-8">{t("languageDesc")}</p>
 
             <div className="space-y-4 mb-8">
-              {Object.entries(languages).map(([code, title]) => (
-                <button
-                  key={code}
-                  onClick={() => setSelectedLang(code)}
-                  className={`w-full rounded-2xl border-2 p-5 flex items-center justify-between transition-all active:scale-95 shadow-sm ${
-                    selectedLang === code
-                      ? "border-primary bg-primary/10 ring-4 ring-primary/5"
-                      : "border-border bg-background hover:border-primary/30"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="text-4xl">{languageEmojis[code] || '🌐'}</span>
-                    <span className="text-lg font-bold text-foreground">{title}</span>
-                  </div>
-                  {selectedLang === code && (
-                    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center animate-in zoom-in">
-                      <Check size={16} className="text-white" />
+              {Object.entries(languages).map(([code, title]) => {
+                const IconComponent = languageIcons[code] || languageIcons['en'];
+                return (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    key={code}
+                    onClick={() => setSelectedLang(code)}
+                    className={`w-full rounded-2xl border-2 p-5 flex items-center justify-between transition-colors shadow-sm ${
+                      selectedLang === code
+                        ? "border-primary bg-primary/10 ring-4 ring-primary/5"
+                        : "border-border bg-background hover:border-primary/30"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 text-foreground/80">
+                      <IconComponent />
+                      <span className="text-lg font-bold text-foreground">{title}</span>
                     </div>
-                  )}
-                </button>
-              ))}
+                    {selectedLang === code && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="h-8 w-8 rounded-full bg-primary flex items-center justify-center"
+                      >
+                        <Check size={16} className="text-white" />
+                      </motion.div>
+                    )}
+                  </motion.button>
+                )
+              })}
             </div>
 
-            <button
+            <motion.button
+              whileTap={selectedLang ? { scale: 0.95 } : {}}
               onClick={handleNextStep}
               disabled={!selectedLang}
-              className="w-full rounded-2xl bg-primary py-4 text-primary-foreground font-bold text-lg active:scale-95 disabled:opacity-50 transition-all shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
+              className="w-full rounded-2xl bg-primary py-4 text-primary-foreground font-bold text-lg disabled:opacity-50 transition-all shadow-sm flex items-center justify-center gap-2"
             >
-              Continue <ArrowRight size={20} />
-            </button>
-          </div>
+              {t("continue")} <ArrowRight size={20} />
+            </motion.button>
+          </motion.div>
         ) : (
-          <div className="bg-card/80 backdrop-blur-md border border-border shadow-xl rounded-3xl p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-md bg-card border-none sm:border sm:border-border shadow-none sm:shadow-sm rounded-3xl p-4 sm:p-8 relative z-10"
+          >
             <h1 className="text-3xl font-black text-foreground text-center mb-2">{t("selectRole")}</h1>
             <p className="text-sm font-medium text-muted-foreground text-center mb-8">{t("selectRoleDesc")}</p>
 
             <div className="space-y-4 mb-8">
-              {roles.map(({ id, emoji, title, desc, color, bg, borderColor }) => (
-                <button
+              {roles.map(({ id, animatedIcon: AnimatedIcon, titleKey, descKey, color, bg, borderColor }) => (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
                   key={id}
                   onClick={() => setSelectedRole(id)}
-                  className={`w-full rounded-2xl border-2 p-5 flex items-start gap-4 transition-all active:scale-[0.98] shadow-sm relative overflow-hidden group ${
+                  className={`w-full rounded-2xl border-2 p-5 flex items-start gap-4 transition-colors shadow-sm relative overflow-hidden group ${
                     selectedRole === id
                       ? `${borderColor} ${bg} ring-4 ring-primary/5`
                       : "border-border bg-background hover:border-border/80"
                   }`}
                 >
-                  {/* Subtle highlight effect on selection */}
                   {selectedRole === id && <div className="absolute inset-0 bg-white/5 opacity-50 pointer-events-none"></div>}
 
-                  <div className="text-4xl shrink-0 mt-1 transform group-hover:scale-110 group-hover:rotate-3 transition-transform">
-                    {emoji}
+                  <div className={`shrink-0 mt-1 p-2 rounded-xl flex items-center justify-center w-14 h-14 ${selectedRole === id ? 'bg-background shadow-sm' : bg}`}>
+                    <AnimatedIcon />
                   </div>
                   <div className="text-left flex-1 relative z-10">
-                    <p className={`text-lg font-bold mb-1 ${selectedRole === id ? color : 'text-foreground'}`}>{title}</p>
-                    <p className="text-xs font-medium text-muted-foreground leading-snug">{desc}</p>
+                    <p className={`text-lg font-bold mb-1 ${selectedRole === id ? color : 'text-foreground'}`}>{t(titleKey)}</p>
+                    <p className="text-xs font-medium text-muted-foreground leading-snug">{t(descKey)}</p>
                   </div>
                   {selectedRole === id && (
-                    <div className={`absolute top-4 right-4 h-6 w-6 rounded-full ${bg.replace('/10', '')} flex items-center justify-center animate-in zoom-in`}>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className={`absolute top-4 right-4 h-6 w-6 rounded-full ${bg.replace('/10', '')} flex items-center justify-center`}
+                    >
                       <Check size={14} className="text-white" />
-                    </div>
+                    </motion.div>
                   )}
-                </button>
+                </motion.button>
               ))}
             </div>
 
-            <button
+            <motion.button
+              whileTap={(!selectedRole || saving) ? {} : { scale: 0.95 }}
               onClick={handleSave}
               disabled={!selectedRole || saving}
-              className="w-full rounded-2xl bg-primary py-4 text-primary-foreground font-bold text-lg active:scale-95 disabled:opacity-50 transition-all shadow-lg shadow-primary/30"
+              className="w-full rounded-2xl bg-primary py-4 text-primary-foreground font-bold text-lg disabled:opacity-50 transition-all shadow-sm flex items-center justify-center"
             >
-              {saving ? "Setting up your workspace..." : "Get Started"}
-            </button>
-          </div>
+              {saving ? t("settingUp") : t("getStarted")}
+            </motion.button>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 };
