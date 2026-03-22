@@ -14,7 +14,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  // If user has no role set, redirect to role selection
+  // If user has no role set or hasn't selected a language (though language defaults to "en"), redirect to role selection
   const validRoles = ["labour", "helper", "mistry", "contractor", "personal", "admin"];
   if (userData && (!userData.role || !validRoles.includes(userData.role))) {
     return <Navigate to="/select-role" replace />;
