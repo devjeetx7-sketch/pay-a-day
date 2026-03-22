@@ -1,4 +1,4 @@
-name: Android CI/CD
+name: Android Build
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
@@ -21,11 +22,10 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      run: chmod +x ./android-app/gradlew
+      run: chmod +x android-app/gradlew
 
     - name: Build with Gradle
-      working-directory: ./android-app
-      run: ./gradlew assembleRelease bundleRelease
+      run: cd android-app && ./gradlew assembleRelease bundleRelease
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
