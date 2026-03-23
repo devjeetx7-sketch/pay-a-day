@@ -3,7 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate } from "react-router-dom";
 import { Briefcase } from "lucide-react";
-import { Capacitor } from "@capacitor/core";
 
 const Login = () => {
   const { user, loginWithGoogle, loginWithEmail, registerWithEmail, loading } = useAuth();
@@ -23,12 +22,7 @@ const Login = () => {
     );
   }
 
-  if (user) {
-    if (Capacitor.isNativePlatform()) {
-      return <Navigate to="/app" replace />;
-    }
-    return <Navigate to="/" replace />;
-  }
+  if (user) return <Navigate to="/" replace />;
 
   return (
     <div className="flex min-h-screen bg-background relative overflow-hidden flex-col lg:flex-row">
