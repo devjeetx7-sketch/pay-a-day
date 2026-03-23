@@ -77,9 +77,17 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
             val account = task.getResult(ApiException::class.java)
             account?.idToken?.let { token ->
                 authViewModel.loginWithGoogleCredential(token)
+            } ?: run {
+                authViewModel.setLoginError("Google Sign-In failed: No ID Token found")
             }
         } catch (e: ApiException) {
-            // Log error
+            val errorMessage = when (e.statusCode) {
+                10 -> "Developer Error (10): Verify SHA-1 and Web Client ID"
+                12501 -> "Sign-in cancelled by user"
+                7 -> "Network Error"
+                else -> "Google Sign-In failed: ${e.message}"
+            }
+            authViewModel.setLoginError(errorMessage)
         }
     }
 

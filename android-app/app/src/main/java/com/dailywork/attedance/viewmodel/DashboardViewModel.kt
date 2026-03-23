@@ -46,9 +46,10 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
 
     init {
         viewModelScope.launch {
-            val role = repository.userRoleFlow.firstOrNull()
-            if (role != null) {
-                loadDashboardData(role)
+            repository.userRoleFlow.collect { role ->
+                if (role != null) {
+                    loadDashboardData(role)
+                }
             }
         }
     }
