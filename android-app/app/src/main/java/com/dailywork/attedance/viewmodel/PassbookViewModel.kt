@@ -78,17 +78,21 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
 
         userListener = db.collection("users").document(user.uid)
             .addSnapshotListener { snapshot, error ->
-                if (error == null && snapshot != null && snapshot.exists()) {
-                    val joinedDateLong = snapshot.getTimestamp("created_at")?.toDate()?.time ?: Date().time
-                    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    _state.value = _state.value.copy(
-                        name = snapshot.getString("name") ?: user.displayName ?: "User",
-                        workType = snapshot.getString("workType") ?: "Labour",
-                        dailyWage = snapshot.getDouble("daily_wage") ?: 500.0,
-                        joinedDate = sdf.format(Date(joinedDateLong))
-                    )
-                    calculatePassbook(cachedDocs) // trigger update with current logs if any
+                if (error != null || snapshot == null || !snapshot.exists()) {
+                    // Fallback to name if user doc is missing
+                    _state.value = _state.value.copy(name = user.displayName ?: "User")
+                    return@addSnapshotListener
                 }
+
+                val joinedDateLong = snapshot.getTimestamp("created_at")?.toDate()?.time ?: Date().time
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                _state.value = _state.value.copy(
+                    name = snapshot.getString("name") ?: user.displayName ?: "User",
+                    workType = snapshot.getString("workType") ?: "Labour",
+                    dailyWage = snapshot.getDouble("daily_wage") ?: 500.0,
+                    joinedDate = sdf.format(Date(joinedDateLong))
+                )
+                calculatePassbook(cachedDocs) // trigger update with current logs if any
             }
 
         val cal = Calendar.getInstance()
