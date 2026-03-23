@@ -29,12 +29,16 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 
 import com.dailywork.attedance.viewmodel.CalendarViewModel
 import com.dailywork.attedance.viewmodel.StatsViewModel
+import com.dailywork.attedance.viewmodel.PassbookViewModel
+import com.dailywork.attedance.viewmodel.SettingsViewModel
 
 @Composable
 fun DashboardScreen(
     dashboardViewModel: DashboardViewModel,
     calendarViewModel: CalendarViewModel,
     statsViewModel: StatsViewModel,
+    passbookViewModel: PassbookViewModel,
+    settingsViewModel: SettingsViewModel,
     onLogout: () -> Unit
 ) {
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
@@ -90,21 +94,6 @@ fun DashboardScreen(
                 }
             }
             composable("calendar") {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Calendar Screen") }
-            }
-            composable("settings") {
-                SettingsScreen(onLogout = onLogout)
-            }
-            composable("workers") {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Workers Screen") }
-            }
-            composable("stats") {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Stats Screen") }
-            }
-            composable("passbook") {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Passbook Screen") }
-            }
-            composable("calendar") {
                 CalendarScreen(
                     viewModel = calendarViewModel,
                     navController = bottomNavController
@@ -112,6 +101,15 @@ fun DashboardScreen(
             }
             composable("stats") {
                 StatsScreenContent(viewModel = statsViewModel, navController = bottomNavController)
+            }
+            composable("passbook") {
+                PassbookScreenContent(viewModel = passbookViewModel, navController = bottomNavController)
+            }
+            composable("settings") {
+                SettingsScreenContent(viewModel = settingsViewModel, onLogout = onLogout)
+            }
+            composable("workers") {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Workers Screen") }
             }
         }
 

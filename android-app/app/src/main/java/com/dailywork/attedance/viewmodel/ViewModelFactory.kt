@@ -22,6 +22,14 @@ class ViewModelFactory(private val repository: UserPreferencesRepository) : View
             @Suppress("UNCHECKED_CAST")
             return StatsViewModel(repository) as T
         }
+        if (modelClass.isAssignableFrom(PassbookViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return PassbookViewModel(repository) as T
+        }
+        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return SettingsViewModel(repository) as T
+        }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
