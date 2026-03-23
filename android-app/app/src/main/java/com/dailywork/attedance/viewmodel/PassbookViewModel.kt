@@ -53,6 +53,8 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
     private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
 
+    private var cachedDocs: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
+
     init {
         setupListeners()
     }
@@ -85,7 +87,7 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
                         dailyWage = snapshot.getDouble("daily_wage") ?: 500.0,
                         joinedDate = sdf.format(Date(joinedDateLong))
                     )
-                    calculatePassbook(emptyList()) // trigger update with current logs if any
+                    calculatePassbook(cachedDocs) // trigger update with current logs if any
                 }
             }
 
@@ -99,7 +101,11 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
             .whereGreaterThanOrEqualTo("date", "$yearMonth-01")
             .whereLessThanOrEqualTo("date", "$yearMonth-31")
             .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
+                if (error != null || snapshot == null) {
+                    _state.value = _state.value.copy(isLoading = false)
+                    return@addSnapshotListener
+                }
+                cachedDocs = snapshot.documents
                 calculatePassbook(snapshot.documents)
             }
     }

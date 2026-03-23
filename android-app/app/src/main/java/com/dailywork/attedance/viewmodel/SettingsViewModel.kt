@@ -98,9 +98,27 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
         _state.value = _state.value.copy(savedMessage = null)
     }
 
+    fun changeRole(onRoleCleared: () -> Unit) {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+            _state.value = _state.value.copy(isSaving = true)
+            try {
+                db.collection("users").document(user.uid).set(mapOf("role" to ""), SetOptions.merge()).await()
+                // Just clear session or role to trigger re-selection
+                repository.clearSession()
+                onRoleCleared()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(savedMessage = "Failed to change role.")
+            } finally {
+                _state.value = _state.value.copy(isSaving = false)
+            }
+        }
+    }
+
     fun logout() {
         auth.signOut()
         viewModelScope.launch {
+            repository.clearSession()
         }
     }
 
