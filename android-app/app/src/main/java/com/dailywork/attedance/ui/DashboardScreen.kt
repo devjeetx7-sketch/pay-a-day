@@ -89,7 +89,7 @@ fun DashboardScreen(
                                 onAddAdvance = { showAdvanceDialog = true }
                             ) }
                         } else {
-                            item { PersonalStatsGrid(dashboardState) }
+                            item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
                             item { PersonalDailyLog(dashboardState, dashboardViewModel) }
                         }
 
@@ -318,7 +318,7 @@ fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: C
 }
 
 @Composable
-fun PersonalStatsGrid(state: DashboardState) {
+fun PersonalStatsGrid(state: DashboardState, onNavigatePassbook: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(
@@ -338,7 +338,7 @@ fun PersonalStatsGrid(state: DashboardState) {
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp)).padding(16.dp),
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
