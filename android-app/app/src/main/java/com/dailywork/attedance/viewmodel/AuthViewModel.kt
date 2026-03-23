@@ -85,13 +85,36 @@ class AuthViewModel(private val repository: UserPreferencesRepository) : ViewMod
              try {
                  val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
                  val result = auth.signInWithCredential(credential).await()
-                 val uid = result.user?.uid ?: ""
-                 repository.saveAuthToken(uid)
-                 _loginState.value = LoginState.Success(uid)
+                 val user = result.user
+                 if (user != null) {
+                     val uid = user.uid
+
+                     // Upsert user document just like email registration to prevent crash on new Google user
+                     val userData = mapOf(
+                        "uid" to uid,
+                        "name" to (user.displayName ?: ""),
+                        "email" to (user.email ?: ""),
+                        "createdAt" to System.currentTimeMillis()
+                     )
+                     com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(uid)
+                        .set(userData, com.google.firebase.firestore.SetOptions.merge())
+                        .await()
+
+                     repository.saveAuthToken(uid)
+                     _loginState.value = LoginState.Success(uid)
+                 } else {
+                     _loginState.value = LoginState.Error("Google Sign-In failed: Null user")
+                 }
              } catch (e: Exception) {
                  _loginState.value = LoginState.Error(e.message ?: "Google Sign-In failed")
              }
         }
+    }
+
+    fun setLoginError(error: String) {
+        _loginState.value = LoginState.Error(error)
     }
 
     fun savePreferences(role: String, language: String) {
