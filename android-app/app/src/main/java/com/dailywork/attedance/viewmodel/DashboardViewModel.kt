@@ -7,17 +7,33 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class DashboardState(
     val role: String = "",
+    val name: String = "",
+    val photoUrl: String = "",
     val isLoading: Boolean = false,
+
+    // Contractor Stats
     val totalWorkers: String = "0",
-    val presentWorkers: String = "0",
-    val pendingAmount: String = "Rs. 0",
-    val daysWorked: String = "0",
-    val earnings: String = "Rs. 0"
+    val todayPresent: String = "0",
+    val totalPaidMonth: String = "0",
+    val pendingAmount: String = "0",
+
+    // Personal Stats
+    val todayEarned: String = "0",
+    val monthEarned: String = "0",
+
+    // Personal Attendance State
+    val todayStatus: String? = null,
+    val overtimeHours: Int = 0,
+    val todayNote: String? = null
 )
 
 class DashboardViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
@@ -30,96 +46,137 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
 
     init {
         viewModelScope.launch {
-            repository.userRoleFlow.collect { role ->
-                if (role != null) {
-                    loadDashboardData(role)
-                }
+            val role = repository.userRoleFlow.firstOrNull()
+            if (role != null) {
+                loadDashboardData(role)
             }
         }
     }
 
-    private fun loadDashboardData(role: String) {
+    fun loadDashboardData(role: String) {
         viewModelScope.launch {
             _dashboardState.value = _dashboardState.value.copy(isLoading = true, role = role)
 
-            val uid = auth.currentUser?.uid
-            if (uid == null) {
+            val user = auth.currentUser
+            if (user == null) {
                 _dashboardState.value = _dashboardState.value.copy(isLoading = false)
                 return@launch
             }
 
+            val userDoc = db.collection("users").document(user.uid).get().await()
+            val name = userDoc.getString("name") ?: user.displayName ?: "User"
+            val photoUrl = user.photoUrl?.toString() ?: ""
+            val defaultWage = userDoc.getDouble("daily_wage") ?: 500.0
+
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+            val todayStr = sdf.format(Date())
+            val currentMonthStr = sdfMonth.format(Date())
+
             try {
-                if (role == "CONTRACTOR") {
+                if (role == "contractor") {
                     val workersSnapshot = db.collection("workers")
-                        .whereEqualTo("contractorId", uid)
+                        .whereEqualTo("contractorId", user.uid)
                         .get()
                         .await()
 
                     val totalWorkers = workersSnapshot.size()
+                    var totalAdvanceMonth = 0.0
+                    var totalEarningsMonth = 0.0
                     var pendingTotal = 0.0
 
+                    val workersMap = mutableMapOf<String, Double>()
                     for (doc in workersSnapshot.documents) {
-                        val attendanceSnap = db.collection("attendance")
-                            .whereEqualTo("workerId", doc.id)
-                            .get().await()
-
-                        // Simple balance calculation (wages - advance)
-                        var earnings = 0.0
-                        var advance = 0.0
-                        for (att in attendanceSnap) {
-                            val status = att.getString("status")
-                            val wage = att.getDouble("wage") ?: 0.0
-                            val adv = att.getDouble("advance") ?: 0.0
-                            if (status == "PRESENT") {
-                                earnings += wage
-                            } else if (status == "HALF_DAY") {
-                                earnings += wage / 2
-                            }
-                            advance += adv
-                        }
-                        pendingTotal += (earnings - advance)
+                        workersMap["worker_${doc.id}"] = doc.getDouble("wage") ?: 0.0
                     }
 
-                    val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
-                    val presentSnapshot = db.collection("attendance")
-                        .whereEqualTo("contractorId", uid)
-                        .whereEqualTo("date", todayStr)
-                        .whereIn("status", listOf("PRESENT", "HALF_DAY"))
-                        .get()
-                        .await()
+                    val attendanceSnap = db.collection("attendance")
+                        .whereEqualTo("contractorId", user.uid)
+                        .get().await()
 
-                    val presentWorkers = presentSnapshot.size()
+                    var todayPresentCount = 0
+
+                    for (att in attendanceSnap.documents) {
+                        val date = att.getString("date") ?: ""
+                        val status = att.getString("status") ?: ""
+                        val type = att.getString("type") ?: "full"
+                        val workerId = att.getString("user_id") ?: ""
+                        val advance = att.getDouble("advance_amount") ?: 0.0
+                        val wage = workersMap[workerId] ?: 0.0
+
+                        if (date == todayStr && status == "present") {
+                            todayPresentCount++
+                        }
+
+                        // Pending Calculation (All Time)
+                        if (status == "present") {
+                            pendingTotal += if (type == "half") wage / 2 else wage
+                        } else if (status == "advance") {
+                            pendingTotal -= advance
+                        }
+
+                        // Monthly Paid Calculation
+                        if (date.startsWith(currentMonthStr) && status == "advance") {
+                            totalAdvanceMonth += advance
+                        }
+                    }
 
                     _dashboardState.value = _dashboardState.value.copy(
                         isLoading = false,
+                        name = name,
+                        photoUrl = photoUrl,
                         totalWorkers = totalWorkers.toString(),
-                        presentWorkers = presentWorkers.toString(),
-                        pendingAmount = "Rs. ${pendingTotal.toInt()}"
+                        todayPresent = todayPresentCount.toString(),
+                        totalPaidMonth = totalAdvanceMonth.toInt().toString(),
+                        pendingAmount = pendingTotal.toInt().toString()
                     )
                 } else {
+                    // Personal Dashboard
                     val attendanceSnapshot = db.collection("attendance")
-                        .whereEqualTo("workerId", uid)
+                        .whereEqualTo("user_id", user.uid)
                         .get()
                         .await()
 
-                    var totalWorked = 0
-                    var earnings = 0.0
-                    for (doc in attendanceSnapshot) {
-                        val status = doc.getString("status")
-                        val wage = doc.getDouble("wage") ?: 0.0
-                        if (status == "PRESENT") {
-                            totalWorked++
-                            earnings += wage
-                        } else if (status == "HALF_DAY") {
-                            totalWorked++
-                            earnings += (wage / 2)
+                    var todayEarned = 0.0
+                    var monthEarned = 0.0
+
+                    var currentTodayStatus: String? = null
+                    var currentOvertime = 0
+                    var currentNote: String? = null
+
+                    for (doc in attendanceSnapshot.documents) {
+                        val date = doc.getString("date") ?: ""
+                        val status = doc.getString("status") ?: ""
+                        val type = doc.getString("type") ?: "full"
+                        val advance = doc.getDouble("advance_amount") ?: 0.0
+
+                        val dailyValue = if (status == "present") {
+                            if (type == "half") defaultWage / 2 else defaultWage
+                        } else 0.0
+
+                        if (date == todayStr) {
+                            if (status != "advance") {
+                                currentTodayStatus = status
+                                currentOvertime = doc.getDouble("overtime_hours")?.toInt() ?: 0
+                                currentNote = doc.getString("note")
+                                todayEarned = dailyValue
+                            }
+                        }
+
+                        if (date.startsWith(currentMonthStr)) {
+                            monthEarned += dailyValue
                         }
                     }
 
                     _dashboardState.value = _dashboardState.value.copy(
                         isLoading = false,
-                        daysWorked = totalWorked.toString(),
-                        earnings = "Rs. ${earnings.toInt()}"
+                        name = name,
+                        photoUrl = photoUrl,
+                        todayEarned = todayEarned.toInt().toString(),
+                        monthEarned = monthEarned.toInt().toString(),
+                        todayStatus = currentTodayStatus,
+                        overtimeHours = currentOvertime,
+                        todayNote = currentNote
                     )
                 }
             } catch (e: Exception) {
