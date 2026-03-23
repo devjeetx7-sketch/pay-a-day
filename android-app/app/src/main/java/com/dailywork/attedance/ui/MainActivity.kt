@@ -71,8 +71,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
         composable("role_selection") {
             RoleSelectionScreen(
                 authViewModel = authViewModel,
-                onRoleSelected = { role ->
-                    authViewModel.saveRole(role)
+                onComplete = {
                     navController.navigate("dashboard") {
                         popUpTo("role_selection") { inclusive = true }
                     }

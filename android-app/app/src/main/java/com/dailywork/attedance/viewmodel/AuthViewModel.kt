@@ -94,9 +94,25 @@ class AuthViewModel(private val repository: UserPreferencesRepository) : ViewMod
         }
     }
 
-    fun saveRole(role: String) {
+    fun savePreferences(role: String, language: String) {
         viewModelScope.launch {
-            repository.saveUserRole(role)
+            val uid = auth.currentUser?.uid
+            if (uid != null) {
+                try {
+                    val updates = mapOf(
+                        "role" to role,
+                        "language" to language
+                    )
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(uid)
+                        .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                        .await()
+                    repository.saveUserRole(role)
+                } catch (e: Exception) {
+                    // Handle error if needed
+                }
+            }
         }
     }
 
