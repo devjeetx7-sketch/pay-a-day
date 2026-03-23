@@ -20,6 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.dailywork.attedance.data.UserPreferencesRepository
 import com.dailywork.attedance.ui.theme.DailyWorkTheme
 import com.dailywork.attedance.viewmodel.AuthViewModel
+import com.dailywork.attedance.viewmodel.CalendarViewModel
 import com.dailywork.attedance.viewmodel.DashboardViewModel
 import com.dailywork.attedance.viewmodel.ViewModelFactory
 
@@ -48,6 +49,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel(factory = factory)
     val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
+    val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
 
     val token by authViewModel.authTokenFlow.collectAsState(initial = "")
 
@@ -88,6 +90,12 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+        composable("calendar") {
+            CalendarScreen(
+                viewModel = calendarViewModel,
+                navController = navController
             )
         }
     }
