@@ -90,7 +90,5 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                 }
             )
         }
-        // Placeholder for bottom nav screens that need their own route logic, if handled in main NavHost
-        // But for a typical BottomNav + Scaffold, we handle it inside DashboardScreen with a nested NavHost
     }
 }
