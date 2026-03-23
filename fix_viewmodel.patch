@@ -1,0 +1,11 @@
+--- android-app/app/src/main/java/com/dailywork/attedance/viewmodel/CalendarViewModel.kt
++++ android-app/app/src/main/java/com/dailywork/attedance/viewmodel/CalendarViewModel.kt
+@@ -128,8 +128,6 @@
+                         overtimeHours = doc.getDouble("overtime_hours")?.toInt(),
+                         note = doc.getString("note"),
+                         advanceAmount = doc.getDouble("advance_amount")
+-                        note = doc.getString("note"),
+-                        advanceAmount = doc.getDouble("advance_amount")
+                     )
+                 }
+                 _calendarState.value = _calendarState.value.copy(

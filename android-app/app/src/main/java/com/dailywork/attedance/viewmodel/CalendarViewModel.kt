@@ -30,7 +30,8 @@ data class AttendanceRecord(
     val type: String?,
     val reason: String?,
     val overtimeHours: Int?,
-    val note: String?
+    val note: String?,
+    val advanceAmount: Double?
 )
 
 data class CalendarState(
@@ -125,7 +126,8 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
                         type = doc.getString("type"),
                         reason = doc.getString("reason"),
                         overtimeHours = doc.getDouble("overtime_hours")?.toInt(),
-                        note = doc.getString("note")
+                        note = doc.getString("note"),
+                        advanceAmount = doc.getDouble("advance_amount")
                     )
                 }
                 _calendarState.value = _calendarState.value.copy(
@@ -165,7 +167,8 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
                         type = doc.getString("type"),
                         reason = doc.getString("reason"),
                         overtimeHours = doc.getDouble("overtime_hours")?.toInt(),
-                        note = doc.getString("note")
+                        note = doc.getString("note"),
+                        advanceAmount = doc.getDouble("advance_amount")
                     )
                 }
 
@@ -220,7 +223,8 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
                 type = if (status == "present") type else null,
                 reason = null,
                 overtimeHours = null,
-                note = null
+                note = null,
+                advanceAmount = null
             )
             val newList = _calendarState.value.contractorAttendance.filter { it.id != docId } + optimisticRecord
             _calendarState.value = _calendarState.value.copy(contractorAttendance = newList)
@@ -246,6 +250,69 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
         updatePersonalAttendanceListener()
     }
 
+    fun markPersonalAttendance(
+        date: String,
+        status: String,
+        type: String,
+        reason: String,
+        overtimeHours: Int,
+        note: String,
+        advanceAmount: Double
+    ) {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+
+            val docId = "${user.uid}_$date"
+
+            if (status == "present" || status == "absent") {
+                val data = hashMapOf(
+                    "user_id" to user.uid,
+                    "date" to date,
+                    "status" to status,
+                    "type" to if (status == "present") type else null,
+                    "reason" to if (status == "absent") reason else null,
+                    "overtime_hours" to if (status == "present") overtimeHours else 0,
+                    "note" to if (note.isNotEmpty()) note else null,
+                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+
+                try {
+                    db.collection("attendance").document(docId).set(data, SetOptions.merge()).await()
+                } catch (e: Exception) { }
+            }
+
+            val advanceDocId = "${user.uid}_${date}_advance"
+            if (advanceAmount > 0) {
+                val advanceData = hashMapOf(
+                    "user_id" to user.uid,
+                    "date" to date,
+                    "status" to "advance",
+                    "advance_amount" to advanceAmount,
+                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+                try {
+                    db.collection("attendance").document(advanceDocId).set(advanceData, SetOptions.merge()).await()
+                } catch (e: Exception) { }
+            } else {
+                try {
+                    db.collection("attendance").document(advanceDocId).delete().await()
+                } catch (e: Exception) { }
+            }
+        }
+    }
+
+    fun removePersonalAttendance(date: String) {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+            val docId = "${user.uid}_$date"
+            val advanceDocId = "${user.uid}_${date}_advance"
+
+            try {
+                db.collection("attendance").document(docId).delete().await()
+                db.collection("attendance").document(advanceDocId).delete().await()
+            } catch (e: Exception) { }
+        }
+    }
 
     override fun onCleared() {
         super.onCleared()

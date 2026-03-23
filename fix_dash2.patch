@@ -1,0 +1,36 @@
+--- android-app/app/src/main/java/com/dailywork/attedance/ui/DashboardScreen.kt
++++ android-app/app/src/main/java/com/dailywork/attedance/ui/DashboardScreen.kt
+@@ -28,7 +28,12 @@
+ import androidx.navigation.compose.currentBackStackEntryAsState
+
+ @Composable
+-fun DashboardScreen(dashboardViewModel: DashboardViewModel, navController: androidx.navigation.NavController, onLogout: () -> Unit) {
++fun DashboardScreen(
++    dashboardViewModel: DashboardViewModel,
++    calendarViewModel: CalendarViewModel,
++    statsViewModel: StatsViewModel,
++    onLogout: () -> Unit
++) {
+     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+     val bottomNavController = rememberNavController()
+     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
+@@ -428,7 +433,18 @@
+                         Text("App Version 1.0.0", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                     }
+                 }
+             }
++            composable("calendar") {
++                CalendarScreenContent(
++                    viewModel = calendarViewModel,
++                    navController = bottomNavController
++                )
++            }
++            composable("stats") {
++                StatsScreenContent(
++                    viewModel = statsViewModel,
++                    navController = bottomNavController
++                )
++            }
+         }
+     }
+ }

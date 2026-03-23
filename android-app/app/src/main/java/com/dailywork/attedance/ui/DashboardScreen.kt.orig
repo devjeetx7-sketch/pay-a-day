@@ -111,7 +111,10 @@ fun DashboardScreen(
                 )
             }
             composable("stats") {
-                StatsScreenContent(viewModel = statsViewModel, navController = bottomNavController)
+                // We'll implement StatsScreen next
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Stats Screen")
+                }
             }
         }
 
