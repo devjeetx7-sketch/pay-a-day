@@ -24,10 +24,20 @@ import com.dailywork.attedance.viewmodel.DashboardState
 @Composable
 fun DashboardScreen(dashboardViewModel: DashboardViewModel, onNavigateToSettings: () -> Unit) {
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+    var currentRoute by remember { mutableStateOf("dashboard") }
 
     Scaffold(
         bottomBar = {
-            BottomNavigationBar()
+            BottomNavigationBar(
+                role = dashboardState.role,
+                currentRoute = currentRoute,
+                onNavigate = { route ->
+                    currentRoute = route
+                    if (route == "settings") {
+                        onNavigateToSettings()
+                    }
+                }
+            )
         }
     ) { padding ->
         if (dashboardState.isLoading) {
@@ -190,7 +200,7 @@ fun ContractorQuickActions() {
         Spacer(modifier = Modifier.height(16.dp))
         QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981))
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.CurrencyRupee, Color(0xFFF97316))
+        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316))
     }
 }
 
@@ -219,38 +229,61 @@ fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: C
                 Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+        Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
     }
 }
 
 @Composable
 fun PersonalStatsGrid(state: DashboardState) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Goal Progress
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.TrendingUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text("Monthly Goal", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Row {
+                        Text("On track ", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A)) // green-600 equivalent
+                        Text("to hit ₹20k", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            Text("View", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 8.dp))
+        }
+
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Column(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(20.dp)
-            ) {
-                Text("Today's Earnings", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("₹${state.todayEarned}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            }
-            Column(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(20.dp)
-            ) {
-                Text("Monthly Earnings", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("₹${state.monthEarned}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
-            }
+            StatCard("Today's Earnings", "₹${state.todayEarned}", Icons.Default.CurrencyRupee, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+            StatCard("Monthly Earnings", "₹${state.monthEarned}", Icons.Default.CurrencyRupee, Color(0xFF10B981), Modifier.weight(1f)) // green-500
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp)).padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                .padding(16.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("View My Passbook", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("View My Passbook", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -273,7 +306,7 @@ fun PersonalDailyLog(state: DashboardState) {
             Spacer(modifier = Modifier.height(12.dp))
 
             // Note Input
-            OutlinedTextField(value = "", onValueChange = {}, placeholder = { Text("Add Note...") }, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outline))
+            OutlinedTextField(value = "", onValueChange = {}, placeholder = { Text("Add Note (Optional)") }, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outline, focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedContainerColor = MaterialTheme.colorScheme.surface))
             Spacer(modifier = Modifier.height(12.dp))
 
             // Action Buttons
@@ -285,7 +318,7 @@ fun PersonalDailyLog(state: DashboardState) {
                         Text("Full Day", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
-                Button(onClick = {}, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                OutlinedButton(onClick = {}, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground, containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp)) }
                         Spacer(modifier = Modifier.height(8.dp))
@@ -294,33 +327,93 @@ fun PersonalDailyLog(state: DashboardState) {
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error), border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.error)) {
+            OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.error)) {
                 Icon(Icons.Default.Close, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Mark Absent", fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         } else {
-             Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)).border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)).padding(24.dp), contentAlignment = Alignment.Center) {
+             val isPresent = state.todayStatus == "present"
+             val bgColor = if (isPresent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+
+             Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(bgColor.copy(alpha = 0.1f)).border(2.dp, bgColor, RoundedCornerShape(16.dp)).padding(24.dp), contentAlignment = Alignment.Center) {
                  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                     Box(modifier = Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) { Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp)) }
+                     Box(modifier = Modifier.size(56.dp).clip(CircleShape).background(bgColor), contentAlignment = Alignment.Center) {
+                        if (isPresent) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                        } else {
+                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                        }
+                     }
                      Spacer(modifier = Modifier.height(12.dp))
-                     Text("Marked Present", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                     Text(if (isPresent) "Marked Present" else "Marked Absent", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = bgColor)
                  }
              }
+
+             Spacer(modifier = Modifier.height(12.dp))
+             OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)) {
+                Text("Remove Attendance", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+             }
         }
+
     }
 }
 
 @Composable
-fun BottomNavigationBar() {
+fun BottomNavigationBar(role: String, currentRoute: String, onNavigate: (String) -> Unit = {}) {
+    val isContractor = role == "contractor"
+
+    data class NavItem(val route: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val label: String)
+
+    val tabs = mutableListOf(
+        NavItem("dashboard", Icons.Default.Home, "Dashboard"),
+        NavItem("calendar", Icons.Default.CalendarMonth, "Calendar")
+    )
+
+    if (isContractor) {
+        tabs.add(NavItem("workers", Icons.Default.People, "Workers"))
+    } else {
+        tabs.add(NavItem("passbook", Icons.Default.Description, "Passbook"))
+    }
+
+    tabs.add(NavItem("stats", Icons.Default.BarChart, "Stats"))
+    tabs.add(NavItem("settings", Icons.Default.Settings, "Settings"))
+
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        tonalElevation = 0.dp,
+        modifier = Modifier.border(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant, shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp))
     ) {
-        NavigationBarItem(icon = { Icon(Icons.Default.Home, contentDescription = null) }, label = { Text("Home", fontSize = 10.sp) }, selected = true, onClick = { })
-        NavigationBarItem(icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) }, label = { Text("Calendar", fontSize = 10.sp) }, selected = false, onClick = { })
-        NavigationBarItem(icon = { Icon(Icons.Default.People, contentDescription = null) }, label = { Text("Workers", fontSize = 10.sp) }, selected = false, onClick = { })
-        NavigationBarItem(icon = { Icon(Icons.Default.BarChart, contentDescription = null) }, label = { Text("Stats", fontSize = 10.sp) }, selected = false, onClick = { })
-        NavigationBarItem(icon = { Icon(Icons.Default.Settings, contentDescription = null) }, label = { Text("Settings", fontSize = 10.sp) }, selected = false, onClick = { })
+        tabs.forEach { tab ->
+            val selected = tab.route == currentRoute
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        tab.icon,
+                        contentDescription = null,
+                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                label = {
+                    Text(
+                        tab.label,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                selected = selected,
+                onClick = { onNavigate(tab.route) },
+                colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.background,
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
     }
 }
