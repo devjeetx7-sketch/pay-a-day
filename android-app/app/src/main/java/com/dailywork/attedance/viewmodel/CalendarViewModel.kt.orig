@@ -88,10 +88,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
             workersListener = db.collection("workers")
                 .whereEqualTo("contractorId", user.uid)
                 .addSnapshotListener { snapshot, error ->
-                    if (error != null || snapshot == null) {
-                        _calendarState.value = _calendarState.value.copy(isLoading = false)
-                        return@addSnapshotListener
-                    }
+                    if (error != null || snapshot == null) return@addSnapshotListener
                     val workersList = snapshot.documents.mapNotNull { doc ->
                         Worker(
                             id = doc.id,
@@ -118,10 +115,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
             .whereEqualTo("contractorId", user.uid)
             .whereEqualTo("date", date)
             .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
-                    _calendarState.value = _calendarState.value.copy(isLoading = false)
-                    return@addSnapshotListener
-                }
+                if (error != null || snapshot == null) return@addSnapshotListener
 
                 val attendanceList = snapshot.documents.map { doc ->
                     AttendanceRecord(
@@ -162,10 +156,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
             .whereGreaterThanOrEqualTo("date", startDate)
             .whereLessThanOrEqualTo("date", endDate)
             .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
-                    _calendarState.value = _calendarState.value.copy(isLoading = false)
-                    return@addSnapshotListener
-                }
+                if (error != null || snapshot == null) return@addSnapshotListener
 
                 val monthlyAttendance = snapshot.documents.map { doc ->
                     AttendanceRecord(

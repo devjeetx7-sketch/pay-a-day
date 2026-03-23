@@ -31,8 +31,6 @@ import com.dailywork.attedance.viewmodel.CalendarViewModel
 import com.dailywork.attedance.viewmodel.StatsViewModel
 import com.dailywork.attedance.viewmodel.PassbookViewModel
 import com.dailywork.attedance.viewmodel.SettingsViewModel
-import com.dailywork.attedance.viewmodel.WorkersViewModel
-import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 
 @Composable
 fun DashboardScreen(
@@ -41,8 +39,6 @@ fun DashboardScreen(
     statsViewModel: StatsViewModel,
     passbookViewModel: PassbookViewModel,
     settingsViewModel: SettingsViewModel,
-    workersViewModel: WorkersViewModel,
-    workerDetailViewModel: WorkerDetailViewModel,
     onLogout: () -> Unit
 ) {
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
@@ -113,14 +109,7 @@ fun DashboardScreen(
                 SettingsScreenContent(viewModel = settingsViewModel, onLogout = onLogout)
             }
             composable("workers") {
-                WorkersScreenContent(viewModel = workersViewModel, navController = bottomNavController)
-            }
-            composable("worker_detail/{workerId}") { backStackEntry ->
-                WorkerDetailScreenContent(
-                    workerId = backStackEntry.arguments?.getString("workerId") ?: "",
-                    viewModel = workerDetailViewModel,
-                    navController = bottomNavController
-                )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Workers Screen") }
             }
         }
 
