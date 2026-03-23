@@ -18,13 +18,23 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
 import com.dailywork.attedance.viewmodel.DashboardViewModel
 import com.dailywork.attedance.viewmodel.DashboardState
 
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+
 @Composable
-fun DashboardScreen(dashboardViewModel: DashboardViewModel, onNavigateToSettings: () -> Unit) {
+fun DashboardScreen(dashboardViewModel: DashboardViewModel, navController: androidx.navigation.NavController, onLogout: () -> Unit) {
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
-    var currentRoute by remember { mutableStateOf("dashboard") }
+    val bottomNavController = rememberNavController()
+    val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
+    var showAdvanceDialog by remember { mutableStateOf(false) }
+    var advanceAmount by remember { mutableStateOf("") }
 
     Scaffold(
         bottomBar = {
@@ -32,41 +42,96 @@ fun DashboardScreen(dashboardViewModel: DashboardViewModel, onNavigateToSettings
                 role = dashboardState.role,
                 currentRoute = currentRoute,
                 onNavigate = { route ->
-                    currentRoute = route
-                    if (route == "settings") {
-                        onNavigateToSettings()
+                    bottomNavController.navigate(route) {
+                        popUpTo(bottomNavController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
             )
         }
     ) { padding ->
-        if (dashboardState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    HeaderSection(dashboardState)
-                }
+        NavHost(navController = bottomNavController, startDestination = "dashboard", modifier = Modifier.fillMaxSize().padding(padding)) {
+            composable("dashboard") {
+                    if (dashboardState.isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            item {
+                                HeaderSection(dashboardState)
+                            }
 
-                if (dashboardState.role == "contractor") {
-                    item { ContractorStatsGrid(dashboardState) }
-                    item { ContractorQuickActions() }
-                } else {
-                    item { PersonalStatsGrid(dashboardState) }
-                    item { PersonalDailyLog(dashboardState) }
-                }
+                            if (dashboardState.role == "contractor") {
+                                item { ContractorStatsGrid(dashboardState) }
+                                item { ContractorQuickActions(
+                                    onManageWorkers = { bottomNavController.navigate("workers") },
+                                    onMarkAttendance = { bottomNavController.navigate("calendar") },
+                                    onAddAdvance = { showAdvanceDialog = true }
+                                ) }
+                            } else {
+                                item { PersonalStatsGrid(dashboardState) }
+                                item { PersonalDailyLog(dashboardState, dashboardViewModel) }
+                            }
 
-                item { Spacer(modifier = Modifier.height(24.dp)) }
+                            item { Spacer(modifier = Modifier.height(24.dp)) }
+                        }
+                    }
             }
+            composable("settings") {
+                SettingsScreen(onLogout = onLogout)
+            }
+            composable("calendar") {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Calendar Screen", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            composable("workers") {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Workers Screen", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            composable("stats") {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Stats Screen", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            composable("passbook") {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Passbook Screen", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+        }
+
+        if (showAdvanceDialog) {
+            AlertDialog(
+                onDismissRequest = { showAdvanceDialog = false },
+                title = { Text("Add Advance Payment", fontWeight = FontWeight.Bold) },
+                text = {
+                    OutlinedTextField(
+                        value = advanceAmount,
+                        onValueChange = { advanceAmount = it },
+                        placeholder = { Text("Amount") },
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                        shape = RoundedCornerShape(12.dp),
+                        leadingIcon = { Text("₹", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold) }
+                    )
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        // Simplified saving, logic could be handled in viewmodel for specific worker
+                        // Note: Web app requires picking a worker, but since this is a quick action,
+                        // this just provides the UI shell per instructions until a worker list is loaded
+                        showAdvanceDialog = false
+                    }) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAdvanceDialog = false }) { Text("Cancel") }
+                }
+            )
         }
     }
 }
@@ -192,26 +257,27 @@ fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modi
 }
 
 @Composable
-fun ContractorQuickActions() {
+fun ContractorQuickActions(onManageWorkers: () -> Unit, onMarkAttendance: () -> Unit, onAddAdvance: () -> Unit) {
     Column {
         Text("QUICK ACTIONS", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
 
-        QuickActionItem("Manage Workers", "Add, edit or remove workers", Icons.Default.People, MaterialTheme.colorScheme.primary)
+        QuickActionItem("Manage Workers", "Add, edit or remove workers", Icons.Default.People, MaterialTheme.colorScheme.primary, onClick = onManageWorkers)
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981))
+        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981), onClick = onMarkAttendance)
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316))
+        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance)
     }
 }
 
 @Composable
-fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color) {
+fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+            .clickable { onClick() }
             .padding(20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -289,36 +355,58 @@ fun PersonalStatsGrid(state: DashboardState) {
 }
 
 @Composable
-fun PersonalDailyLog(state: DashboardState) {
+fun PersonalDailyLog(state: DashboardState, dashboardViewModel: DashboardViewModel) {
+    var overtimeHours by remember { mutableStateOf(state.overtimeHours) }
+    var note by remember { mutableStateOf(state.todayNote ?: "") }
+    var showAbsentDialog by remember { mutableStateOf(false) }
+
+    // Sync from state to UI if state loads from remote later
+    LaunchedEffect(state.overtimeHours, state.todayNote) {
+        overtimeHours = state.overtimeHours
+        note = state.todayNote ?: ""
+    }
+
     Column {
         Text("DAILY LOG", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
 
         if (state.todayStatus == null) {
-            // Overtime Input (Simplified for UI representation)
+            // Overtime Input
             Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Overtime (Hours)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
-                    Text("0", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)).clickable { if (overtimeHours > 0) overtimeHours-- }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+                    Text(overtimeHours.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)).clickable { overtimeHours++ }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
 
             // Note Input
-            OutlinedTextField(value = "", onValueChange = {}, placeholder = { Text("Add Note (Optional)") }, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outline, focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedContainerColor = MaterialTheme.colorScheme.surface))
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                placeholder = { Text("Add Note (Optional)") },
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
             // Action Buttons
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = {}, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                Button(onClick = { dashboardViewModel.markAttendance("full", overtimeHours, note) }, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp)) }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Full Day", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
-                OutlinedButton(onClick = {}, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground, containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
+                OutlinedButton(onClick = { dashboardViewModel.markAttendance("half", overtimeHours, note) }, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground, containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp)) }
                         Spacer(modifier = Modifier.height(8.dp))
@@ -327,7 +415,7 @@ fun PersonalDailyLog(state: DashboardState) {
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.error)) {
+            OutlinedButton(onClick = { showAbsentDialog = true }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.error)) {
                 Icon(Icons.Default.Close, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Mark Absent", fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -347,15 +435,46 @@ fun PersonalDailyLog(state: DashboardState) {
                      }
                      Spacer(modifier = Modifier.height(12.dp))
                      Text(if (isPresent) "Marked Present" else "Marked Absent", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = bgColor)
+                     if (note.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(note, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                     }
                  }
              }
 
              Spacer(modifier = Modifier.height(12.dp))
-             OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)) {
+             OutlinedButton(onClick = { dashboardViewModel.removeAttendance() }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)) {
                 Text("Remove Attendance", fontWeight = FontWeight.Bold, fontSize = 14.sp)
              }
         }
 
+        if (showAbsentDialog) {
+            AlertDialog(
+                onDismissRequest = { showAbsentDialog = false },
+                title = { Text("Mark Absent", fontWeight = FontWeight.Bold) },
+                text = { Text("Are you sure you want to mark yourself absent for today?") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            dashboardViewModel.markAbsent("personal", note)
+                            showAbsentDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAbsentDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -382,8 +501,7 @@ fun BottomNavigationBar(role: String, currentRoute: String, onNavigate: (String)
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        tonalElevation = 0.dp,
-        modifier = Modifier.border(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant, shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp))
+        tonalElevation = 0.dp
     ) {
         tabs.forEach { tab ->
             val selected = tab.route == currentRoute

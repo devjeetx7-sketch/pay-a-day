@@ -81,11 +81,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
         composable("dashboard") {
             DashboardScreen(
                 dashboardViewModel = dashboardViewModel,
-                onNavigateToSettings = { navController.navigate("settings") }
-            )
-        }
-        composable("settings") {
-            SettingsScreen(
+                navController = navController,
                 onLogout = {
                     authViewModel.logout()
                     navController.navigate("login") {
@@ -94,5 +90,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                 }
             )
         }
+        // Placeholder for bottom nav screens that need their own route logic, if handled in main NavHost
+        // But for a typical BottomNav + Scaffold, we handle it inside DashboardScreen with a nested NavHost
     }
 }
