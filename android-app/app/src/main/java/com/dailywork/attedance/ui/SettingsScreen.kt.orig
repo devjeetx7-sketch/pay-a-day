@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -43,9 +42,6 @@ fun SettingsScreenContent(
     var customWorkType by remember { mutableStateOf("") }
     var isAddingCustomType by remember { mutableStateOf(false) }
     var showRoleChangeDialog by remember { mutableStateOf(false) }
-    var showHowToUseDialog by remember { mutableStateOf(false) }
-    var isDarkMode by remember { mutableStateOf(false) }
-    var isRemindersEnabled by remember { mutableStateOf(false) }
 
     val defaultWorkTypes = listOf("Labour", "Helper", "Mistry", "Custom")
     var expandedWorkTypeMenu by remember { mutableStateOf(false) }

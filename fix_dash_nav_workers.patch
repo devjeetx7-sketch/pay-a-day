@@ -1,0 +1,35 @@
+--- android-app/app/src/main/java/com/dailywork/attedance/ui/DashboardScreen.kt
++++ android-app/app/src/main/java/com/dailywork/attedance/ui/DashboardScreen.kt
+@@ -31,6 +31,8 @@
+ import com.dailywork.attedance.viewmodel.StatsViewModel
+ import com.dailywork.attedance.viewmodel.PassbookViewModel
+ import com.dailywork.attedance.viewmodel.SettingsViewModel
++import com.dailywork.attedance.viewmodel.WorkersViewModel
++import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
+
+ @Composable
+ fun DashboardScreen(
+@@ -40,6 +42,8 @@
+     statsViewModel: StatsViewModel,
+     passbookViewModel: PassbookViewModel,
+     settingsViewModel: SettingsViewModel,
++    workersViewModel: WorkersViewModel,
++    workerDetailViewModel: WorkerDetailViewModel,
+     onLogout: () -> Unit
+ ) {
+     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+@@ -107,7 +111,14 @@
+                 SettingsScreenContent(viewModel = settingsViewModel, onLogout = onLogout)
+             }
+             composable("workers") {
+-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Workers Screen") }
++                WorkersScreenContent(viewModel = workersViewModel, navController = bottomNavController)
++            }
++            composable("worker_detail/{workerId}") { backStackEntry ->
++                WorkerDetailScreenContent(
++                    workerId = backStackEntry.arguments?.getString("workerId") ?: "",
++                    viewModel = workerDetailViewModel,
++                    navController = bottomNavController
++                )
+             }
+         }
