@@ -4,6 +4,8 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
 import Login from "@/pages/Login";
+import WebProtectedRoute from "@/components/WebProtectedRoute";
+import MobileAppRoute from "@/mobile/MobileAppRoute";
 import RoleSelection from "@/pages/RoleSelection";
 import Dashboard from "@/pages/Dashboard";
 import { WorkerDetail } from "@/pages/WorkerDetail";
@@ -26,17 +28,23 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/select-role" element={<RoleSelection />} />
-          <Route path="/" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
-          <Route path="/worker/:id" element={<ProtectedRoute><AppLayout><WorkerDetail /></AppLayout></ProtectedRoute>} />
-          <Route path="/passbook" element={<ProtectedRoute><AppLayout><PersonalPassbook /></AppLayout></ProtectedRoute>} />
-          <Route path="/calendar" element={<ProtectedRoute><AppLayout><CalendarPage /></AppLayout></ProtectedRoute>} />
-          <Route path="/history" element={<ProtectedRoute><AppLayout><History /></AppLayout></ProtectedRoute>} />
-          <Route path="/stats" element={<ProtectedRoute><AppLayout><StatsPage /></AppLayout></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
-          <Route path="/workers" element={<ProtectedRoute><AppLayout><WorkersPage /></AppLayout></ProtectedRoute>} />
-          <Route path="/premium" element={<ProtectedRoute><AppLayout><PremiumPage /></AppLayout></ProtectedRoute>} />
+
+          {/* Web Routes */}
+          <Route path="/" element={<WebProtectedRoute><AppLayout><Dashboard /></AppLayout></WebProtectedRoute>} />
+          <Route path="/worker/:id" element={<WebProtectedRoute><AppLayout><WorkerDetail /></AppLayout></WebProtectedRoute>} />
+          <Route path="/passbook" element={<WebProtectedRoute><AppLayout><PersonalPassbook /></AppLayout></WebProtectedRoute>} />
+          <Route path="/calendar" element={<WebProtectedRoute><AppLayout><CalendarPage /></AppLayout></WebProtectedRoute>} />
+          <Route path="/history" element={<WebProtectedRoute><AppLayout><History /></AppLayout></WebProtectedRoute>} />
+          <Route path="/stats" element={<WebProtectedRoute><AppLayout><StatsPage /></AppLayout></WebProtectedRoute>} />
+          <Route path="/settings" element={<WebProtectedRoute><AppLayout><SettingsPage /></AppLayout></WebProtectedRoute>} />
+          <Route path="/workers" element={<WebProtectedRoute><AppLayout><WorkersPage /></AppLayout></WebProtectedRoute>} />
+          <Route path="/premium" element={<WebProtectedRoute><AppLayout><PremiumPage /></AppLayout></WebProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/user/:userId" element={<AdminRoute><AdminUserDetail /></AdminRoute>} />
+
+          {/* Mobile Routes */}
+          <Route path="/app/*" element={<MobileAppRoute />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

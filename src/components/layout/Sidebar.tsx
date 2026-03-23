@@ -2,6 +2,7 @@ import { Home, CalendarDays, BarChart3, Settings, Users, Briefcase, Crown } from
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { Capacitor } from "@capacitor/core";
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -9,15 +10,29 @@ const Sidebar = () => {
   const { t } = useLanguage();
   const { userData } = useAuth();
 
-  const isContractor = userData?.role === "contractor";
+  const isMobileApp = Capacitor.isNativePlatform();
+  const isContractor = isMobileApp
+    ? location.pathname.includes("/app/contractor")
+    : userData?.role === "contractor";
+
+  const basePath = isMobileApp
+    ? (isContractor ? "/app/contractor" : "/app/worker")
+    : "";
 
   const tabs = [
-    { path: "/", icon: Home, label: t("dashboard") },
-    { path: "/calendar", icon: CalendarDays, label: t("calendar") },
-    ...(isContractor ? [{ path: "/workers", icon: Users, label: t("workers") }] : []),
-    { path: "/stats", icon: BarChart3, label: t("stats") },
-    { path: "/settings", icon: Settings, label: t("settings") },
+    { path: isMobileApp ? `${basePath}/dashboard`.replace('//', '/') : "/", icon: Home, label: t("dashboard") },
+    { path: isMobileApp ? `${basePath}/calendar`.replace('//', '/') : "/calendar", icon: CalendarDays, label: t("calendar") },
+    ...(isContractor ? [{ path: isMobileApp ? `${basePath}/workers`.replace('//', '/') : "/workers", icon: Users, label: t("workers") }] : []),
+    { path: isMobileApp ? `${basePath}/stats`.replace('//', '/') : "/stats", icon: BarChart3, label: t("stats") },
+    { path: isMobileApp ? `${basePath}/settings`.replace('//', '/') : "/settings", icon: Settings, label: t("settings") },
   ];
+
+  // Adjust path matching for the dashboard base path case (when basePath is empty or for native apps matching exactly)
+  const isMatch = (tabPath: string) => {
+    if (tabPath === "/" && location.pathname !== "/") return false;
+    if (tabPath.endsWith("/dashboard") && (location.pathname === basePath || location.pathname === `${basePath}/dashboard`)) return true;
+    return location.pathname === tabPath;
+  };
 
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen border-r border-border bg-card fixed left-0 top-0">
@@ -30,7 +45,7 @@ const Sidebar = () => {
 
       <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
         {tabs.map(({ path, icon: Icon, label }) => {
-          const active = location.pathname === path;
+            const active = isMatch(path);
           return (
             <button
               key={path}

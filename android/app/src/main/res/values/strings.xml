@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DailyWork</string>
+    <string name="title_activity_main">DailyWork</string>
+    <string name="package_name">com.dailywork.app</string>
+    <string name="custom_url_scheme">com.dailywork.app</string>
+</resources>
