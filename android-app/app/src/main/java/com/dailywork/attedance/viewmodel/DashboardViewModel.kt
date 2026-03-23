@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dailywork.attedance.data.UserPreferencesRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -210,6 +211,12 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             val todayStr = sdf.format(Date())
             val docId = "${user.uid}_$todayStr"
 
+            _dashboardState.value = _dashboardState.value.copy(
+                todayStatus = "present",
+                overtimeHours = overtimeHours,
+                todayNote = note
+            )
+
             val attendanceData = hashMapOf(
                 "user_id" to user.uid,
                 "date" to todayStr,
@@ -222,7 +229,7 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             )
 
             try {
-                db.collection("attendance").document(docId).set(attendanceData).await()
+                db.collection("attendance").document(docId).set(attendanceData, SetOptions.merge()).await()
             } catch (e: Exception) {
             }
         }
@@ -235,6 +242,12 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             val todayStr = sdf.format(Date())
             val docId = "${user.uid}_$todayStr"
 
+            _dashboardState.value = _dashboardState.value.copy(
+                todayStatus = "absent",
+                overtimeHours = 0,
+                todayNote = note
+            )
+
             val attendanceData = hashMapOf(
                 "user_id" to user.uid,
                 "date" to todayStr,
@@ -245,7 +258,37 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             )
 
             try {
-                db.collection("attendance").document(docId).set(attendanceData).await()
+                db.collection("attendance").document(docId).set(attendanceData, SetOptions.merge()).await()
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    fun addAdvance(amount: Double, workerId: String? = null) {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val todayStr = sdf.format(Date())
+
+            val isContractor = _dashboardState.value.role == "contractor"
+            val targetUserId = if (isContractor && workerId != null) "worker_$workerId" else user.uid
+
+            val docId = "${targetUserId}_${todayStr}_advance"
+
+            val advanceData = hashMapOf(
+                "user_id" to targetUserId,
+                "date" to todayStr,
+                "status" to "advance",
+                "advance_amount" to amount,
+                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+
+            if (isContractor) {
+                advanceData["contractorId"] = user.uid
+            }
+
+            try {
+                db.collection("attendance").document(docId).set(advanceData, SetOptions.merge()).await()
             } catch (e: Exception) {
             }
         }
@@ -257,6 +300,12 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val todayStr = sdf.format(Date())
             val docId = "${user.uid}_$todayStr"
+
+            _dashboardState.value = _dashboardState.value.copy(
+                todayStatus = null,
+                overtimeHours = 0,
+                todayNote = null
+            )
 
             try {
                 db.collection("attendance").document(docId).delete().await()

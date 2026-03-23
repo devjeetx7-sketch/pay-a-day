@@ -46,11 +46,13 @@ fun DashboardScreen(
     onLogout: () -> Unit
 ) {
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+    val calendarState by calendarViewModel.calendarState.collectAsState()
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
     var showAdvanceDialog by remember { mutableStateOf(false) }
     var advanceAmount by remember { mutableStateOf("") }
+    var selectedWorkerId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         bottomBar = {
@@ -90,6 +92,7 @@ fun DashboardScreen(
                             ) }
                         } else {
                             item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
+                            item { PersonalQuickActions(onAddAdvance = { showAdvanceDialog = true }) }
                             item { PersonalDailyLog(dashboardState, dashboardViewModel) }
                         }
 
@@ -129,20 +132,69 @@ fun DashboardScreen(
                 onDismissRequest = { showAdvanceDialog = false },
                 title = { Text("Add Advance Payment", fontWeight = FontWeight.Bold) },
                 text = {
-                    OutlinedTextField(
-                        value = advanceAmount,
-                        onValueChange = { advanceAmount = it },
-                        placeholder = { Text("Amount") },
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
-                        shape = RoundedCornerShape(12.dp),
-                        leadingIcon = { Text("₹", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold) }
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        if (dashboardState.role == "contractor") {
+                            var expandedWorkerMenu by remember { mutableStateOf(false) }
+                            val selectedWorkerName = calendarState.workers.find { it.id == selectedWorkerId }?.name ?: "Select Worker"
+
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(
+                                    onClick = { expandedWorkerMenu = true },
+                                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+                                ) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text(selectedWorkerName, fontWeight = FontWeight.Bold)
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                    }
+                                }
+                                DropdownMenu(
+                                    expanded = expandedWorkerMenu,
+                                    onDismissRequest = { expandedWorkerMenu = false },
+                                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                                ) {
+                                    calendarState.workers.forEach { worker ->
+                                        DropdownMenuItem(
+                                            text = { Text(worker.name, fontWeight = FontWeight.Bold) },
+                                            onClick = {
+                                                selectedWorkerId = worker.id
+                                                expandedWorkerMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = advanceAmount,
+                            onValueChange = { advanceAmount = it },
+                            placeholder = { Text("Amount") },
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            leadingIcon = { Text("₹", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold) },
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                        )
+                    }
                 },
                 confirmButton = {
-                    Button(onClick = {
-                        // Note: actual backend call could go here for specific workers
-                        showAdvanceDialog = false
-                    }) {
+                    Button(
+                        onClick = {
+                            val amount = advanceAmount.toDoubleOrNull()
+                            if (amount != null && amount > 0) {
+                                if (dashboardState.role == "personal") {
+                                    dashboardViewModel.addAdvance(amount)
+                                } else if (selectedWorkerId != null) {
+                                    dashboardViewModel.addAdvance(amount, selectedWorkerId)
+                                }
+                            }
+                            showAdvanceDialog = false
+                            advanceAmount = ""
+                            selectedWorkerId = null
+                        },
+                        enabled = dashboardState.role == "personal" || selectedWorkerId != null
+                    ) {
                         Text("Save")
                     }
                 },
@@ -345,6 +397,16 @@ fun PersonalStatsGrid(state: DashboardState, onNavigatePassbook: () -> Unit) {
             Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.width(8.dp))
             Text("View My Passbook", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+fun PersonalQuickActions(onAddAdvance: () -> Unit) {
+    Column {
+        Text("QUICK ACTIONS", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+        Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
+            QuickActionItem("Add Advance Payment", "Record money received", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance)
         }
     }
 }

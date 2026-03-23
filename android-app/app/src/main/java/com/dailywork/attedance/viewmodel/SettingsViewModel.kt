@@ -16,6 +16,9 @@ data class SettingsState(
     val dailyWage: Double = 500.0,
     val workType: String = "",
     val role: String = "",
+    val language: String = "en",
+    val isDarkMode: Boolean = false,
+    val isRemindersEnabled: Boolean = false,
     val isSaving: Boolean = false,
     val savedMessage: String? = null
 )
@@ -31,6 +34,28 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
 
     init {
         setupListener()
+        viewModelScope.launch {
+            repository.darkModeFlow.collect { isDark ->
+                _state.value = _state.value.copy(isDarkMode = isDark)
+            }
+        }
+        viewModelScope.launch {
+            repository.remindersFlow.collect { enabled ->
+                _state.value = _state.value.copy(isRemindersEnabled = enabled)
+            }
+        }
+    }
+
+    fun toggleTheme(isDark: Boolean) {
+        viewModelScope.launch {
+            repository.saveThemePreference(isDark)
+        }
+    }
+
+    fun toggleReminders(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveRemindersPreference(enabled)
+        }
     }
 
     private fun setupListener() {
@@ -43,10 +68,26 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
                         name = snapshot.getString("name") ?: user.displayName ?: "",
                         dailyWage = snapshot.getDouble("daily_wage") ?: 500.0,
                         workType = snapshot.getString("workType") ?: "",
-                        role = snapshot.getString("role") ?: ""
+                        role = snapshot.getString("role") ?: "",
+                        language = snapshot.getString("language") ?: "en"
                     )
                 }
             }
+    }
+
+    fun saveLanguage(newLang: String) {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+            _state.value = _state.value.copy(isSaving = true)
+            try {
+                db.collection("users").document(user.uid).set(mapOf("language" to newLang), SetOptions.merge()).await()
+                _state.value = _state.value.copy(savedMessage = "Language saved successfully!")
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(savedMessage = "Failed to save language.")
+            } finally {
+                _state.value = _state.value.copy(isSaving = false)
+            }
+        }
     }
 
     fun saveName(newName: String) {
