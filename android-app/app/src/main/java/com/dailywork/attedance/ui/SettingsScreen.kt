@@ -41,6 +41,7 @@ fun SettingsScreenContent(
     var editWorkType by remember(state.workType) { mutableStateOf(state.workType) }
     var customWorkType by remember { mutableStateOf("") }
     var isAddingCustomType by remember { mutableStateOf(false) }
+    var showRoleChangeDialog by remember { mutableStateOf(false) }
 
     val defaultWorkTypes = listOf("Labour", "Helper", "Mistry", "Custom")
     var expandedWorkTypeMenu by remember { mutableStateOf(false) }
@@ -201,6 +202,34 @@ fun SettingsScreenContent(
                 }
             }
 
+            // Role Management
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Role Management", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+
+                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("App Mode", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("Current: ${state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        OutlinedButton(
+                            onClick = { showRoleChangeDialog = true },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("Switch Role", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
             // General App Settings
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text("General Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
@@ -237,6 +266,41 @@ fun SettingsScreenContent(
                 }
             }
 
+            // Data & Support
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Data & Support", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+
+                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Data & Privacy Policy", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text("Stored securely in cloud", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                        Divider(color = MaterialTheme.colorScheme.outline)
+                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF16A34A).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF16A34A))
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Contact Support", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text("WhatsApp us for help", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
@@ -245,10 +309,24 @@ fun SettingsScreenContent(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
             ) {
-                Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
+        }
+
+        if (showRoleChangeDialog) {
+            AlertDialog(
+                onDismissRequest = { showRoleChangeDialog = false },
+                title = { Text("Change Role", fontWeight = FontWeight.Bold) },
+                text = { Text("Are you sure you want to change your role? This will clear your session and take you to the setup screen.") },
+                confirmButton = {
+                    Button(onClick = { viewModel.changeRole(onRoleCleared = onLogout) }) { Text("Confirm") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRoleChangeDialog = false }) { Text("Cancel") }
+                }
+            )
         }
     }
 }
