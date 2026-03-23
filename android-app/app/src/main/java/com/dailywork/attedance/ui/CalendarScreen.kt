@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -44,33 +45,16 @@ fun CalendarScreen(
 ) {
     val state by viewModel.calendarState.collectAsState()
 
-    Scaffold(
-        bottomBar = {
-            BottomNavigationBar(
-                role = state.role,
-                currentRoute = "calendar",
-                onNavigate = { route ->
-                    navController.navigate(route) {
-                        popUpTo(0) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (state.isLoading && state.role.isEmpty()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        if (state.isLoading && state.role.isEmpty()) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            if (state.role == "contractor") {
+                ContractorCalendarView(viewModel = viewModel, state = state)
             } else {
-                if (state.role == "contractor") {
-                    ContractorCalendarView(viewModel = viewModel, state = state)
-                } else {
-                    PersonalCalendarView(viewModel = viewModel, state = state)
-                }
+                PersonalCalendarView(viewModel = viewModel, state = state)
             }
         }
     }
@@ -273,6 +257,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
     // Group attendance by day
     val dayMap = remember(state.personalAttendance) {
         val map = mutableMapOf<Int, AttendanceRecord>()
+        val advances = mutableMapOf<Int, Double>()
 
         state.personalAttendance.forEach { record ->
             val recordParts = record.date.split("-")
@@ -282,11 +267,28 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                 val rDay = recordParts[2].toIntOrNull() ?: return@forEach
 
                 if (rYear == year && rMonth == month) {
-                    map[rDay] = record
+                    if (record.status == "advance") {
+                        advances[rDay] = (advances[rDay] ?: 0.0) + (record.advanceAmount ?: 0.0)
+                    } else {
+                        map[rDay] = record
+                    }
                 }
             }
         }
-        map
+
+        // Merge advances into the main records for display purposes
+        val mergedMap = mutableMapOf<Int, AttendanceRecord>()
+        for (day in 1..daysInMonth) {
+            val record = map[day]
+            val adv = advances[day]
+            if (record != null || adv != null) {
+                mergedMap[day] = record?.copy(advanceAmount = adv) ?: AttendanceRecord(
+                    id = "", userId = "", date = String.format("%04d-%02d-%02d", year, month + 1, day),
+                    status = "advance", type = null, reason = null, overtimeHours = null, note = null, advanceAmount = adv
+                )
+            }
+        }
+        mergedMap
     }
 
     val presentCount = dayMap.values.count { it.status == "present" }
@@ -353,7 +355,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            "Tap any day to view details.",
+            "Tap any day to edit attendance or add note/advance.",
             fontSize = 10.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
@@ -399,6 +401,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                                 val isPresent = data?.status == "present"
                                 val isAbsent = data?.status == "absent"
                                 val isHalf = data?.type == "half"
+                                val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
                                 val isToday = isCurrentMonth && day == todayDay
 
                                 val bgColor = when {
@@ -423,10 +426,8 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                                             interactionSource = remember { MutableInteractionSource() },
                                             indication = androidx.compose.material.ripple.rememberRipple()
                                         ) {
-                                            if (data != null) {
-                                                selectedDay = day
-                                                showDialog = true
-                                            }
+                                            selectedDay = day
+                                            showDialog = true
                                         }
                                         .border(
                                             width = if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
@@ -441,6 +442,26 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                                         fontWeight = FontWeight.Bold,
                                         color = textColor
                                     )
+                                    if (isHalf) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(4.dp)
+                                                .size(6.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.onPrimary)
+                                        )
+                                    }
+                                    if (hasAdvance) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .padding(bottom = 6.dp)
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFFF97316)) // Orange
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -474,58 +495,203 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Absent", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            Spacer(modifier = Modifier.width(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Advance", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 
     if (showDialog && selectedDay != null) {
+        val dateStr = String.format("%04d-%02d-%02d", year, month + 1, selectedDay!!)
         val existingRecord = dayMap[selectedDay!!]
 
-        PersonalDetailsDialog(
+        PersonalAttendanceDialog(
+            dateStr = dateStr,
             displayDate = "$selectedDay ${SimpleDateFormat("MMMM", Locale.getDefault()).format(currentMonthDate)} $year",
             existingRecord = existingRecord,
-            onDismiss = { showDialog = false }
+            onDismiss = { showDialog = false },
+            onSave = { status, type, reason, overtime, note, advance ->
+                viewModel.markPersonalAttendance(dateStr, status, type, reason, overtime, note, advance)
+                showDialog = false
+            },
+            onDelete = {
+                viewModel.removePersonalAttendance(dateStr)
+                showDialog = false
+            }
         )
     }
 }
 
 @Composable
-fun PersonalDetailsDialog(
+fun PersonalAttendanceDialog(
+    dateStr: String,
     displayDate: String,
     existingRecord: AttendanceRecord?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSave: (String, String, String, Int, String, Double) -> Unit,
+    onDelete: () -> Unit
 ) {
+    var editStatus by remember { mutableStateOf(if (existingRecord?.status == "advance" || existingRecord == null) "present" else existingRecord.status) }
+    var editType by remember { mutableStateOf(existingRecord?.type ?: "full") }
+    var editReason by remember { mutableStateOf(existingRecord?.reason ?: "sick") }
+    var editOT by remember { mutableStateOf(existingRecord?.overtimeHours ?: 0) }
+    var editNote by remember { mutableStateOf(existingRecord?.note ?: "") }
+    var editAdvance by remember { mutableStateOf((existingRecord?.advanceAmount ?: 0.0).toInt().toString()) }
+
+    val absenceReasons = listOf("sick", "family", "travel", "other")
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Column {
                 Text(displayDate, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("Tap to edit attendance or add note/advance.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                if (existingRecord?.status == "present") {
-                    val typeCap = existingRecord.type?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } ?: "Full"
-                    Text("Status: Present ($typeCap Day)", fontWeight = FontWeight.SemiBold)
-                    if ((existingRecord.overtimeHours ?: 0) > 0) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Overtime: ${existingRecord.overtimeHours} Hours")
+                // Status Toggle
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { editStatus = "present" },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (editStatus == "present") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (editStatus == "present") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text("Present", fontWeight = FontWeight.Bold)
                     }
-                } else if (existingRecord?.status == "absent") {
-                    Text("Status: Absent", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.error)
+                    Button(
+                        onClick = { editStatus = "absent" },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (editStatus == "absent") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (editStatus == "absent") MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text("Absent", fontWeight = FontWeight.Bold)
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (editStatus == "present") {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { editType = "full" },
+                            modifier = Modifier.weight(1f).height(40.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (editType == "full") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            border = if (editType == "full") androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                        ) {
+                            Text("Full Day", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { editType = "half" },
+                            modifier = Modifier.weight(1f).height(40.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (editType == "half") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            border = if (editType == "half") androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                        ) {
+                            Text("Half Day", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Overtime (Hours)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).clickable { if (editOT > 0) editOT-- },
+                                contentAlignment = Alignment.Center
+                            ) { Text("-", fontWeight = FontWeight.Bold) }
+                            Text(editOT.toString(), fontWeight = FontWeight.Bold, modifier = Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            Box(
+                                modifier = Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).clickable { editOT++ },
+                                contentAlignment = Alignment.Center
+                            ) { Text("+", fontWeight = FontWeight.Bold) }
+                        }
+                    }
+                } else if (editStatus == "absent") {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.height(100.dp) // Approximate height for 2 rows
+                    ) {
+                        items(absenceReasons) { reason ->
+                            val displayReason = reason.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
+                            Button(
+                                onClick = { editReason = reason },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (editReason == reason) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (editReason == reason) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface
+                                ),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text(displayReason, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
                 }
 
-                if (!existingRecord?.note.isNullOrEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text("Note:", fontWeight = FontWeight.SemiBold)
-                    Text(existingRecord?.note ?: "")
-                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Advance Payment (₹)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = editAdvance,
+                    onValueChange = { editAdvance = it },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = editNote,
+                    onValueChange = { editNote = it },
+                    placeholder = { Text("Add Note...") },
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    shape = RoundedCornerShape(12.dp)
+                )
             }
         },
         confirmButton = {
             Button(
-                onClick = onDismiss
+                onClick = {
+                    val advanceVal = editAdvance.toDoubleOrNull() ?: 0.0
+                    onSave(editStatus, editType, editReason, editOT, editNote, advanceVal)
+                }
             ) {
-                Text("Close")
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            if (existingRecord != null) {
+                TextButton(onClick = onDelete, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
+                    Text("Remove")
+                }
+            } else {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
             }
         }
     )

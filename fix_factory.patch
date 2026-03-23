@@ -1,0 +1,14 @@
+--- android-app/app/src/main/java/com/dailywork/attedance/viewmodel/ViewModelFactory.kt
++++ android-app/app/src/main/java/com/dailywork/attedance/viewmodel/ViewModelFactory.kt
+@@ -17,6 +17,10 @@
+         if (modelClass.isAssignableFrom(CalendarViewModel::class.java)) {
+             @Suppress("UNCHECKED_CAST")
+             return CalendarViewModel(repository) as T
+         }
++        if (modelClass.isAssignableFrom(StatsViewModel::class.java)) {
++            @Suppress("UNCHECKED_CAST")
++            return StatsViewModel(repository) as T
++        }
+         throw IllegalArgumentException("Unknown ViewModel class")
+     }
+ }

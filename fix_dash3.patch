@@ -1,0 +1,21 @@
+--- android-app/app/src/main/java/com/dailywork/attedance/ui/DashboardScreen.kt
++++ android-app/app/src/main/java/com/dailywork/attedance/ui/DashboardScreen.kt
+@@ -89,6 +89,18 @@
+                     }
+                 }
+             }
++            composable("calendar") {
++                CalendarScreen(
++                    viewModel = calendarViewModel,
++                    navController = bottomNavController
++                )
++            }
++            composable("stats") {
++                // We'll implement StatsScreen next
++                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
++                    Text("Stats Screen")
++                }
++            }
+         }
+
+         if (showAdvanceDialog) {

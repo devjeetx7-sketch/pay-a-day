@@ -21,10 +21,7 @@ import com.dailywork.attedance.data.UserPreferencesRepository
 import com.dailywork.attedance.ui.theme.DailyWorkTheme
 import com.dailywork.attedance.viewmodel.AuthViewModel
 import com.dailywork.attedance.viewmodel.CalendarViewModel
-import com.dailywork.attedance.viewmodel.StatsViewModel
 import com.dailywork.attedance.viewmodel.DashboardViewModel
-import com.dailywork.attedance.viewmodel.PassbookViewModel
-import com.dailywork.attedance.viewmodel.SettingsViewModel
 import com.dailywork.attedance.viewmodel.ViewModelFactory
 
 class MainActivity : ComponentActivity() {
@@ -53,9 +50,6 @@ fun DailyWorkApp(factory: ViewModelFactory) {
     val authViewModel: AuthViewModel = viewModel(factory = factory)
     val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
     val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
-    val statsViewModel: StatsViewModel = viewModel(factory = factory)
-    val passbookViewModel: PassbookViewModel = viewModel(factory = factory)
-    val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
 
     val token by authViewModel.authTokenFlow.collectAsState(initial = "")
 
@@ -89,16 +83,19 @@ fun DailyWorkApp(factory: ViewModelFactory) {
         composable("dashboard") {
             DashboardScreen(
                 dashboardViewModel = dashboardViewModel,
-                calendarViewModel = calendarViewModel,
-                statsViewModel = statsViewModel,
-                passbookViewModel = passbookViewModel,
-                settingsViewModel = settingsViewModel,
+                navController = navController,
                 onLogout = {
                     authViewModel.logout()
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+        composable("calendar") {
+            CalendarScreen(
+                viewModel = calendarViewModel,
+                navController = navController
             )
         }
     }
