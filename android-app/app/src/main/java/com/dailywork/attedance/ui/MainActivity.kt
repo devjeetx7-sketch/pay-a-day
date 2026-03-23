@@ -37,7 +37,8 @@ class MainActivity : ComponentActivity() {
         val factory = ViewModelFactory(repository)
 
         setContent {
-            DailyWorkTheme {
+            val isDarkMode by repository.darkModeFlow.collectAsState(initial = false)
+            DailyWorkTheme(darkTheme = isDarkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
