@@ -29,6 +29,7 @@ data class DashboardState(
     // Personal Stats
     val todayEarned: String = "0",
     val monthEarned: String = "0",
+    val defaultWage: Double = 500.0,
 
     // Personal Attendance State
     val todayStatus: String? = null,
@@ -173,6 +174,7 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
                         isLoading = false,
                         name = name,
                         photoUrl = photoUrl,
+                        defaultWage = defaultWage,
                         todayEarned = todayEarned.toInt().toString(),
                         monthEarned = monthEarned.toInt().toString(),
                         todayStatus = currentTodayStatus,
@@ -182,6 +184,97 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
                 }
             } catch (e: Exception) {
                 _dashboardState.value = _dashboardState.value.copy(isLoading = false)
+            }
+        }
+    }
+
+    fun markAttendance(type: String, overtimeHours: Int, note: String) {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val todayStr = sdf.format(Date())
+            val docId = "${user.uid}_$todayStr"
+
+            val attendanceData = hashMapOf(
+                "user_id" to user.uid,
+                "date" to todayStr,
+                "status" to "present",
+                "type" to type,
+                "overtime_hours" to overtimeHours,
+                "note" to note,
+                "daily_wage" to _dashboardState.value.defaultWage,
+                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+
+            try {
+                // Optimistic UI Update
+                val newEarned = if (type == "half") _dashboardState.value.defaultWage / 2 else _dashboardState.value.defaultWage
+                _dashboardState.value = _dashboardState.value.copy(
+                    todayStatus = "present",
+                    todayNote = note,
+                    overtimeHours = overtimeHours,
+                    todayEarned = newEarned.toInt().toString()
+                )
+
+                db.collection("attendance").document(docId).set(attendanceData).await()
+                loadDashboardData(_dashboardState.value.role) // Refresh completely
+            } catch (e: Exception) {
+                // Ignore error in view, just refresh
+            }
+        }
+    }
+
+    fun markAbsent(reason: String, note: String) {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val todayStr = sdf.format(Date())
+            val docId = "${user.uid}_$todayStr"
+
+            val attendanceData = hashMapOf(
+                "user_id" to user.uid,
+                "date" to todayStr,
+                "status" to "absent",
+                "reason" to reason,
+                "note" to note,
+                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+
+            try {
+                // Optimistic Update
+                _dashboardState.value = _dashboardState.value.copy(
+                    todayStatus = "absent",
+                    todayNote = note,
+                    todayEarned = "0"
+                )
+
+                db.collection("attendance").document(docId).set(attendanceData).await()
+                loadDashboardData(_dashboardState.value.role)
+            } catch (e: Exception) {
+                // Error handling
+            }
+        }
+    }
+
+    fun removeAttendance() {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val todayStr = sdf.format(Date())
+            val docId = "${user.uid}_$todayStr"
+
+            try {
+                 // Optimistic Update
+                _dashboardState.value = _dashboardState.value.copy(
+                    todayStatus = null,
+                    todayNote = null,
+                    todayEarned = "0",
+                    overtimeHours = 0
+                )
+                db.collection("attendance").document(docId).delete().await()
+                loadDashboardData(_dashboardState.value.role)
+            } catch (e: Exception) {
+                // Error
             }
         }
     }
