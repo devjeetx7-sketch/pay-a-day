@@ -30,7 +30,6 @@ fun SettingsScreenContent(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(state.savedMessage) {
         state.savedMessage?.let { msg ->

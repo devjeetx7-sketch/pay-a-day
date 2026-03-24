@@ -116,7 +116,9 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
                         .whereEqualTo("contractorId", user.uid)
                         // .whereGreaterThanOrEqualTo("date", "$yearMonth-01") // Could optimize, but matching logic
                         .addSnapshotListener { attSnapshot, attError ->
-                            if (attError != null || attSnapshot == null) return@addSnapshotListener
+                            if (attError != null || attSnapshot == null) {
+                                return@addSnapshotListener
+                            }
                             calculateContractorStats(attSnapshot.documents, yearMonth)
                         }
                 }
@@ -199,7 +201,6 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
             val adv = doc.getDouble("advance_amount") ?: 0.0
             val ot = doc.getDouble("overtime_hours")?.toInt() ?: 0
 
-            val dayVal = if (type == "half") 0.5 else 1.0
             val costVal = if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
 
             // All time

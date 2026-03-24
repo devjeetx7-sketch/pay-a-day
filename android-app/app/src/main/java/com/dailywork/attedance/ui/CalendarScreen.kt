@@ -40,8 +40,7 @@ import java.util.*
 
 @Composable
 fun CalendarScreen(
-    viewModel: CalendarViewModel,
-    navController: NavController
+    viewModel: CalendarViewModel
 ) {
     val state by viewModel.calendarState.collectAsState()
 
@@ -509,7 +508,6 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
         val existingRecord = dayMap[selectedDay!!]
 
         PersonalAttendanceDialog(
-            dateStr = dateStr,
             displayDate = "$selectedDay ${SimpleDateFormat("MMMM", Locale.getDefault()).format(currentMonthDate)} $year",
             existingRecord = existingRecord,
             onDismiss = { showDialog = false },
@@ -527,7 +525,6 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
 
 @Composable
 fun PersonalAttendanceDialog(
-    dateStr: String,
     displayDate: String,
     existingRecord: AttendanceRecord?,
     onDismiss: () -> Unit,
