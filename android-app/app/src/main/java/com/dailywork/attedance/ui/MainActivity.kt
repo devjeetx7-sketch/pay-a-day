@@ -93,6 +93,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
         }
         composable("dashboard") {
             DashboardScreen(
+                navController = navController,
                 dashboardViewModel = dashboardViewModel,
                 calendarViewModel = calendarViewModel,
                 statsViewModel = statsViewModel,
@@ -106,6 +107,12 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+        composable("premium") {
+            PremiumScreen(
+                navController = navController,
+                dashboardState = dashboardViewModel.dashboardState.collectAsState().value
             )
         }
     }
