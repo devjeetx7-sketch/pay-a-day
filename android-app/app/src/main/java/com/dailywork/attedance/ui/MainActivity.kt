@@ -109,11 +109,5 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                 }
             )
         }
-        composable("premium") {
-            PremiumScreen(
-                navController = navController,
-                dashboardState = dashboardViewModel.dashboardState.collectAsState().value
-            )
-        }
     }
 }
