@@ -55,13 +55,6 @@ fun DashboardScreen(
     var showAdvanceDialog by remember { mutableStateOf(false) }
     var advanceAmount by remember { mutableStateOf("") }
     var selectedWorkerId by remember { mutableStateOf<String?>(null) }
-    var showPremiumModal by remember { mutableStateOf(false) }
-
-    PremiumModal(
-        open = showPremiumModal,
-        onOpenChange = { showPremiumModal = it },
-        onNavigateToPremium = { navController.navigate("premium") }
-    )
 
     Scaffold(
         bottomBar = {
@@ -126,8 +119,7 @@ fun DashboardScreen(
             composable("settings") {
                 SettingsScreenContent(
                     viewModel = settingsViewModel,
-                    onLogout = onLogout,
-                    onNavigateToPremium = { navController.navigate("premium") }
+                    onLogout = onLogout
                 )
             }
             composable("workers") {
