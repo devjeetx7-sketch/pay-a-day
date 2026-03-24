@@ -26,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavController
 
 import com.dailywork.attedance.viewmodel.CalendarViewModel
 import com.dailywork.attedance.viewmodel.StatsViewModel
@@ -36,6 +37,7 @@ import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 
 @Composable
 fun DashboardScreen(
+    navController: NavController,
     dashboardViewModel: DashboardViewModel,
     calendarViewModel: CalendarViewModel,
     statsViewModel: StatsViewModel,
@@ -53,6 +55,13 @@ fun DashboardScreen(
     var showAdvanceDialog by remember { mutableStateOf(false) }
     var advanceAmount by remember { mutableStateOf("") }
     var selectedWorkerId by remember { mutableStateOf<String?>(null) }
+    var showPremiumModal by remember { mutableStateOf(false) }
+
+    PremiumModal(
+        open = showPremiumModal,
+        onOpenChange = { showPremiumModal = it },
+        onNavigateToPremium = { navController.navigate("premium") }
+    )
 
     Scaffold(
         bottomBar = {
@@ -80,7 +89,10 @@ fun DashboardScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            HeaderSection(dashboardState)
+                            HeaderSection(
+                                state = dashboardState,
+                                onNavigateToPremium = { navController.navigate("premium") }
+                            )
                         }
 
                         if (dashboardState.role == "contractor") {
@@ -113,10 +125,17 @@ fun DashboardScreen(
                 PassbookScreenContent(viewModel = passbookViewModel, navController = bottomNavController)
             }
             composable("settings") {
-                SettingsScreenContent(viewModel = settingsViewModel, onLogout = onLogout)
+                SettingsScreenContent(
+                    viewModel = settingsViewModel,
+                    onLogout = onLogout,
+                    onNavigateToPremium = { navController.navigate("premium") }
+                )
             }
             composable("workers") {
-                WorkersScreenContent(viewModel = workersViewModel, navController = bottomNavController)
+                WorkersScreenContent(
+                    viewModel = workersViewModel,
+                    navController = navController
+                )
             }
             composable("worker_detail/{workerId}") { backStackEntry ->
                 WorkerDetailScreenContent(
@@ -207,7 +226,7 @@ fun DashboardScreen(
 }
 
 @Composable
-fun HeaderSection(state: DashboardState) {
+fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -255,7 +274,8 @@ fun HeaderSection(state: DashboardState) {
                 .size(48.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFFEF3C7)) // amber-100
-                .border(1.dp, Color(0xFFFDE68A), CircleShape), // amber-200
+                .border(1.dp, Color(0xFFFDE68A), CircleShape) // amber-200
+                .clickable { onNavigateToPremium() },
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Default.WorkspacePremium, contentDescription = "Premium", tint = Color(0xFFD97706)) // amber-600
