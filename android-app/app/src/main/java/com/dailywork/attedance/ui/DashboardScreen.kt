@@ -102,12 +102,11 @@ fun DashboardScreen(
             }
             composable("calendar") {
                 CalendarScreen(
-                    viewModel = calendarViewModel,
-                    navController = bottomNavController
+                    viewModel = calendarViewModel
                 )
             }
             composable("stats") {
-                StatsScreenContent(viewModel = statsViewModel, navController = bottomNavController)
+                StatsScreenContent(viewModel = statsViewModel)
             }
             composable("passbook") {
                 PassbookScreenContent(viewModel = passbookViewModel, navController = bottomNavController)

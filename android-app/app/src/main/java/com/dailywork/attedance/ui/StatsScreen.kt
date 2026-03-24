@@ -33,8 +33,7 @@ import java.util.Locale
 
 @Composable
 fun StatsScreenContent(
-    viewModel: StatsViewModel,
-    navController: NavController
+    viewModel: StatsViewModel
 ) {
     val state by viewModel.statsState.collectAsState()
 
