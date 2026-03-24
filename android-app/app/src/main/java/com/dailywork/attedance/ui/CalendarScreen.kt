@@ -405,7 +405,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                                 val isToday = isCurrentMonth && day == todayDay
 
                                 val bgColor = when {
-                                    isPresent && isHalf -> Color(0xFF86EFAC)
+                                    isPresent && isHalf -> Color(0xFFF97316)
                                     isPresent -> MaterialTheme.colorScheme.primary
                                     isAbsent -> MaterialTheme.colorScheme.error
                                     else -> Color.Transparent
@@ -485,7 +485,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
             }
             Spacer(modifier = Modifier.width(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFF86EFAC)))
+                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Half Day", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
