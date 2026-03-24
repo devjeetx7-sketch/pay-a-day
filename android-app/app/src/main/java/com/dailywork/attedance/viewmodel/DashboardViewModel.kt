@@ -34,7 +34,10 @@ data class DashboardState(
     // Personal Attendance State
     val todayStatus: String? = null,
     val overtimeHours: Int = 0,
-    val todayNote: String? = null
+    val todayNote: String? = null,
+
+    // Premium state
+    val isPremium: Boolean = false
 )
 
 class DashboardViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
@@ -78,11 +81,13 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
 
                 val name = snapshot.getString("name") ?: user.displayName ?: "User"
                 val photoUrl = user.photoUrl?.toString() ?: ""
+                val isPremium = snapshot.getBoolean("isPremium") ?: false
                 cachedDefaultWage = snapshot.getDouble("daily_wage") ?: 500.0
 
                 _dashboardState.value = _dashboardState.value.copy(
                     name = name,
-                    photoUrl = photoUrl
+                    photoUrl = photoUrl,
+                    isPremium = isPremium
                 )
 
                 recalculateStats()
@@ -310,6 +315,25 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             try {
                 db.collection("attendance").document(docId).delete().await()
             } catch (e: Exception) {
+            }
+        }
+    }
+
+    fun upgradeToPremium(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+
+            // Optimistic UI Update
+            _dashboardState.value = _dashboardState.value.copy(isPremium = true)
+
+            try {
+                db.collection("users").document(user.uid)
+                    .set(hashMapOf("isPremium" to true), SetOptions.merge())
+                    .await()
+                onSuccess()
+            } catch (e: Exception) {
+                // Revert optimistic update on error
+                _dashboardState.value = _dashboardState.value.copy(isPremium = false)
             }
         }
     }

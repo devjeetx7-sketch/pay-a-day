@@ -260,16 +260,29 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
         }
 
         // Premium Crown Button
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFFEF3C7)) // amber-100
-                .border(1.dp, Color(0xFFFDE68A), CircleShape) // amber-200
-                .clickable { onNavigateToPremium() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.WorkspacePremium, contentDescription = "Premium", tint = Color(0xFFD97706)) // amber-600
+        if (!state.isPremium) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFEF3C7)) // amber-100
+                    .border(1.dp, Color(0xFFFDE68A), CircleShape) // amber-200
+                    .clickable { onNavigateToPremium() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.WorkspacePremium, contentDescription = "Premium", tint = Color(0xFFD97706)) // amber-600
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.WorkspacePremium, contentDescription = "Premium Active", tint = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }
