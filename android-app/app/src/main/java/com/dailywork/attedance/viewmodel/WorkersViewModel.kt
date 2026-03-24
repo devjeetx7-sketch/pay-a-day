@@ -27,7 +27,8 @@ data class WorkersState(
     val role: String = "",
     val workers: List<WorkerItem> = emptyList(),
     val isSaving: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isPremium: Boolean = false
 )
 
 class WorkersViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
@@ -38,15 +39,30 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
     val state: StateFlow<WorkersState> = _state
 
     private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     init {
         viewModelScope.launch {
             repository.userRoleFlow.collect { role ->
                 if (role != null) {
                     _state.value = _state.value.copy(role = role)
-                    if (role == "contractor") setupListener()
+                    if (role == "contractor") {
+                        setupListener()
+                        setupUserListener()
+                    }
                 }
             }
+        }
+    }
+
+    private fun setupUserListener() {
+        val user = auth.currentUser ?: return
+        userListener?.remove()
+        userListener = db.collection("users").document(user.uid).addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+            _state.value = _state.value.copy(
+                isPremium = snapshot.getBoolean("isPremium") ?: false
+            )
         }
     }
 

@@ -40,7 +40,8 @@ data class PassbookState(
     val totalAdvance: Double = 0.0,
     val finalBalance: Double = 0.0,
 
-    val logs: List<PassbookLog> = emptyList()
+    val logs: List<PassbookLog> = emptyList(),
+    val isPremium: Boolean = false
 )
 
 class PassbookViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
@@ -90,7 +91,8 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
                     name = snapshot.getString("name") ?: user.displayName ?: "User",
                     workType = snapshot.getString("workType") ?: "Labour",
                     dailyWage = snapshot.getDouble("daily_wage") ?: 500.0,
-                    joinedDate = sdf.format(Date(joinedDateLong))
+                    joinedDate = sdf.format(Date(joinedDateLong)),
+                    isPremium = snapshot.getBoolean("isPremium") ?: false
                 )
                 calculatePassbook(cachedDocs) // trigger update with current logs if any
             }

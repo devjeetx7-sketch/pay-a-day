@@ -78,7 +78,14 @@ fun WorkersScreenContent(
                         Text(if (state.workers.isEmpty()) "No workers found" else "No matching workers", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (state.workers.isEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { editingWorker = null; showFormDialog = true }, shape = RoundedCornerShape(12.dp)) {
+                            Button(onClick = {
+                                if (!state.isPremium && state.workers.size >= 10) {
+                                    navController.navigate("premium")
+                                } else {
+                                    editingWorker = null
+                                    showFormDialog = true
+                                }
+                            }, shape = RoundedCornerShape(12.dp)) {
                                 Text("Add Worker")
                             }
                         }
@@ -158,7 +165,14 @@ fun WorkersScreenContent(
         }
 
         FloatingActionButton(
-            onClick = { editingWorker = null; showFormDialog = true },
+            onClick = {
+                if (!state.isPremium && state.workers.size >= 10) {
+                    navController.navigate("premium")
+                } else {
+                    editingWorker = null
+                    showFormDialog = true
+                }
+            },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).padding(bottom = 64.dp),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = Color.White

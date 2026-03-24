@@ -29,6 +29,17 @@ class WorkerDetailViewModel : ViewModel() {
         if (workerId == id) return
         workerId = id
         setupListeners()
+        setupUserListener()
+    }
+
+    private fun setupUserListener() {
+        val user = auth.currentUser ?: return
+        db.collection("users").document(user.uid).addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+            _state.value = _state.value.copy(
+                isPremium = snapshot.getBoolean("isPremium") ?: false
+            )
+        }
     }
 
     fun changeMonth(offset: Int) {
