@@ -20,6 +20,7 @@ data class DashboardState(
     val name: String = "",
     val photoUrl: String = "",
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
 
     // Contractor Stats
     val totalWorkers: String = "0",
@@ -68,6 +69,11 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
         }
     }
 
+    fun refresh() {
+        _dashboardState.value = _dashboardState.value.copy(isRefreshing = true)
+        setupListeners(_dashboardState.value.role)
+    }
+
     private fun setupListeners(role: String) {
         val user = auth.currentUser ?: return
 
@@ -87,7 +93,8 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
                 _dashboardState.value = _dashboardState.value.copy(
                     name = name,
                     photoUrl = photoUrl,
-                    isPremium = isPremium
+                    isPremium = isPremium,
+                    isRefreshing = false
                 )
 
                 recalculateStats()

@@ -21,8 +21,8 @@ class WorkerDetailViewModel : ViewModel() {
 
     private var workerId: String? = null
     private var workerListener: com.google.firebase.firestore.ListenerRegistration? = null
-    private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     private var cachedDocs: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
 
@@ -67,6 +67,7 @@ class WorkerDetailViewModel : ViewModel() {
 
         workerListener?.remove()
         attendanceListener?.remove()
+        userListener?.remove()
 
         workerListener = db.collection("workers").document(wId)
             .addSnapshotListener { snapshot, error ->
@@ -154,7 +155,6 @@ class WorkerDetailViewModel : ViewModel() {
 
         _state.value = _state.value.copy(
             isLoading = false,
-            isRefreshing = false,
             presentDays = present,
             absentDays = absent,
             halfDays = half,
@@ -164,7 +164,8 @@ class WorkerDetailViewModel : ViewModel() {
             grossEarned = grossEarned,
             totalAdvance = totalAdv,
             finalBalance = finalBalance,
-            logs = sortedLogs
+            logs = sortedLogs,
+            isRefreshing = false
         )
     }
 

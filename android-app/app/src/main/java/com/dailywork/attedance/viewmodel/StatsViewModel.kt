@@ -39,6 +39,7 @@ data class PersonalStatsData(
 data class StatsState(
     val role: String = "",
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val selectedMonthDate: Date = Date(),
 
     // Contractor
@@ -71,6 +72,11 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
                 }
             }
         }
+    }
+
+    fun refresh() {
+        _statsState.value = _statsState.value.copy(isRefreshing = true)
+        setupListeners(_statsState.value.role)
     }
 
     fun changeMonth(offset: Int) {
@@ -108,7 +114,10 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
             workersListener = db.collection("workers")
                 .whereEqualTo("contractorId", user.uid)
                 .addSnapshotListener { snapshot, error ->
-                    if (error != null || snapshot == null) return@addSnapshotListener
+                    if (error != null || snapshot == null) {
+                        _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                        return@addSnapshotListener
+                    }
                     cachedWorkers = snapshot.documents
 
                     attendanceListener?.remove()
@@ -117,6 +126,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
                         // .whereGreaterThanOrEqualTo("date", "$yearMonth-01") // Could optimize, but matching logic
                         .addSnapshotListener { attSnapshot, attError ->
                             if (attError != null || attSnapshot == null) {
+                                _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
                                 return@addSnapshotListener
                             }
                             calculateContractorStats(attSnapshot.documents, yearMonth)
@@ -127,7 +137,10 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
             attendanceListener = db.collection("attendance")
                 .whereEqualTo("user_id", user.uid)
                 .addSnapshotListener { snapshot, error ->
-                    if (error != null || snapshot == null) return@addSnapshotListener
+                    if (error != null || snapshot == null) {
+                        _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                        return@addSnapshotListener
+                    }
                     calculatePersonalStats(snapshot.documents)
                 }
         }
@@ -170,6 +183,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
 
         _statsState.value = _statsState.value.copy(
             isLoading = false,
+            isRefreshing = false,
             contractorStats = ContractorStatsData(
                 totalCost = totalCost,
                 totalDailyWorks = totalDays,
@@ -227,6 +241,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
 
         _statsState.value = _statsState.value.copy(
             isLoading = false,
+            isRefreshing = false,
             personalStats = PersonalStatsData(
                 present = present,
                 absent = absent,

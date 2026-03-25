@@ -61,6 +61,11 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
         setupListeners()
     }
 
+    fun refresh() {
+        _state.value = _state.value.copy(isRefreshing = true)
+        setupListeners()
+    }
+
     fun changeMonth(offset: Int) {
         val cal = Calendar.getInstance()
         cal.time = _state.value.selectedMonthDate
@@ -82,7 +87,7 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null || !snapshot.exists()) {
                     // Fallback to name if user doc is missing
-                    _state.value = _state.value.copy(name = user.displayName ?: "User")
+                    _state.value = _state.value.copy(name = user.displayName ?: "User", isLoading = false, isRefreshing = false)
                     return@addSnapshotListener
                 }
 
@@ -109,7 +114,7 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
             .whereLessThanOrEqualTo("date", "$yearMonth-31")
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
-                    _state.value = _state.value.copy(isLoading = false)
+                    _state.value = _state.value.copy(isLoading = false, isRefreshing = false)
                     return@addSnapshotListener
                 }
                 cachedDocs = snapshot.documents
@@ -177,7 +182,8 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
             grossEarned = grossEarned,
             totalAdvance = totalAdv,
             finalBalance = finalBalance,
-            logs = sortedLogs
+            logs = sortedLogs,
+            isRefreshing = false
         )
     }
 
