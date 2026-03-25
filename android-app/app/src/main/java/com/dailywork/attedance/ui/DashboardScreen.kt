@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.sp
 import com.dailywork.attedance.viewmodel.DashboardViewModel
 import com.dailywork.attedance.viewmodel.DashboardState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,7 +37,9 @@ import com.dailywork.attedance.viewmodel.PassbookViewModel
 import com.dailywork.attedance.viewmodel.SettingsViewModel
 import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DashboardScreen(
     navController: NavController,
@@ -51,76 +56,98 @@ fun DashboardScreen(
     val calendarState by calendarViewModel.calendarState.collectAsState()
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
+    val currentRoute = navBackStackEntry?.destination?.route ?: "main_pager"
     var showAdvanceDialog by remember { mutableStateOf(false) }
     var advanceAmount by remember { mutableStateOf("") }
     var selectedWorkerId by remember { mutableStateOf<String?>(null) }
 
+    val pagerState = rememberPagerState(pageCount = { 4 })
+    val coroutineScope = rememberCoroutineScope()
+
     Scaffold(
         bottomBar = {
-            BottomNavigationBar(role = dashboardState.role, currentRoute = currentRoute, onNavigate = { route ->
-                bottomNavController.navigate(route) {
-                    popUpTo(bottomNavController.graph.startDestinationId) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            })
-        }
-    ) { padding ->
-        NavHost(navController = bottomNavController, startDestination = "dashboard", modifier = Modifier.fillMaxSize().padding(padding)) {
-            composable("dashboard") {
-                if (dashboardState.isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            HeaderSection(
-                                state = dashboardState,
-                                onNavigateToPremium = { navController.navigate("premium") }
-                            )
+            if (currentRoute == "main_pager") {
+                BottomNavigationBar(
+                    currentRoute = when (pagerState.currentPage) {
+                        0 -> "dashboard"
+                        1 -> "calendar"
+                        2 -> "stats"
+                        3 -> "settings"
+                        else -> "dashboard"
+                    },
+                    onNavigate = { route ->
+                        val page = when (route) {
+                            "dashboard" -> 0
+                            "calendar" -> 1
+                            "stats" -> 2
+                            "settings" -> 3
+                            else -> 0
                         }
-
-                        if (dashboardState.role == "contractor") {
-                            item { ContractorStatsGrid(dashboardState) }
-                            item { ContractorQuickActions(
-                                onManageWorkers = { bottomNavController.navigate("workers") },
-                                onMarkAttendance = { bottomNavController.navigate("calendar") },
-                                onAddAdvance = { showAdvanceDialog = true }
-                            ) }
-                        } else {
-                            item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
-                            item { PersonalQuickActions(onAddAdvance = { showAdvanceDialog = true }) }
-                            item { PersonalDailyLog(dashboardState, dashboardViewModel) }
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(page)
                         }
-
-                        item { Spacer(modifier = Modifier.height(24.dp)) }
                     }
-                }
-            }
-            composable("calendar") {
-                CalendarScreen(
-                    viewModel = calendarViewModel
                 )
             }
-            composable("stats") {
-                StatsScreenContent(viewModel = statsViewModel)
+        }
+    ) { padding ->
+        NavHost(navController = bottomNavController, startDestination = "main_pager", modifier = Modifier.fillMaxSize().padding(padding)) {
+            composable("main_pager") {
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                    when (page) {
+                        0 -> {
+                            if (dashboardState.isLoading) {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                }
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.background)
+                                        .padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    item {
+                                        HeaderSection(
+                                            state = dashboardState,
+                                            onNavigateToPremium = { navController.navigate("premium") }
+                                        )
+                                    }
+
+                                    if (dashboardState.role == "contractor") {
+                                        item { ContractorStatsGrid(dashboardState) }
+                                        item { ContractorQuickActions(
+                                            onManageWorkers = { bottomNavController.navigate("workers") },
+                                            onMarkAttendance = {
+                                                coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                            },
+                                            onAddAdvance = { showAdvanceDialog = true }
+                                        ) }
+                                    } else {
+                                        item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
+                                        item { PersonalQuickActions(onAddAdvance = { showAdvanceDialog = true }) }
+                                        item { PersonalDailyLog(dashboardState, dashboardViewModel) }
+                                    }
+
+                                    item { Spacer(modifier = Modifier.height(24.dp)) }
+                                }
+                            }
+                        }
+                        1 -> {
+                            CalendarScreen(viewModel = calendarViewModel)
+                        }
+                        2 -> {
+                            StatsScreenContent(viewModel = statsViewModel)
+                        }
+                        3 -> {
+                            SettingsScreenContent(viewModel = settingsViewModel, onLogout = onLogout)
+                        }
+                    }
+                }
             }
             composable("passbook") {
                 PassbookScreenContent(viewModel = passbookViewModel, navController = bottomNavController)
-            }
-            composable("settings") {
-                SettingsScreenContent(
-                    viewModel = settingsViewModel,
-                    onLogout = onLogout
-                )
             }
             composable("workers") {
                 WorkersScreenContent(
@@ -559,7 +586,7 @@ fun PersonalDailyLog(state: DashboardState, dashboardViewModel: DashboardViewMod
 }
 
 @Composable
-fun BottomNavigationBar(role: String, currentRoute: String, onNavigate: (String) -> Unit = {}) {
+fun BottomNavigationBar(currentRoute: String, onNavigate: (String) -> Unit = {}) {
     data class NavItem(val route: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val label: String)
 
     val tabs = listOf(
