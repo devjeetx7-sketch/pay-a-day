@@ -23,6 +23,7 @@ data class PassbookLog(
 
 data class PassbookState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val selectedMonthDate: Date = Date(),
     val name: String = "",
     val workType: String = "Labour",
