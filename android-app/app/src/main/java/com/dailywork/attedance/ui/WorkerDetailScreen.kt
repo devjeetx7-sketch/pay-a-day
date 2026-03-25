@@ -25,7 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import com.dailywork.attedance.utils.PassbookPdfGenerator
+import com.dailywork.attedance.utils.PdfData
+import com.dailywork.attedance.utils.PdfLog
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
@@ -48,7 +52,11 @@ fun WorkerDetailScreenContent(
 
     val state by viewModel.state.collectAsState()
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+    val sdfMonthNumeric = SimpleDateFormat("MM", Locale.getDefault())
+    val sdfYearNumeric = SimpleDateFormat("yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
+    val monthNumericStr = sdfMonthNumeric.format(state.selectedMonthDate)
+    val yearNumericStr = sdfYearNumeric.format(state.selectedMonthDate)
     val context = LocalContext.current
 
     val pullRefreshState = rememberPullToRefreshState()
@@ -62,6 +70,59 @@ fun WorkerDetailScreenContent(
             pullRefreshState.startRefresh()
         } else {
             pullRefreshState.endRefresh()
+        }
+    }
+
+    fun generatePdfData(): PdfData {
+        var currentRunningBalance = 0.0
+
+        val sortedLogs = state.logs.sortedBy { it.date }.map { log ->
+            val dailyEarned = if (log.status == "present") {
+                if (log.type == "half") state.dailyWage / 2 else state.dailyWage
+            } else 0.0
+            val advanceAmt = log.advanceAmount ?: 0.0
+
+            currentRunningBalance += dailyEarned - advanceAmt
+
+            PdfLog(
+                date = log.date.split("-").reversed().joinToString("/"),
+                status = if (log.status == "present") if (log.type == "half") "Half Day" else "Present" else if (log.status == "absent") "Absent" else "-",
+                workType = state.workType,
+                dailyWage = "Rs. ${state.dailyWage.toInt()}",
+                overtime = "-",
+                advanceAmount = if (log.status == "advance" || advanceAmt > 0) "Rs. ${advanceAmt.toInt()}" else "-",
+                runningBalance = "Rs. ${currentRunningBalance.toInt()}"
+            )
+        }
+
+        return PdfData(
+            title = "DailyWork Pro",
+            subtitle = "Official Worker Passbook",
+            name = state.name,
+            userId = workerId,
+            role = state.workType,
+            monthYearStr = monthYearStr,
+            monthNumericStr = monthNumericStr,
+            yearNumericStr = yearNumericStr,
+            contractorName = "Admin", // WorkerDetailViewModel currently doesn't fetch contractor name, using fallback
+            dailyWage = state.dailyWage,
+            totalManDays = state.totalDailyWorks,
+            grossEarned = state.grossEarned,
+            advanceDeducted = state.totalAdvance,
+            netPayable = state.finalBalance,
+            logs = sortedLogs
+        )
+    }
+
+    fun exportPDF() {
+        val file = PassbookPdfGenerator.generatePdf(context, generatePdfData())
+        if (file != null) {
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            context.startActivity(Intent.createChooser(intent, "Open PDF"))
         }
     }
 
@@ -185,7 +246,7 @@ fun WorkerDetailScreenContent(
                 OutlinedButton(
                     onClick = {
                         if (state.isPremium) {
-                            /* TODO Implement PDF Export */
+                            exportPDF()
                         } else {
                             navController.navigate("premium")
                         }

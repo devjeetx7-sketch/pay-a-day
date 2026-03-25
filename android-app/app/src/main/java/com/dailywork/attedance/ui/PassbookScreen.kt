@@ -14,15 +14,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import com.dailywork.attedance.utils.PassbookPdfGenerator
+import com.dailywork.attedance.utils.PdfData
+import com.dailywork.attedance.utils.PdfLog
 import com.dailywork.attedance.viewmodel.PassbookViewModel
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +47,12 @@ fun PassbookScreenContent(
 ) {
     val state by viewModel.state.collectAsState()
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+    val sdfMonthNumeric = SimpleDateFormat("MM", Locale.getDefault())
+    val sdfYearNumeric = SimpleDateFormat("yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
+    val monthNumericStr = sdfMonthNumeric.format(state.selectedMonthDate)
+    val yearNumericStr = sdfYearNumeric.format(state.selectedMonthDate)
+    val context = LocalContext.current
 
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
@@ -52,6 +65,111 @@ fun PassbookScreenContent(
             pullRefreshState.startRefresh()
         } else {
             pullRefreshState.endRefresh()
+        }
+    }
+
+    fun generatePdfData(): PdfData {
+        var currentRunningBalance = 0.0
+
+        val sortedLogs = state.logs.sortedBy { it.date }.map { log ->
+            val dailyEarned = if (log.status == "present") {
+                if (log.type == "half") state.dailyWage / 2 else state.dailyWage
+            } else 0.0
+            val advanceAmt = log.advanceAmount ?: 0.0
+
+            currentRunningBalance += dailyEarned - advanceAmt
+
+            PdfLog(
+                date = log.date.split("-").reversed().joinToString("/"),
+                status = if (log.status == "present") if (log.type == "half") "Half Day" else "Present" else if (log.status == "absent") "Absent" else "-",
+                workType = state.workType,
+                dailyWage = "Rs. ${state.dailyWage.toInt()}",
+                overtime = "-",
+                advanceAmount = if (log.status == "advance" || advanceAmt > 0) "Rs. ${advanceAmt.toInt()}" else "-",
+                runningBalance = "Rs. ${currentRunningBalance.toInt()}"
+            )
+        }
+
+        return PdfData(
+            title = "DailyWork Pro",
+            subtitle = "Official Worker Passbook",
+            name = state.name,
+            userId = "personal", // No specific worker ID in personal passbook view
+            role = state.workType,
+            monthYearStr = monthYearStr,
+            monthNumericStr = monthNumericStr,
+            yearNumericStr = yearNumericStr,
+            contractorName = "Admin", // PassbookViewModel doesn't fetch contractor name for personal mode
+            dailyWage = state.dailyWage,
+            totalManDays = state.totalDailyWorks,
+            grossEarned = state.grossEarned,
+            advanceDeducted = state.totalAdvance,
+            netPayable = state.finalBalance,
+            logs = sortedLogs
+        )
+    }
+
+    fun exportPDF() {
+        val file = PassbookPdfGenerator.generatePdf(context, generatePdfData())
+        if (file != null) {
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            context.startActivity(Intent.createChooser(intent, "Open PDF"))
+        }
+    }
+
+    fun shareViaWhatsApp() {
+        val text = """
+            👷 *Official Worker Passbook*
+
+            👤 *Name:* ${state.name}
+            🛠️ *Role:* ${state.workType}
+            📅 *Month:* $monthYearStr
+            📊 *Attendance Summary:*
+            ✅ Present: ${state.presentDays} days
+            🕒 Half Days: ${state.halfDays} days
+            ❌ Absent: ${state.absentDays} days
+            📈 *Total Man Days:* ${state.totalDailyWorks}
+
+            💰 *Financial Summary:*
+            💵 Daily Wage: ₹${state.dailyWage.toInt()}
+            💸 Gross Earned: ₹${state.grossEarned.toInt()}
+            📉 Advance Deducted: ₹${state.totalAdvance.toInt()}
+            ━━━━━━━━━━━━━━━━━━
+            🏆 *Net Payable: ₹${state.finalBalance.toInt()}*
+            ━━━━━━━━━━━━━━━━━━
+
+            _Generated automatically via DailyWork Pro App_ 📱
+        """.trimIndent()
+
+        val file = PassbookPdfGenerator.generatePdf(context, generatePdfData())
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            if (file != null) {
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                putExtra(Intent.EXTRA_STREAM, uri)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            putExtra(Intent.EXTRA_TEXT, text)
+            setPackage("com.whatsapp")
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Fallback if WhatsApp is not installed
+            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                if (file != null) {
+                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            context.startActivity(Intent.createChooser(fallbackIntent, "Share PDF"))
         }
     }
 
@@ -146,7 +264,7 @@ fun PassbookScreenContent(
                 OutlinedButton(
                     onClick = {
                         if (state.isPremium) {
-                            /* TODO Implement PDF Export */
+                            exportPDF()
                         } else {
                             navController.navigate("premium")
                         }
@@ -164,7 +282,7 @@ fun PassbookScreenContent(
                 Button(
                     onClick = {
                         if (state.isPremium) {
-                            /* TODO Implement WhatsApp Share */
+                            shareViaWhatsApp()
                         } else {
                             navController.navigate("premium")
                         }
