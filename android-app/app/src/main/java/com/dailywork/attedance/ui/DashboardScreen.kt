@@ -560,23 +560,14 @@ fun PersonalDailyLog(state: DashboardState, dashboardViewModel: DashboardViewMod
 
 @Composable
 fun BottomNavigationBar(role: String, currentRoute: String, onNavigate: (String) -> Unit = {}) {
-    val isContractor = role == "contractor"
-
     data class NavItem(val route: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val label: String)
 
-    val tabs = mutableListOf(
-        NavItem("dashboard", Icons.Default.Home, "Dashboard"),
-        NavItem("calendar", Icons.Default.CalendarMonth, "Calendar")
+    val tabs = listOf(
+        NavItem("dashboard", Icons.Default.Home, "Home"),
+        NavItem("calendar", Icons.Default.CalendarMonth, "Calendar"),
+        NavItem("stats", Icons.Default.BarChart, "Status"),
+        NavItem("settings", Icons.Default.Settings, "Setting")
     )
-
-    if (isContractor) {
-        tabs.add(NavItem("workers", Icons.Default.People, "Workers"))
-    } else {
-        tabs.add(NavItem("passbook", Icons.Default.Description, "Passbook"))
-    }
-
-    tabs.add(NavItem("stats", Icons.Default.BarChart, "Stats"))
-    tabs.add(NavItem("settings", Icons.Default.Settings, "Settings"))
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.background,
@@ -590,24 +581,23 @@ fun BottomNavigationBar(role: String, currentRoute: String, onNavigate: (String)
                     Icon(
                         tab.icon,
                         contentDescription = null,
-                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 },
                 label = {
                     Text(
                         tab.label,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 },
                 selected = selected,
                 onClick = { onNavigate(tab.route) },
-                colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.background,
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                alwaysShowLabel = false,
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
