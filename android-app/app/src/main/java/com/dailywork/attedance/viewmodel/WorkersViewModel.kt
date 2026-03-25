@@ -77,12 +77,14 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
         val user = auth.currentUser ?: return
 
         workersListener?.remove()
+        userListener?.remove()
 
         workersListener = db.collection("workers")
             .whereEqualTo("contractorId", user.uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
-                    _state.value = _state.value.copy(isLoading = false, isRefreshing = false, errorMessage = error?.message)
+                    _state.value = _state.value.copy(isLoading = false,
+                    isRefreshing = false, errorMessage = error?.message)
                     return@addSnapshotListener
                 }
 

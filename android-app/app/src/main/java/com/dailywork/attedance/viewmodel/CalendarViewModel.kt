@@ -37,6 +37,7 @@ data class AttendanceRecord(
 data class CalendarState(
     val role: String = "",
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
 
     // Contractor State
     val selectedDate: String = "", // YYYY-MM-DD
@@ -76,6 +77,11 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
         }
     }
 
+    fun refresh() {
+        _calendarState.value = _calendarState.value.copy(isRefreshing = true)
+        setupListeners(_calendarState.value.role)
+    }
+
     private fun setupListeners(role: String) {
         val user = auth.currentUser ?: return
 
@@ -89,7 +95,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
                 .whereEqualTo("contractorId", user.uid)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) {
-                        _calendarState.value = _calendarState.value.copy(isLoading = false)
+                        _calendarState.value = _calendarState.value.copy(isLoading = false, isRefreshing = false)
                         return@addSnapshotListener
                     }
                     val workersList = snapshot.documents.mapNotNull { doc ->
@@ -100,7 +106,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
                             wage = doc.getDouble("wage") ?: 0.0
                         )
                     }
-                    _calendarState.value = _calendarState.value.copy(workers = workersList)
+                    _calendarState.value = _calendarState.value.copy(workers = workersList, isRefreshing = false)
                     updateContractorAttendanceListener()
                 }
         } else {
@@ -119,7 +125,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
             .whereEqualTo("date", date)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
-                    _calendarState.value = _calendarState.value.copy(isLoading = false)
+                    _calendarState.value = _calendarState.value.copy(isLoading = false, isRefreshing = false)
                     return@addSnapshotListener
                 }
 
@@ -163,7 +169,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
             .whereLessThanOrEqualTo("date", endDate)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
-                    _calendarState.value = _calendarState.value.copy(isLoading = false)
+                    _calendarState.value = _calendarState.value.copy(isLoading = false, isRefreshing = false)
                     return@addSnapshotListener
                 }
 

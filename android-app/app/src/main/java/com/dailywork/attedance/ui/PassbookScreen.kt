@@ -25,7 +25,13 @@ import androidx.navigation.NavController
 import com.dailywork.attedance.viewmodel.PassbookViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.runtime.LaunchedEffect
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PassbookScreenContent(
     viewModel: PassbookViewModel,
@@ -35,17 +41,36 @@ fun PassbookScreenContent(
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
 
-    if (state.isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+    val pullRefreshState = rememberPullToRefreshState()
+    if (pullRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.refresh()
         }
-        return
+    }
+    LaunchedEffect(state.isRefreshing) {
+        if (state.isRefreshing) {
+            pullRefreshState.startRefresh()
+        } else {
+            pullRefreshState.endRefresh()
+        }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(pullRefreshState.nestedScrollConnection)
     ) {
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 IconButton(onClick = { navController.navigateUp() }) {
@@ -285,5 +310,12 @@ fun PassbookScreenContent(
                 }
             }
         }
+            }
+        }
+        PullToRefreshContainer(
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary
+        )
     }
 }

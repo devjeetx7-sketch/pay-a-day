@@ -24,6 +24,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,7 +43,7 @@ import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     navController: NavController,
@@ -101,36 +105,62 @@ fun DashboardScreen(
                                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                                 }
                             } else {
-                                LazyColumn(
+                                val pullRefreshState = rememberPullToRefreshState()
+                                if (pullRefreshState.isRefreshing) {
+                                    LaunchedEffect(true) {
+                                        dashboardViewModel.refresh()
+                                    }
+                                }
+                                LaunchedEffect(dashboardState.isRefreshing) {
+                                    if (dashboardState.isRefreshing) {
+                                        pullRefreshState.startRefresh()
+                                    } else {
+                                        pullRefreshState.endRefresh()
+                                    }
+                                }
+
+                                Box(
                                     modifier = Modifier
                                         .fillMaxSize()
+                                        .nestedScroll(pullRefreshState.nestedScrollConnection)
                                         .background(MaterialTheme.colorScheme.background)
-                                        .padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    item {
+                                    LazyColumn(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        item {
                                         HeaderSection(
                                             state = dashboardState,
                                             onNavigateToPremium = { navController.navigate("premium") }
                                         )
                                     }
 
-                                    if (dashboardState.role == "contractor") {
-                                        item { ContractorStatsGrid(dashboardState) }
-                                        item { ContractorQuickActions(
-                                            onManageWorkers = { bottomNavController.navigate("workers") },
-                                            onMarkAttendance = {
-                                                coroutineScope.launch { pagerState.animateScrollToPage(1) }
-                                            },
-                                            onAddAdvance = { showAdvanceDialog = true }
-                                        ) }
-                                    } else {
-                                        item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
-                                        item { PersonalQuickActions(onAddAdvance = { showAdvanceDialog = true }) }
-                                        item { PersonalDailyLog(dashboardState, dashboardViewModel) }
+                                        if (dashboardState.role == "contractor") {
+                                            item { ContractorStatsGrid(dashboardState) }
+                                            item { ContractorQuickActions(
+                                                onManageWorkers = { bottomNavController.navigate("workers") },
+                                                onMarkAttendance = {
+                                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                                },
+                                                onAddAdvance = { showAdvanceDialog = true }
+                                            ) }
+                                        } else {
+                                            item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
+                                            item { PersonalQuickActions(onAddAdvance = { showAdvanceDialog = true }) }
+                                            item { PersonalDailyLog(dashboardState, dashboardViewModel) }
+                                        }
+
+                                        item { Spacer(modifier = Modifier.height(24.dp)) }
                                     }
 
-                                    item { Spacer(modifier = Modifier.height(24.dp)) }
+                                    PullToRefreshContainer(
+                                        state = pullRefreshState,
+                                        modifier = Modifier.align(Alignment.TopCenter),
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
                         }
