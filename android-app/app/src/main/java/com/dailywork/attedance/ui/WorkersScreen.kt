@@ -25,7 +25,12 @@ import androidx.navigation.NavController
 import com.dailywork.attedance.viewmodel.WorkerItem
 import com.dailywork.attedance.viewmodel.WorkersViewModel
 import java.util.Locale
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun WorkersScreenContent(
     viewModel: WorkersViewModel,
@@ -41,15 +46,22 @@ fun WorkersScreenContent(
         it.name.contains(searchQuery, ignoreCase = true) || it.phone.contains(searchQuery) || it.workType.contains(searchQuery, ignoreCase = true)
     }
 
-    if (state.isLoading && state.role.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isRefreshing,
+        onRefresh = { viewModel.refresh() }
+    )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        if (state.isLoading && state.role.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Text("Manage Workers", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -160,9 +172,16 @@ fun WorkersScreenContent(
                     }
 
                     item { Spacer(modifier = Modifier.height(80.dp)) }
-                }
+                } // end LazyColumn
             }
-        }
+        } // end Column
+
+        PullRefreshIndicator(
+            refreshing = state.isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary
+        )
 
         FloatingActionButton(
             onClick = {
@@ -193,6 +212,7 @@ fun WorkersScreenContent(
             )
         }
 
+        // Delete Worker Dialog
         if (showDeleteDialog != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = null },
@@ -209,7 +229,8 @@ fun WorkersScreenContent(
                 }
             )
         }
-    }
+        } // end else
+    } // end Box
 }
 
 @Composable

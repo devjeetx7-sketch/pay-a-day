@@ -22,6 +22,7 @@ class WorkerDetailViewModel : ViewModel() {
     private var workerId: String? = null
     private var workerListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     private var cachedDocs: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
 
@@ -34,12 +35,19 @@ class WorkerDetailViewModel : ViewModel() {
 
     private fun setupUserListener() {
         val user = auth.currentUser ?: return
-        db.collection("users").document(user.uid).addSnapshotListener { snapshot, error ->
+        userListener?.remove()
+        userListener = db.collection("users").document(user.uid).addSnapshotListener { snapshot, error ->
             if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
             _state.value = _state.value.copy(
                 isPremium = snapshot.getBoolean("isPremium") ?: false
             )
         }
+    }
+
+    fun refresh() {
+        _state.value = _state.value.copy(isRefreshing = true)
+        setupListeners()
+        setupUserListener()
     }
 
     fun changeMonth(offset: Int) {
@@ -87,7 +95,7 @@ class WorkerDetailViewModel : ViewModel() {
             .whereLessThanOrEqualTo("date", "$yearMonth-31")
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
-                    _state.value = _state.value.copy(isLoading = false)
+                    _state.value = _state.value.copy(isLoading = false, isRefreshing = false)
                     return@addSnapshotListener
                 }
                 cachedDocs = snapshot.documents
@@ -146,6 +154,7 @@ class WorkerDetailViewModel : ViewModel() {
 
         _state.value = _state.value.copy(
             isLoading = false,
+            isRefreshing = false,
             presentDays = present,
             absentDays = absent,
             halfDays = half,
@@ -163,5 +172,6 @@ class WorkerDetailViewModel : ViewModel() {
         super.onCleared()
         workerListener?.remove()
         attendanceListener?.remove()
+        userListener?.remove()
     }
 }

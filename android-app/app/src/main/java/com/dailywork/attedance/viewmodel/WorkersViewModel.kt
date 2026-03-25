@@ -24,6 +24,7 @@ data class WorkerItem(
 
 data class WorkersState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val role: String = "",
     val workers: List<WorkerItem> = emptyList(),
     val isSaving: Boolean = false,
@@ -66,6 +67,12 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
         }
     }
 
+    fun refresh() {
+        _state.value = _state.value.copy(isRefreshing = true)
+        setupListener()
+        setupUserListener()
+    }
+
     private fun setupListener() {
         val user = auth.currentUser ?: return
 
@@ -75,7 +82,7 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
             .whereEqualTo("contractorId", user.uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
-                    _state.value = _state.value.copy(isLoading = false, errorMessage = error?.message)
+                    _state.value = _state.value.copy(isLoading = false, isRefreshing = false, errorMessage = error?.message)
                     return@addSnapshotListener
                 }
 
@@ -94,7 +101,8 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
 
                 _state.value = _state.value.copy(
                     workers = workerList,
-                    isLoading = false
+                    isLoading = false,
+                    isRefreshing = false
                 )
             }
     }
@@ -146,5 +154,6 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
     override fun onCleared() {
         super.onCleared()
         workersListener?.remove()
+        userListener?.remove()
     }
 }

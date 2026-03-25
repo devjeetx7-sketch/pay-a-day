@@ -30,7 +30,12 @@ import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun WorkerDetailScreenContent(
     workerId: String,
@@ -46,12 +51,10 @@ fun WorkerDetailScreenContent(
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
     val context = LocalContext.current
 
-    if (state.isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isRefreshing,
+        onRefresh = { viewModel.refresh() }
+    )
 
     fun shareViaWhatsApp() {
         val text = """
@@ -82,10 +85,22 @@ fun WorkerDetailScreenContent(
         context.startActivity(intent)
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
     ) {
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 IconButton(onClick = { navController.navigateUp() }, modifier = Modifier.background(MaterialTheme.colorScheme.surface, CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)) {
@@ -325,5 +340,13 @@ fun WorkerDetailScreenContent(
                 }
             }
         }
+            }
+        }
+        PullRefreshIndicator(
+            refreshing = state.isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary
+        )
     }
 }
