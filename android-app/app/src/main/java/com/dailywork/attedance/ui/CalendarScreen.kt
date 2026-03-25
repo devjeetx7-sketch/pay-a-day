@@ -447,10 +447,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                                         .fillMaxSize()
                                         .clip(CircleShape)
                                         .background(bgColor)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = androidx.compose.material.ripple.rememberRipple()
-                                        ) {
+                                        .clickable {
                                             selectedDay = day
                                             showDialog = true
                                         }
