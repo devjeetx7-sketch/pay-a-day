@@ -595,9 +595,9 @@ fun BottomNavigationBar(role: String, currentRoute: String, onNavigate: (String)
                 onClick = { onNavigate(tab.route) },
                 alwaysShowLabel = false,
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
