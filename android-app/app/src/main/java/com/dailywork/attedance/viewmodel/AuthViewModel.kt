@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class AuthViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
+class AuthViewModel(val repository: UserPreferencesRepository) : ViewModel() {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
@@ -126,6 +126,26 @@ class AuthViewModel(private val repository: UserPreferencesRepository) : ViewMod
                         "role" to role,
                         "language" to language
                     )
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(uid)
+                        .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                        .await()
+                    repository.saveUserRole(role)
+                    repository.saveLanguage(language)
+                } catch (e: Exception) {
+                    // Handle error if needed
+                }
+            }
+        }
+    }
+
+    fun saveRole(role: String) {
+        viewModelScope.launch {
+            val uid = auth.currentUser?.uid
+            if (uid != null) {
+                try {
+                    val updates = mapOf("role" to role)
                     com.google.firebase.firestore.FirebaseFirestore.getInstance()
                         .collection("users")
                         .document(uid)
