@@ -60,7 +60,11 @@ fun Modifier.pressScaleEffect() = composed {
 }
 
 @Composable
-fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
+fun LoginScreen(
+    authViewModel: AuthViewModel,
+    selectedLanguage: String,
+    onLoginSuccess: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
@@ -68,6 +72,44 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
 
     val loginState by authViewModel.loginState.collectAsState()
     val context = LocalContext.current
+
+    // Simple language dictionary for Login Screen based on selected language
+    val isHindi = selectedLanguage == "hi"
+    val isBengali = selectedLanguage == "bn"
+    val isMarathi = selectedLanguage == "mr"
+    val isTamil = selectedLanguage == "ta"
+    val isTelugu = selectedLanguage == "te"
+
+    val titleText = when {
+        isHindi -> "नमस्ते, शुरू करें"
+        isBengali -> "নমস্কার, শুরু করা যাক"
+        isMarathi -> "नमस्कार, सुरुवात करूया"
+        isTamil -> "வணக்கம், தொடங்குவோம்"
+        isTelugu -> "నమస్కారం, ప్రారంభిద్దాం"
+        else -> "Namaste, Let's get started"
+    }
+
+    val subtitleText = when {
+        isHindi -> "अपने कार्यबल का कुशलतापूर्वक प्रबंधन करें।"
+        isBengali -> "আপনার কর্মীবাহিনী দক্ষতার সাথে পরিচালনা করুন।"
+        isMarathi -> "आपल्या कर्मचाऱ्यांचे प्रभावीपणे व्यवस्थापन करा."
+        isTamil -> "உங்கள் பணியாளர்களை திறமையாக நிர்வகிக்கவும்."
+        isTelugu -> "మీ వర్క్‌ఫోర్స్‌ను సమర్థవంతంగా నిర్వహించండి."
+        else -> "Manage your workforce efficiently."
+    }
+
+    val nameLabel = if (isHindi) "पूरा नाम" else "Full Name"
+    val emailLabel = if (isHindi) "ईमेल पता" else "Email Address"
+    val passwordLabel = if (isHindi) "पासवर्ड" else "Password"
+
+    val loginText = if (isHindi) "लॉग इन" else "Login"
+    val registerText = if (isHindi) "खाता बनाएँ" else "Create Account"
+
+    val googleText = if (isHindi) "Google से साइन इन करें" else "Sign in with Google"
+
+    val alreadyAccountText = if (isHindi) "क्या आपके पास पहले से खाता है?" else "Already have an account?"
+    val noAccountText = if (isHindi) "क्या आपके पास खाता नहीं है?" else "Don't have an account?"
+    val signUpText = if (isHindi) "साइन अप करें" else "Sign Up"
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -126,17 +168,19 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "DailyWork",
+                text = titleText,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Manage your workforce efficiently.",
+                text = subtitleText,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
 
@@ -144,7 +188,7 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (isRegistering) {
                 CustomTextField(
-                    label = "Full Name",
+                    label = nameLabel,
                     value = name,
                     onValueChange = { name = it },
                     placeholder = "John Doe"
@@ -153,7 +197,7 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
             }
 
             CustomTextField(
-                label = "Email Address",
+                label = emailLabel,
                 value = email,
                 onValueChange = { email = it },
                 placeholder = "name@example.com",
@@ -162,7 +206,7 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             CustomTextField(
-                label = "Password",
+                label = passwordLabel,
                 value = password,
                 onValueChange = { password = it },
                 placeholder = "••••••••",
@@ -218,7 +262,7 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
                 )
             } else {
                 Text(
-                    text = if (isRegistering) "Create Account" else "Login",
+                    text = if (isRegistering) registerText else loginText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -232,7 +276,7 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Divider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
+            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
             Text(
                 text = "OR",
                 modifier = Modifier.padding(horizontal = 12.dp),
@@ -240,7 +284,7 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Divider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
+            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -267,7 +311,7 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
             enabled = loginState !is LoginState.Loading
         ) {
             Text(
-                text = "Sign in with Google",
+                text = googleText,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -282,14 +326,14 @@ fun LoginScreen(authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (isRegistering) "Already have an account?" else "Don't have an account?",
+                text = if (isRegistering) alreadyAccountText else noAccountText,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = if (isRegistering) "Login" else "Sign Up",
+                text = if (isRegistering) loginText else signUpText,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Black,
                 fontSize = 14.sp,

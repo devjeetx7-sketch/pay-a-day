@@ -62,23 +62,58 @@ fun DailyWorkApp(factory: ViewModelFactory) {
     val workersViewModel: WorkersViewModel = viewModel(factory = factory)
     val workerDetailViewModel: WorkerDetailViewModel = viewModel(factory = factory)
 
-    val token by authViewModel.authTokenFlow.collectAsState(initial = "")
+    // Using null for loading state, empty string for not set, actual value for set
+    val tokenState by authViewModel.authTokenFlow.collectAsState(initial = "LOADING")
+    val languageState by authViewModel.repository.languageFlow.collectAsState(initial = "LOADING")
+    val roleState by authViewModel.userRoleFlow.collectAsState(initial = "LOADING")
 
-    if (token == "") {
-        // Show loading or splash screen while token is being fetched from DataStore
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
+    if (tokenState == "LOADING" || languageState == "LOADING" || roleState == "LOADING") {
+        return // Wait for datastore
     }
 
-    val startDestination = if (token != null) "dashboard" else "login"
-
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = "splash") {
+        composable("splash") {
+            SplashScreen(
+                onSplashFinished = {
+                    if (languageState == null) {
+                        navController.navigate("language_selection") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    } else if (tokenState == null) {
+                        navController.navigate("login") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    } else if (roleState == null) {
+                        navController.navigate("role_selection") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("dashboard") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+        composable("language_selection") {
+            LanguageSelectionScreen(
+                repository = authViewModel.repository,
+                onLanguageSelected = {
+                    navController.navigate("login") {
+                        popUpTo("language_selection") { inclusive = true }
+                    }
+                }
+            )
+        }
         composable("login") {
             LoginScreen(
                 authViewModel = authViewModel,
-                onLoginSuccess = { navController.navigate("role_selection") }
+                selectedLanguage = languageState ?: "en",
+                onLoginSuccess = {
+                    navController.navigate("role_selection") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
             )
         }
         composable("role_selection") {

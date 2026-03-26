@@ -18,6 +18,7 @@ class UserPreferencesRepository(private val context: Context) {
         val TOKEN_KEY = stringPreferencesKey("auth_token")
         val THEME_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("dark_mode")
         val REMINDERS_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("reminders_enabled")
+        val LANGUAGE_KEY = stringPreferencesKey("app_language")
     }
 
     val userRoleFlow: Flow<String?> = context.dataStore.data.map { preferences ->
@@ -26,6 +27,10 @@ class UserPreferencesRepository(private val context: Context) {
 
     val authTokenFlow: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[TOKEN_KEY]
+    }
+
+    val languageFlow: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[LANGUAGE_KEY]
     }
 
     val darkModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -57,6 +62,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun saveRemindersPreference(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[REMINDERS_KEY] = enabled
+        }
+    }
+
+    suspend fun saveLanguage(lang: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LANGUAGE_KEY] = lang
         }
     }
 
