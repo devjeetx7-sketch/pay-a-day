@@ -3,9 +3,11 @@ package com.dailywork.attedance.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dailywork.attedance.data.UserPreferencesRepository
+import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -13,9 +15,17 @@ import kotlinx.coroutines.tasks.await
 
 data class SettingsState(
     val name: String = "",
+    val originalName: String = "",
     val dailyWage: Double = 500.0,
+    val originalWage: Double = 500.0,
     val workType: String = "",
     val role: String = "",
+    val originalRole: String = "",
+    val phone: String = "",
+    val originalPhone: String = "",
+    val profileImageUrl: String = "",
+    val originalProfileImageUrl: String = "",
+    val profileImageUri: Uri? = null,
     val language: String = "en",
     val isDarkMode: Boolean = false,
     val isRemindersEnabled: Boolean = false,
@@ -64,15 +74,101 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
         userListener = db.collection("users").document(user.uid)
             .addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && snapshot.exists()) {
+                    val currentName = snapshot.getString("name") ?: user.displayName ?: ""
+                    val currentWage = snapshot.getDouble("daily_wage") ?: 500.0
+                    val currentRole = snapshot.getString("role") ?: ""
+                    val currentPhone = snapshot.getString("phone") ?: ""
+                    val currentProfileImageUrl = snapshot.getString("profileImageUrl") ?: ""
+
                     _state.value = _state.value.copy(
-                        name = snapshot.getString("name") ?: user.displayName ?: "",
-                        dailyWage = snapshot.getDouble("daily_wage") ?: 500.0,
+                        name = currentName,
+                        originalName = currentName,
+                        dailyWage = currentWage,
+                        originalWage = currentWage,
                         workType = snapshot.getString("workType") ?: "",
-                        role = snapshot.getString("role") ?: "",
+                        role = currentRole,
+                        originalRole = currentRole,
+                        phone = currentPhone,
+                        originalPhone = currentPhone,
+                        profileImageUrl = currentProfileImageUrl,
+                        originalProfileImageUrl = currentProfileImageUrl,
                         language = snapshot.getString("language") ?: "en"
                     )
                 }
             }
+    }
+
+    fun onNameChange(newName: String) {
+        _state.value = _state.value.copy(name = newName)
+    }
+
+    fun onWageChange(newWage: String) {
+        val wageDouble = newWage.toDoubleOrNull() ?: 0.0
+        _state.value = _state.value.copy(dailyWage = wageDouble)
+    }
+
+    fun onRoleChange(newRole: String) {
+        _state.value = _state.value.copy(role = newRole)
+    }
+
+    fun onPhoneChange(newPhone: String) {
+        _state.value = _state.value.copy(phone = newPhone)
+    }
+
+    fun onProfileImageSelected(uri: Uri?) {
+        _state.value = _state.value.copy(profileImageUri = uri)
+    }
+
+    fun saveChanges() {
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+            _state.value = _state.value.copy(isSaving = true)
+
+            try {
+                var finalImageUrl = _state.value.profileImageUrl
+                val imageUri = _state.value.profileImageUri
+
+                if (imageUri != null) {
+                    val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/${user.uid}.jpg")
+                    storageRef.putFile(imageUri).await()
+                    finalImageUrl = storageRef.downloadUrl.await().toString()
+                }
+
+                val updates = mutableMapOf<String, Any>(
+                    "name" to _state.value.name,
+                    "daily_wage" to _state.value.dailyWage,
+                    "role" to _state.value.role,
+                    "phone" to _state.value.phone,
+                    "profileImageUrl" to finalImageUrl
+                )
+
+                db.collection("users").document(user.uid).set(updates, SetOptions.merge()).await()
+
+                val roleChanged = _state.value.role != _state.value.originalRole
+
+                _state.value = _state.value.copy(
+                    originalName = _state.value.name,
+                    originalWage = _state.value.dailyWage,
+                    originalRole = _state.value.role,
+                    originalPhone = _state.value.phone,
+                    profileImageUrl = finalImageUrl,
+                    originalProfileImageUrl = finalImageUrl,
+                    profileImageUri = null,
+                    savedMessage = "Profile updated successfully!",
+                    isSaving = false
+                )
+
+                if (roleChanged) {
+                    repository.clearSession()
+                }
+
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    savedMessage = "Failed to update profile.",
+                    isSaving = false
+                )
+            }
+        }
     }
 
     fun saveLanguage(newLang: String) {
@@ -84,36 +180,6 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
                 _state.value = _state.value.copy(savedMessage = "Language saved successfully!")
             } catch (e: Exception) {
                 _state.value = _state.value.copy(savedMessage = "Failed to save language.")
-            } finally {
-                _state.value = _state.value.copy(isSaving = false)
-            }
-        }
-    }
-
-    fun saveName(newName: String) {
-        viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
-            _state.value = _state.value.copy(isSaving = true)
-            try {
-                db.collection("users").document(user.uid).set(mapOf("name" to newName), SetOptions.merge()).await()
-                _state.value = _state.value.copy(savedMessage = "Name saved successfully!")
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(savedMessage = "Failed to save name.")
-            } finally {
-                _state.value = _state.value.copy(isSaving = false)
-            }
-        }
-    }
-
-    fun saveWage(newWage: Double) {
-        viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
-            _state.value = _state.value.copy(isSaving = true)
-            try {
-                db.collection("users").document(user.uid).set(mapOf("daily_wage" to newWage), SetOptions.merge()).await()
-                _state.value = _state.value.copy(savedMessage = "Wage saved successfully!")
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(savedMessage = "Failed to save wage.")
             } finally {
                 _state.value = _state.value.copy(isSaving = false)
             }
@@ -137,23 +203,6 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
 
     fun clearMessage() {
         _state.value = _state.value.copy(savedMessage = null)
-    }
-
-    fun changeRole(onRoleCleared: () -> Unit) {
-        viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
-            _state.value = _state.value.copy(isSaving = true)
-            try {
-                db.collection("users").document(user.uid).set(mapOf("role" to ""), SetOptions.merge()).await()
-                // Just clear session or role to trigger re-selection
-                repository.clearSession()
-                onRoleCleared()
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(savedMessage = "Failed to change role.")
-            } finally {
-                _state.value = _state.value.copy(isSaving = false)
-            }
-        }
     }
 
     fun logout() {
