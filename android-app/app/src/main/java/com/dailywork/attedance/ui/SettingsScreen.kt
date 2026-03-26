@@ -1,5 +1,9 @@
 package com.dailywork.attedance.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,9 +24,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import coil.compose.AsyncImage
 import com.dailywork.attedance.viewmodel.SettingsViewModel
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreenContent(
     viewModel: SettingsViewModel,
@@ -38,18 +45,28 @@ fun SettingsScreenContent(
         }
     }
 
-    var editName by remember(state.name) { mutableStateOf(state.name) }
-    var editWage by remember(state.dailyWage) { mutableStateOf(if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "") }
     var editWorkType by remember(state.workType) { mutableStateOf(state.workType) }
     var customWorkType by remember { mutableStateOf("") }
     var isAddingCustomType by remember { mutableStateOf(false) }
-    var showRoleChangeDialog by remember { mutableStateOf(false) }
     var showHowToUseDialog by remember { mutableStateOf(false) }
 
     val defaultWorkTypes = listOf("Labour", "Helper", "Mistry", "Custom")
     var expandedWorkTypeMenu by remember { mutableStateOf(false) }
     var expandedLanguageMenu by remember { mutableStateOf(false) }
+    var expandedRoleMenu by remember { mutableStateOf(false) }
     val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी", "bn" to "বাংলা", "te" to "తెలుగు", "mr" to "मराठी", "ta" to "தமிழ்", "gu" to "ગુજરાતી")
+
+    val hasChanges = state.name != state.originalName ||
+            state.dailyWage != state.originalWage ||
+            state.role != state.originalRole ||
+            state.phone != state.originalPhone ||
+            state.profileImageUri != null
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        viewModel.onProfileImageSelected(uri)
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -71,65 +88,141 @@ fun SettingsScreenContent(
 
                 // Profile Settings
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Profile Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
-
-                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        // Name
-                        Column {
-                            Text("Full Name", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                OutlinedTextField(
-                                    value = editName,
-                                    onValueChange = { editName = it },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    singleLine = true,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Button(
-                                    onClick = { viewModel.saveName(editName) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.height(56.dp)
-                                ) {
-                                    Text("Save", fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Profile Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                        AnimatedVisibility(visible = hasChanges) {
+                            IconButton(onClick = { viewModel.saveChanges() }, enabled = !state.isSaving) {
+                                if (state.isSaving) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                } else {
+                                    Icon(Icons.Default.Check, contentDescription = "Save Changes", tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }
+                    }
+
+                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+
+                        // Profile Image
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable { imagePickerLauncher.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (state.profileImageUri != null) {
+                                AsyncImage(model = state.profileImageUri, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                            } else if (state.profileImageUrl.isNotEmpty()) {
+                                AsyncImage(model = state.profileImageUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                            } else {
+                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        // Name
+                        OutlinedTextField(
+                            value = state.name,
+                            onValueChange = { viewModel.onNameChange(it) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Full Name") },
+                            leadingIcon = { Icon(Icons.Default.Person, null) },
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        // Email
+                        OutlinedTextField(
+                            value = FirebaseAuth.getInstance().currentUser?.email ?: "",
+                            onValueChange = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            readOnly = true,
+                            enabled = false,
+                            label = { Text("Email") },
+                            leadingIcon = { Icon(Icons.Default.Email, null) },
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
 
                         // Daily Wage
-                        Column {
-                            Text("Daily Wage", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                OutlinedTextField(
-                                    value = editWage,
-                                    onValueChange = { editWage = it },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    )
+                        OutlinedTextField(
+                            value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
+                            onValueChange = { viewModel.onWageChange(it) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Daily Wage") },
+                            leadingIcon = { Icon(Icons.Default.CurrencyRupee, null) },
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        // Phone Number
+                        OutlinedTextField(
+                            value = state.phone,
+                            onValueChange = { viewModel.onPhoneChange(it) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Phone Number") },
+                            leadingIcon = { Icon(Icons.Default.Phone, null) },
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        // Role Dropdown
+                        ExposedDropdownMenuBox(
+                            expanded = expandedRoleMenu,
+                            onExpandedChange = { expandedRoleMenu = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Role") },
+                                leadingIcon = { Icon(Icons.Default.Work, null) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRoleMenu) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Button(
-                                    onClick = {
-                                        val wageDouble = editWage.toDoubleOrNull()
-                                        if (wageDouble != null && wageDouble > 0) {
-                                            viewModel.saveWage(wageDouble)
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expandedRoleMenu,
+                                onDismissRequest = { expandedRoleMenu = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            ) {
+                                listOf("contractor", "personal").forEach { roleOption ->
+                                    DropdownMenuItem(
+                                        text = { Text(roleOption.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }, fontWeight = FontWeight.Bold) },
+                                        onClick = {
+                                            expandedRoleMenu = false
+                                            viewModel.onRoleChange(roleOption)
                                         }
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.height(56.dp)
-                                ) {
-                                    Text("Save", fontWeight = FontWeight.Bold)
+                                    )
                                 }
                             }
                         }
@@ -204,34 +297,6 @@ fun SettingsScreenContent(
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-            }
-
-                // Role Management
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Role Management", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
-
-                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text("App Mode", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text("Current: ${state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                        OutlinedButton(
-                            onClick = { showRoleChangeDialog = true },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text("Switch Role", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -427,20 +492,6 @@ fun SettingsScreenContent(
             ) {
                 Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-        }
-
-        if (showRoleChangeDialog) {
-            AlertDialog(
-                onDismissRequest = { showRoleChangeDialog = false },
-                title = { Text("Change Role", fontWeight = FontWeight.Bold) },
-                text = { Text("Are you sure you want to change your role? This will clear your session and take you to the setup screen.") },
-                confirmButton = {
-                    Button(onClick = { viewModel.changeRole(onRoleCleared = onLogout) }) { Text("Confirm") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRoleChangeDialog = false }) { Text("Cancel") }
-                }
-            )
         }
 
         if (showHowToUseDialog) {
