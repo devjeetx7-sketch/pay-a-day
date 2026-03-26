@@ -3,6 +3,7 @@ package com.dailywork.attedance.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,12 +30,26 @@ import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import com.dailywork.attedance.viewmodel.ViewModelFactory
 
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
         val repository = UserPreferencesRepository(applicationContext)
         val factory = ViewModelFactory(repository)
+
+        var isReady = false
+        lifecycleScope.launch {
+            repository.authTokenFlow.first()
+            isReady = true
+        }
+
+        splashScreen.setKeepOnScreenCondition { !isReady }
 
         setContent {
             val isDarkMode by repository.darkModeFlow.collectAsState(initial = false)
@@ -65,10 +80,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
     val token by authViewModel.authTokenFlow.collectAsState(initial = "")
 
     if (token == "") {
-        // Show loading or splash screen while token is being fetched from DataStore
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        // Fallback loading state, though splash screen should cover this
         return
     }
 
