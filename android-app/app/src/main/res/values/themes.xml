@@ -4,4 +4,15 @@
         <item name="android:statusBarColor">#FFFFFF</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Background color of the splash screen -->
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <!-- Center icon -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <!-- Icon background color (optional) -->
+        <item name="windowSplashScreenIconBackgroundColor">#39b27d</item>
+        <!-- Theme to switch to after splash screen -->
+        <item name="postSplashScreenTheme">@style/Theme.DailyWork</item>
+    </style>
 </resources>

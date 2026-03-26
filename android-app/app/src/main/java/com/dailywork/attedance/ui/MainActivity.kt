@@ -28,22 +28,43 @@ import com.dailywork.attedance.viewmodel.SettingsViewModel
 import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import com.dailywork.attedance.viewmodel.ViewModelFactory
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
         val repository = UserPreferencesRepository(applicationContext)
         val factory = ViewModelFactory(repository)
 
+        var isAppReady = false
+
+        // Keep the splash screen on screen until DataStore tells us what to do
+        splashScreen.setKeepOnScreenCondition {
+            !isAppReady
+        }
+
         setContent {
+            val tokenState by repository.authTokenFlow.collectAsState(initial = "LOADING")
+            val languageState by repository.languageFlow.collectAsState(initial = "LOADING")
+            val roleState by repository.userRoleFlow.collectAsState(initial = "LOADING")
+
+            if (tokenState != "LOADING" && languageState != "LOADING" && roleState != "LOADING") {
+                isAppReady = true
+            }
+
             val isDarkMode by repository.darkModeFlow.collectAsState(initial = false)
             DailyWorkTheme(darkTheme = isDarkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    DailyWorkApp(factory)
+                    if (isAppReady) {
+                        DailyWorkApp(factory)
+                    }
                 }
             }
         }
@@ -71,7 +92,17 @@ fun DailyWorkApp(factory: ViewModelFactory) {
         return // Wait for datastore
     }
 
-    NavHost(navController = navController, startDestination = "splash") {
+    val startDestination = if (languageState == null) {
+        "splash" // If first time, show our custom animated Compose splash screen to show the onboarding visual flair
+    } else if (tokenState == null) {
+        "login"
+    } else if (roleState == null) {
+        "role_selection"
+    } else {
+        "dashboard"
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("splash") {
             SplashScreen(
                 onSplashFinished = {
