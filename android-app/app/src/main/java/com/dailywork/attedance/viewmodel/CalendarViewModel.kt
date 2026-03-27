@@ -2,25 +2,22 @@ package com.dailywork.attedance.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dailywork.attedance.data.AttendanceEntity
+import com.dailywork.attedance.data.SyncRepository
 import com.dailywork.attedance.data.UserPreferencesRepository
+import com.dailywork.attedance.data.WorkerEntity
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-data class Worker(
-    val id: String,
-    val name: String,
-    val workType: String,
-    val wage: Double
-)
+typealias Worker = WorkerEntity
 
 data class AttendanceRecord(
     val id: String,
@@ -49,16 +46,18 @@ data class CalendarState(
     val personalAttendance: List<AttendanceRecord> = emptyList()
 )
 
-class CalendarViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
+class CalendarViewModel(
+    private val repository: UserPreferencesRepository,
+    private val syncRepository: SyncRepository
+) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
 
     private val _calendarState = MutableStateFlow(CalendarState())
     val calendarState: StateFlow<CalendarState> = _calendarState
 
-    private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
-    private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var workersJob: Job? = null
+    private var attendanceJob: Job? = null
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
@@ -68,7 +67,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
         )
 
         viewModelScope.launch {
-            repository.userRoleFlow.collect { role ->
+            repository.userRoleFlow.collectLatest { role ->
                 if (role != null) {
                     _calendarState.value = _calendarState.value.copy(role = role)
                     setupListeners(role)
@@ -85,30 +84,19 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
     private fun setupListeners(role: String) {
         val user = auth.currentUser ?: return
 
-        workersListener?.remove()
-        attendanceListener?.remove()
+        workersJob?.cancel()
+        attendanceJob?.cancel()
 
         _calendarState.value = _calendarState.value.copy(isLoading = true)
 
         if (role == "contractor") {
-            workersListener = db.collection("workers")
-                .whereEqualTo("contractorId", user.uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null || snapshot == null) {
-                        _calendarState.value = _calendarState.value.copy(isLoading = false, isRefreshing = false)
-                        return@addSnapshotListener
-                    }
-                    val workersList = snapshot.documents.mapNotNull { doc ->
-                        Worker(
-                            id = doc.id,
-                            name = doc.getString("name") ?: "",
-                            workType = doc.getString("workType") ?: "Labour",
-                            wage = doc.getDouble("wage") ?: 0.0
-                        )
-                    }
-                    _calendarState.value = _calendarState.value.copy(workers = workersList, isRefreshing = false)
+            workersJob = viewModelScope.launch {
+                syncRepository.getWorkersFlow(user.uid).collectLatest { workers ->
+                    _calendarState.value = _calendarState.value.copy(workers = workers, isRefreshing = false)
                     updateContractorAttendanceListener()
                 }
+            }
+            viewModelScope.launch { syncRepository.syncWorkers(user.uid) }
         } else {
             updatePersonalAttendanceListener()
         }
@@ -117,81 +105,72 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
     private fun updateContractorAttendanceListener() {
         val user = auth.currentUser ?: return
         val date = _calendarState.value.selectedDate
+        val monthId = date.substring(0, 7)
 
-        attendanceListener?.remove()
+        attendanceJob?.cancel()
 
-        attendanceListener = db.collection("attendance")
-            .whereEqualTo("contractorId", user.uid)
-            .whereEqualTo("date", date)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
-                    _calendarState.value = _calendarState.value.copy(isLoading = false, isRefreshing = false)
-                    return@addSnapshotListener
-                }
-
-                val attendanceList = snapshot.documents.map { doc ->
+        attendanceJob = viewModelScope.launch {
+            syncRepository.getContractorAttendanceFlow(user.uid, monthId).collectLatest { attendance ->
+                // Filter client side for specific date (Room returns whole month)
+                val dailyAttendance = attendance.filter { it.date == date }.map { doc ->
                     AttendanceRecord(
                         id = doc.id,
-                        userId = doc.getString("user_id") ?: "",
-                        date = doc.getString("date") ?: "",
-                        status = doc.getString("status") ?: "",
-                        type = doc.getString("type"),
-                        reason = doc.getString("reason"),
-                        overtimeHours = doc.getDouble("overtime_hours")?.toInt(),
-                        note = doc.getString("note"),
-                        advanceAmount = doc.getDouble("advance_amount")
+                        userId = doc.userId,
+                        date = doc.date,
+                        status = doc.status,
+                        type = doc.type,
+                        reason = doc.reason,
+                        overtimeHours = doc.overtimeHours,
+                        note = doc.note,
+                        advanceAmount = doc.advanceAmount
                     )
                 }
+
                 _calendarState.value = _calendarState.value.copy(
-                    contractorAttendance = attendanceList,
-                    isLoading = false
+                    contractorAttendance = dailyAttendance,
+                    isLoading = false,
+                    isRefreshing = false
                 )
             }
+        }
+        viewModelScope.launch { syncRepository.syncAttendance(user.uid, monthId, true) }
     }
 
     private fun updatePersonalAttendanceListener() {
         val user = auth.currentUser ?: return
-
-        attendanceListener?.remove()
+        attendanceJob?.cancel()
 
         val currentMonthDate = _calendarState.value.currentMonthDate
         val cal = Calendar.getInstance()
         cal.time = currentMonthDate
 
         val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-        val monthPrefix = sdfMonth.format(cal.time)
-        val startDate = "$monthPrefix-01"
-        val endDate = "$monthPrefix-31"
+        val monthId = sdfMonth.format(cal.time)
 
-        attendanceListener = db.collection("attendance")
-            .whereEqualTo("user_id", user.uid)
-            .whereGreaterThanOrEqualTo("date", startDate)
-            .whereLessThanOrEqualTo("date", endDate)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
-                    _calendarState.value = _calendarState.value.copy(isLoading = false, isRefreshing = false)
-                    return@addSnapshotListener
-                }
-
-                val monthlyAttendance = snapshot.documents.map { doc ->
+        attendanceJob = viewModelScope.launch {
+            syncRepository.getPersonalAttendanceFlow(user.uid, monthId).collectLatest { attendance ->
+                val monthlyAttendance = attendance.map { doc ->
                     AttendanceRecord(
                         id = doc.id,
-                        userId = doc.getString("user_id") ?: "",
-                        date = doc.getString("date") ?: "",
-                        status = doc.getString("status") ?: "",
-                        type = doc.getString("type"),
-                        reason = doc.getString("reason"),
-                        overtimeHours = doc.getDouble("overtime_hours")?.toInt(),
-                        note = doc.getString("note"),
-                        advanceAmount = doc.getDouble("advance_amount")
+                        userId = doc.userId,
+                        date = doc.date,
+                        status = doc.status,
+                        type = doc.type,
+                        reason = doc.reason,
+                        overtimeHours = doc.overtimeHours,
+                        note = doc.note,
+                        advanceAmount = doc.advanceAmount
                     )
                 }
 
                 _calendarState.value = _calendarState.value.copy(
                     personalAttendance = monthlyAttendance,
-                    isLoading = false
+                    isLoading = false,
+                    isRefreshing = false
                 )
             }
+        }
+        viewModelScope.launch { syncRepository.syncAttendance(user.uid, monthId, false) }
     }
 
     // --- Contractor Actions ---
@@ -211,6 +190,7 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
             val date = _calendarState.value.selectedDate
+            val monthId = date.substring(0, 7)
             val userId = "worker_$workerId"
 
             // Find existing id if not advance
@@ -220,35 +200,22 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
 
             val docId = existing?.id ?: "${userId}_$date"
 
-            val newData = hashMapOf(
-                "user_id" to userId,
-                "contractorId" to user.uid,
-                "date" to date,
-                "status" to status,
-                "type" to if (status == "present") type else null,
-                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
-            )
-
-            // Optimistic UI
-            val optimisticRecord = AttendanceRecord(
+            val record = AttendanceEntity(
                 id = docId,
                 userId = userId,
+                contractorId = user.uid,
                 date = date,
+                monthId = monthId,
                 status = status,
                 type = if (status == "present") type else null,
                 reason = null,
                 overtimeHours = null,
                 note = null,
-                advanceAmount = null
+                advanceAmount = null,
+                timestamp = System.currentTimeMillis()
             )
-            val newList = _calendarState.value.contractorAttendance.filter { it.id != docId } + optimisticRecord
-            _calendarState.value = _calendarState.value.copy(contractorAttendance = newList)
 
-            try {
-                db.collection("attendance").document(docId).set(newData, SetOptions.merge()).await()
-            } catch (e: Exception) {
-                // Handle error
-            }
+            syncRepository.markAttendanceOptimistically(record)
         }
     }
 
@@ -276,42 +243,47 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
     ) {
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
+            val monthId = date.substring(0, 7)
 
             val docId = "${user.uid}_$date"
 
             if (status == "present" || status == "absent") {
-                val data = hashMapOf(
-                    "user_id" to user.uid,
-                    "date" to date,
-                    "status" to status,
-                    "type" to if (status == "present") type else null,
-                    "reason" to if (status == "absent") reason else null,
-                    "overtime_hours" to if (status == "present") overtimeHours else 0,
-                    "note" to if (note.isNotEmpty()) note else null,
-                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                val record = AttendanceEntity(
+                    id = docId,
+                    userId = user.uid,
+                    contractorId = null,
+                    date = date,
+                    monthId = monthId,
+                    status = status,
+                    type = if (status == "present") type else null,
+                    reason = if (status == "absent") reason else null,
+                    overtimeHours = if (status == "present") overtimeHours else 0,
+                    note = if (note.isNotEmpty()) note else null,
+                    advanceAmount = null,
+                    timestamp = System.currentTimeMillis()
                 )
-
-                try {
-                    db.collection("attendance").document(docId).set(data, SetOptions.merge()).await()
-                } catch (e: Exception) { }
+                syncRepository.markAttendanceOptimistically(record)
             }
 
             val advanceDocId = "${user.uid}_${date}_advance"
             if (advanceAmount > 0) {
-                val advanceData = hashMapOf(
-                    "user_id" to user.uid,
-                    "date" to date,
-                    "status" to "advance",
-                    "advance_amount" to advanceAmount,
-                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                val advanceRecord = AttendanceEntity(
+                    id = advanceDocId,
+                    userId = user.uid,
+                    contractorId = null,
+                    date = date,
+                    monthId = monthId,
+                    status = "advance",
+                    type = null,
+                    reason = null,
+                    overtimeHours = null,
+                    note = null,
+                    advanceAmount = advanceAmount,
+                    timestamp = System.currentTimeMillis()
                 )
-                try {
-                    db.collection("attendance").document(advanceDocId).set(advanceData, SetOptions.merge()).await()
-                } catch (e: Exception) { }
+                syncRepository.markAttendanceOptimistically(advanceRecord)
             } else {
-                try {
-                    db.collection("attendance").document(advanceDocId).delete().await()
-                } catch (e: Exception) { }
+                syncRepository.deleteAttendanceOptimistically(user.uid, monthId, advanceDocId)
             }
         }
     }
@@ -319,19 +291,18 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
     fun removePersonalAttendance(date: String) {
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
+            val monthId = date.substring(0, 7)
             val docId = "${user.uid}_$date"
             val advanceDocId = "${user.uid}_${date}_advance"
 
-            try {
-                db.collection("attendance").document(docId).delete().await()
-                db.collection("attendance").document(advanceDocId).delete().await()
-            } catch (e: Exception) { }
+            syncRepository.deleteAttendanceOptimistically(user.uid, monthId, docId)
+            syncRepository.deleteAttendanceOptimistically(user.uid, monthId, advanceDocId)
         }
     }
 
     override fun onCleared() {
         super.onCleared()
-        workersListener?.remove()
-        attendanceListener?.remove()
+        workersJob?.cancel()
+        attendanceJob?.cancel()
     }
 }
