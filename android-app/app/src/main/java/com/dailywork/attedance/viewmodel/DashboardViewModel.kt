@@ -2,16 +2,15 @@ package com.dailywork.attedance.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dailywork.attedance.data.AttendanceEntity
-import com.dailywork.attedance.data.SyncRepository
 import com.dailywork.attedance.data.UserPreferencesRepository
-import com.dailywork.attedance.data.WorkerEntity
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.Job
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,28 +41,26 @@ data class DashboardState(
     val isPremium: Boolean = false
 )
 
-class DashboardViewModel(
-    private val repository: UserPreferencesRepository,
-    private val syncRepository: SyncRepository
-) : ViewModel() {
+class DashboardViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
 
     private val _dashboardState = MutableStateFlow(DashboardState(isLoading = true))
     val dashboardState: StateFlow<DashboardState> = _dashboardState
 
-    private var userJob: Job? = null
-    private var workersJob: Job? = null
-    private var attendanceJob: Job? = null
+    private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     // Cache locally to recalculate efficiently on either snapshot change
-    private var cachedWorkers: List<WorkerEntity> = emptyList()
-    private var cachedAttendance: List<AttendanceEntity> = emptyList()
+    private var cachedWorkers: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
+    private var cachedAttendance: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
     private var cachedDefaultWage: Double = 500.0
 
     init {
         viewModelScope.launch {
-            repository.userRoleFlow.collectLatest { role ->
+            repository.userRoleFlow.collect { role ->
                 if (role != null) {
                     _dashboardState.value = _dashboardState.value.copy(role = role)
                     setupListeners(role)
@@ -79,52 +76,54 @@ class DashboardViewModel(
 
     private fun setupListeners(role: String) {
         val user = auth.currentUser ?: return
-        val currentMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
 
-        userJob?.cancel()
-        workersJob?.cancel()
-        attendanceJob?.cancel()
+        userListener?.remove()
+        workersListener?.remove()
+        attendanceListener?.remove()
 
-        userJob = viewModelScope.launch {
-            syncRepository.getUserFlow(user.uid).collectLatest { userEntity ->
-                if (userEntity == null) return@collectLatest
+        userListener = db.collection("users").document(user.uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+
+                val name = snapshot.getString("name") ?: user.displayName ?: "User"
+                val photoUrl = user.photoUrl?.toString() ?: ""
+                val isPremium = snapshot.getBoolean("isPremium") ?: false
+                cachedDefaultWage = snapshot.getDouble("daily_wage") ?: 500.0
 
                 _dashboardState.value = _dashboardState.value.copy(
-                    name = userEntity.name.ifEmpty { user.displayName ?: "User" },
-                    photoUrl = userEntity.profileImageUrl ?: user.photoUrl?.toString() ?: "",
-                    isPremium = userEntity.isPremium,
+                    name = name,
+                    photoUrl = photoUrl,
+                    isPremium = isPremium,
                     isRefreshing = false
                 )
-                cachedDefaultWage = userEntity.dailyWage
+
                 recalculateStats()
             }
-        }
-        viewModelScope.launch { syncRepository.syncUser(user.uid) }
 
         if (role == "contractor") {
-            workersJob = viewModelScope.launch {
-                syncRepository.getWorkersFlow(user.uid).collectLatest { workers ->
-                    cachedWorkers = workers
+            workersListener = db.collection("workers")
+                .whereEqualTo("contractorId", user.uid)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null || snapshot == null) return@addSnapshotListener
+                    cachedWorkers = snapshot.documents
                     recalculateStats()
                 }
-            }
-            viewModelScope.launch { syncRepository.syncWorkers(user.uid) }
 
-            attendanceJob = viewModelScope.launch {
-                syncRepository.getContractorAttendanceFlow(user.uid, currentMonth).collectLatest { attendance ->
-                    cachedAttendance = attendance
+            attendanceListener = db.collection("attendance")
+                .whereEqualTo("contractorId", user.uid)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null || snapshot == null) return@addSnapshotListener
+                    cachedAttendance = snapshot.documents
                     recalculateStats()
                 }
-            }
-            viewModelScope.launch { syncRepository.syncAttendance(user.uid, currentMonth, true) }
         } else {
-            attendanceJob = viewModelScope.launch {
-                syncRepository.getPersonalAttendanceFlow(user.uid, currentMonth).collectLatest { attendance ->
-                    cachedAttendance = attendance
+            attendanceListener = db.collection("attendance")
+                .whereEqualTo("user_id", user.uid)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null || snapshot == null) return@addSnapshotListener
+                    cachedAttendance = snapshot.documents
                     recalculateStats()
                 }
-            }
-            viewModelScope.launch { syncRepository.syncAttendance(user.uid, currentMonth, false) }
         }
     }
 
@@ -143,15 +142,15 @@ class DashboardViewModel(
 
             val workersMap = mutableMapOf<String, Double>()
             for (doc in cachedWorkers) {
-                workersMap["worker_${doc.id}"] = doc.wage
+                workersMap["worker_${doc.id}"] = doc.getDouble("wage") ?: 0.0
             }
 
             for (att in cachedAttendance) {
-                val date = att.date
-                val status = att.status
-                val type = att.type ?: "full"
-                val workerId = att.userId
-                val advance = att.advanceAmount ?: 0.0
+                val date = att.getString("date") ?: ""
+                val status = att.getString("status") ?: ""
+                val type = att.getString("type") ?: "full"
+                val workerId = att.getString("user_id") ?: ""
+                val advance = att.getDouble("advance_amount") ?: 0.0
                 val wage = workersMap[workerId] ?: 0.0
 
                 if (date == todayStr && status == "present") {
@@ -184,9 +183,9 @@ class DashboardViewModel(
             var currentNote: String? = null
 
             for (doc in cachedAttendance) {
-                val date = doc.date
-                val status = doc.status
-                val type = doc.type ?: "full"
+                val date = doc.getString("date") ?: ""
+                val status = doc.getString("status") ?: ""
+                val type = doc.getString("type") ?: "full"
 
                 val dailyValue = if (status == "present") {
                     if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
@@ -195,8 +194,8 @@ class DashboardViewModel(
                 if (date == todayStr) {
                     if (status != "advance") {
                         currentTodayStatus = status
-                        currentOvertime = doc.overtimeHours ?: 0
-                        currentNote = doc.note
+                        currentOvertime = doc.getDouble("overtime_hours")?.toInt() ?: 0
+                        currentNote = doc.getString("note")
                         todayEarned = dailyValue
                     }
                 }
@@ -221,28 +220,30 @@ class DashboardViewModel(
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-            val date = Date()
-            val todayStr = sdf.format(date)
-            val monthStr = sdfMonth.format(date)
+            val todayStr = sdf.format(Date())
             val docId = "${user.uid}_$todayStr"
 
-            val record = AttendanceEntity(
-                id = docId,
-                userId = user.uid,
-                contractorId = null,
-                date = todayStr,
-                monthId = monthStr,
-                status = "present",
-                type = type,
-                reason = null,
+            _dashboardState.value = _dashboardState.value.copy(
+                todayStatus = "present",
                 overtimeHours = overtimeHours,
-                note = note,
-                advanceAmount = null,
-                timestamp = System.currentTimeMillis()
+                todayNote = note
             )
 
-            syncRepository.markAttendanceOptimistically(record)
+            val attendanceData = hashMapOf(
+                "user_id" to user.uid,
+                "date" to todayStr,
+                "status" to "present",
+                "type" to type,
+                "overtime_hours" to overtimeHours,
+                "note" to note,
+                "daily_wage" to cachedDefaultWage,
+                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+
+            try {
+                db.collection("attendance").document(docId).set(attendanceData, SetOptions.merge()).await()
+            } catch (e: Exception) {
+            }
         }
     }
 
@@ -250,27 +251,28 @@ class DashboardViewModel(
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-            val date = Date()
-            val todayStr = sdf.format(date)
-            val monthStr = sdfMonth.format(date)
+            val todayStr = sdf.format(Date())
             val docId = "${user.uid}_$todayStr"
 
-            val record = AttendanceEntity(
-                id = docId,
-                userId = user.uid,
-                contractorId = null,
-                date = todayStr,
-                monthId = monthStr,
-                status = "absent",
-                type = null,
-                reason = reason,
-                overtimeHours = null,
-                note = note,
-                advanceAmount = null,
-                timestamp = System.currentTimeMillis()
+            _dashboardState.value = _dashboardState.value.copy(
+                todayStatus = "absent",
+                overtimeHours = 0,
+                todayNote = note
             )
-            syncRepository.markAttendanceOptimistically(record)
+
+            val attendanceData = hashMapOf(
+                "user_id" to user.uid,
+                "date" to todayStr,
+                "status" to "absent",
+                "reason" to reason,
+                "note" to note,
+                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+
+            try {
+                db.collection("attendance").document(docId).set(attendanceData, SetOptions.merge()).await()
+            } catch (e: Exception) {
+            }
         }
     }
 
@@ -278,32 +280,29 @@ class DashboardViewModel(
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-            val date = Date()
-            val todayStr = sdf.format(date)
-            val monthStr = sdfMonth.format(date)
+            val todayStr = sdf.format(Date())
 
             val isContractor = _dashboardState.value.role == "contractor"
             val targetUserId = if (isContractor && workerId != null) "worker_$workerId" else user.uid
 
             val docId = "${targetUserId}_${todayStr}_advance"
 
-            val record = AttendanceEntity(
-                id = docId,
-                userId = targetUserId,
-                contractorId = if (isContractor) user.uid else null,
-                date = todayStr,
-                monthId = monthStr,
-                status = "advance",
-                type = null,
-                reason = null,
-                overtimeHours = null,
-                note = null,
-                advanceAmount = amount,
-                timestamp = System.currentTimeMillis()
+            val advanceData = hashMapOf(
+                "user_id" to targetUserId,
+                "date" to todayStr,
+                "status" to "advance",
+                "advance_amount" to amount,
+                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
             )
 
-            syncRepository.markAttendanceOptimistically(record)
+            if (isContractor) {
+                advanceData["contractorId"] = user.uid
+            }
+
+            try {
+                db.collection("attendance").document(docId).set(advanceData, SetOptions.merge()).await()
+            } catch (e: Exception) {
+            }
         }
     }
 
@@ -311,24 +310,45 @@ class DashboardViewModel(
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-            val date = Date()
-            val todayStr = sdf.format(date)
-            val monthStr = sdfMonth.format(date)
+            val todayStr = sdf.format(Date())
             val docId = "${user.uid}_$todayStr"
 
-            syncRepository.deleteAttendanceOptimistically(user.uid, monthStr, docId)
+            _dashboardState.value = _dashboardState.value.copy(
+                todayStatus = null,
+                overtimeHours = 0,
+                todayNote = null
+            )
+
+            try {
+                db.collection("attendance").document(docId).delete().await()
+            } catch (e: Exception) {
+            }
         }
     }
 
     fun upgradeToPremium(onSuccess: () -> Unit) {
-        // Implementation remains unchanged
+        viewModelScope.launch {
+            val user = auth.currentUser ?: return@launch
+
+            // Optimistic UI Update
+            _dashboardState.value = _dashboardState.value.copy(isPremium = true)
+
+            try {
+                db.collection("users").document(user.uid)
+                    .set(hashMapOf("isPremium" to true), SetOptions.merge())
+                    .await()
+                onSuccess()
+            } catch (e: Exception) {
+                // Revert optimistic update on error
+                _dashboardState.value = _dashboardState.value.copy(isPremium = false)
+            }
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
-        userJob?.cancel()
-        workersJob?.cancel()
-        attendanceJob?.cancel()
+        userListener?.remove()
+        workersListener?.remove()
+        attendanceListener?.remove()
     }
 }
