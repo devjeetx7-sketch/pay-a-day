@@ -2,34 +2,16 @@ package com.dailywork.attedance.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dailywork.attedance.data.AttendanceEntity
-import com.dailywork.attedance.data.SyncRepository
 import com.dailywork.attedance.data.UserPreferencesRepository
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.Job
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-
-data class MonthStat(
-    val monthName: String,
-    val year: String,
-    val present: Int,
-    val absent: Int,
-    val half: Int,
-    val date: Date,
-
-    // Personal details
-    val totalEarned: Double = 0.0,
-
-    // Contractor details
-    val totalPaid: Double = 0.0
-)
 
 data class WorkerStats(
     val name: String,
@@ -67,25 +49,23 @@ data class StatsState(
     val personalStats: PersonalStatsData = PersonalStatsData()
 )
 
-class StatsViewModel(
-    private val repository: UserPreferencesRepository,
-    private val syncRepository: SyncRepository
-) : ViewModel() {
+class StatsViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
 
     private val _statsState = MutableStateFlow(StatsState())
     val statsState: StateFlow<StatsState> = _statsState
 
-    private var workersJob: Job? = null
-    private var attendanceJob: Job? = null
-    private var userJob: Job? = null
+    private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     private var cachedDefaultWage: Double = 500.0
-    private var cachedWorkers: List<com.dailywork.attedance.data.WorkerEntity> = emptyList()
+    private var cachedWorkers: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
 
     init {
         viewModelScope.launch {
-            repository.userRoleFlow.collectLatest { role ->
+            repository.userRoleFlow.collect { role ->
                 if (role != null) {
                     _statsState.value = _statsState.value.copy(role = role)
                     setupListeners(role)
@@ -99,10 +79,10 @@ class StatsViewModel(
         setupListeners(_statsState.value.role)
     }
 
-    fun changeMonth(offsetMonths: Int) {
+    fun changeMonth(offset: Int) {
         val cal = Calendar.getInstance()
         cal.time = _statsState.value.selectedMonthDate
-        cal.add(Calendar.MONTH, offsetMonths)
+        cal.add(Calendar.MONTH, offset)
         _statsState.value = _statsState.value.copy(
             selectedMonthDate = cal.time,
             isLoading = true
@@ -113,46 +93,58 @@ class StatsViewModel(
     private fun setupListeners(role: String) {
         val user = auth.currentUser ?: return
 
-        userJob?.cancel()
-        workersJob?.cancel()
-        attendanceJob?.cancel()
+        userListener?.remove()
+        workersListener?.remove()
+        attendanceListener?.remove()
+
+        userListener = db.collection("users").document(user.uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error == null && snapshot != null && snapshot.exists()) {
+                    cachedDefaultWage = snapshot.getDouble("daily_wage") ?: 500.0
+                    calculatePersonalStats(emptyList()) // trigger re-calculation if needed, but attendance listener handles it
+                }
+            }
 
         val cal = Calendar.getInstance()
         cal.time = _statsState.value.selectedMonthDate
         val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         val yearMonth = sdfMonth.format(cal.time)
 
-        userJob = viewModelScope.launch {
-            syncRepository.getUserFlow(user.uid).collectLatest { userEntity ->
-                if (userEntity != null) {
-                    cachedDefaultWage = userEntity.dailyWage
-                }
-            }
-        }
-        viewModelScope.launch { syncRepository.syncUser(user.uid) }
-
         if (role == "contractor") {
-            workersJob = viewModelScope.launch {
-                syncRepository.getWorkersFlow(user.uid).collectLatest { workers ->
-                    cachedWorkers = workers
-                }
-            }
-            viewModelScope.launch { syncRepository.syncWorkers(user.uid) }
+            workersListener = db.collection("workers")
+                .whereEqualTo("contractorId", user.uid)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null || snapshot == null) {
+                        _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                        return@addSnapshotListener
+                    }
+                    cachedWorkers = snapshot.documents
 
-            attendanceJob = viewModelScope.launch {
-                syncRepository.getContractorAttendanceFlow(user.uid, yearMonth).collectLatest { docs ->
-                    calculateContractorStats(docs, yearMonth)
+                    attendanceListener?.remove()
+                    attendanceListener = db.collection("attendance")
+                        .whereEqualTo("contractorId", user.uid)
+                        .addSnapshotListener { attSnapshot, attError ->
+                            if (attError != null || attSnapshot == null) {
+                                _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                                return@addSnapshotListener
+                            }
+                            calculateContractorStats(attSnapshot.documents, yearMonth)
+                        }
                 }
-            }
-            viewModelScope.launch { syncRepository.syncAttendance(user.uid, yearMonth, true) }
         } else {
-            // Using Room Aggregation Queries instead of looping lists
-            observePersonalStatsAggregations(user.uid, yearMonth)
-            viewModelScope.launch { syncRepository.syncAttendance(user.uid, yearMonth, false) }
+            attendanceListener = db.collection("attendance")
+                .whereEqualTo("user_id", user.uid)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null || snapshot == null) {
+                        _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                        return@addSnapshotListener
+                    }
+                    calculatePersonalStats(snapshot.documents)
+                }
         }
     }
 
-    private fun calculateContractorStats(attendanceDocs: List<AttendanceEntity>, yearMonth: String) {
+    private fun calculateContractorStats(attendanceDocs: List<com.google.firebase.firestore.DocumentSnapshot>, yearMonth: String) {
         var totalCost = 0.0
         var totalDays = 0.0
         val workerPerfMap = mutableMapOf<String, WorkerStats>()
@@ -160,20 +152,20 @@ class StatsViewModel(
         val workersMap = cachedWorkers.associateBy({ "worker_${it.id}" }, { it })
 
         attendanceDocs.forEach { doc ->
-            val date = doc.date
-            val status = doc.status
+            val status = doc.getString("status") ?: ""
+            val date = doc.getString("date") ?: ""
             if (date.startsWith(yearMonth) && status == "present") {
-                val userId = doc.userId
+                val userId = doc.getString("user_id") ?: ""
                 val workerDoc = workersMap[userId]
 
                 if (workerDoc != null) {
-                    val wage = workerDoc.wage
-                    val type = doc.type ?: "full"
+                    val wage = workerDoc.getDouble("wage") ?: 0.0
+                    val type = doc.getString("type") ?: "full"
 
                     val dayVal = if (type == "half") 0.5 else 1.0
                     val costVal = if (type == "half") wage / 2 else wage
 
-                    val currentStats = workerPerfMap[userId] ?: WorkerStats(workerDoc.name, 0.0, 0.0)
+                    val currentStats = workerPerfMap[userId] ?: WorkerStats(workerDoc.getString("name") ?: "Unknown", 0.0, 0.0)
                     workerPerfMap[userId] = currentStats.copy(
                         days = currentStats.days + dayVal,
                         cost = currentStats.cost + costVal
@@ -198,67 +190,73 @@ class StatsViewModel(
         )
     }
 
-    private fun observePersonalStatsAggregations(userId: String, yearMonth: String) {
-        attendanceJob?.cancel()
-        attendanceJob = viewModelScope.launch {
-            // Flow combine max is 5 without custom array handling, so nest combines
-            kotlinx.coroutines.flow.combine(
-                kotlinx.coroutines.flow.combine(
-                    syncRepository.getPersonalStatusCountFlow(userId, yearMonth, "present"),
-                    syncRepository.getPersonalStatusCountFlow(userId, yearMonth, "present", "half"),
-                    syncRepository.getPersonalStatusCountFlow(userId, yearMonth, "absent"),
-                    syncRepository.getPersonalAdvanceSumFlow(userId, yearMonth)
-                ) { presentTotal, halfDays, absent, advanceTotal ->
-                    listOf(presentTotal, halfDays, absent, advanceTotal)
-                },
-                kotlinx.coroutines.flow.combine(
-                    syncRepository.getPersonalOvertimeSumFlow(userId, yearMonth),
-                    syncRepository.getPersonalAllTimePresentFlow(userId),
-                    syncRepository.getPersonalAllTimeHalfFlow(userId)
-                ) { overtime, allTimePresent, allTimeHalf ->
-                    listOf(overtime, allTimePresent, allTimeHalf)
+    private fun calculatePersonalStats(attendanceDocs: List<com.google.firebase.firestore.DocumentSnapshot>) {
+        val cal = Calendar.getInstance()
+        cal.time = _statsState.value.selectedMonthDate
+        val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        val yearMonth = sdfMonth.format(cal.time)
+
+        var present = 0
+        var absent = 0
+        var halfDays = 0
+        var overtime = 0
+        var advanceTotal = 0.0
+        var totalEarnings = 0.0
+
+        var allTimeDays = 0
+        var allTimeEarnings = 0.0
+
+        attendanceDocs.forEach { doc ->
+            val date = doc.getString("date") ?: ""
+            val status = doc.getString("status") ?: ""
+            val type = doc.getString("type") ?: "full"
+            val adv = doc.getDouble("advance_amount") ?: 0.0
+            val ot = doc.getDouble("overtime_hours")?.toInt() ?: 0
+
+            val costVal = if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
+
+            // All time
+            if (status == "present") {
+                allTimeDays++
+                allTimeEarnings += costVal
+            }
+
+            // Current month
+            if (date.startsWith(yearMonth)) {
+                if (status == "present") {
+                    present++
+                    if (type == "half") halfDays++
+                    overtime += ot
+                    totalEarnings += costVal
+                } else if (status == "absent") {
+                    absent++
                 }
-            ) { group1, group2 ->
-                val presentTotal = group1[0] as Int
-                val halfDays = group1[1] as Int
-                val absent = group1[2] as Int
-                val advanceTotal = group1[3] as Double?
-
-                val overtime = group2[0] as Int?
-                val allTimePresent = group2[1] as Int
-                val allTimeHalf = group2[2] as Int
-
-                // Calculate derived values natively without looping lists
-                val fullDays = presentTotal - halfDays
-                val monthEarnings = (fullDays * cachedDefaultWage) + (halfDays * (cachedDefaultWage / 2))
-
-                val allTimeFull = allTimePresent - allTimeHalf
-                val allTimeEarnings = (allTimeFull * cachedDefaultWage) + (allTimeHalf * (cachedDefaultWage / 2))
-
-                PersonalStatsData(
-                    present = presentTotal,
-                    absent = absent,
-                    halfDays = halfDays,
-                    overtime = overtime ?: 0,
-                    advanceTotal = advanceTotal ?: 0.0,
-                    totalEarnings = monthEarnings,
-                    allTimeDays = allTimePresent,
-                    allTimeEarnings = allTimeEarnings
-                )
-            }.collectLatest { statsData ->
-                _statsState.value = _statsState.value.copy(
-                    isLoading = false,
-                    isRefreshing = false,
-                    personalStats = statsData
-                )
+                if (adv > 0) {
+                    advanceTotal += adv
+                }
             }
         }
+
+        _statsState.value = _statsState.value.copy(
+            isLoading = false,
+            isRefreshing = false,
+            personalStats = PersonalStatsData(
+                present = present,
+                absent = absent,
+                halfDays = halfDays,
+                overtime = overtime,
+                advanceTotal = advanceTotal,
+                totalEarnings = totalEarnings,
+                allTimeDays = allTimeDays,
+                allTimeEarnings = allTimeEarnings
+            )
+        )
     }
 
     override fun onCleared() {
         super.onCleared()
-        userJob?.cancel()
-        workersJob?.cancel()
-        attendanceJob?.cancel()
+        userListener?.remove()
+        workersListener?.remove()
+        attendanceListener?.remove()
     }
 }

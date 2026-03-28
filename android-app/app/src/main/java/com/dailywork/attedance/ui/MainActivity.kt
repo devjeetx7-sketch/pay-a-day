@@ -17,9 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.dailywork.attedance.data.AppDatabase
-import com.dailywork.attedance.data.FirestoreApi
-import com.dailywork.attedance.data.SyncRepository
 import com.dailywork.attedance.data.UserPreferencesRepository
 import com.dailywork.attedance.ui.theme.DailyWorkTheme
 import com.dailywork.attedance.viewmodel.AuthViewModel
@@ -37,10 +34,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val repository = UserPreferencesRepository(applicationContext)
-        val appDatabase = AppDatabase.getDatabase(applicationContext)
-        val firestoreApi = FirestoreApi()
-        val syncRepository = SyncRepository(appDatabase, firestoreApi)
-        val factory = ViewModelFactory(repository, syncRepository)
+        val factory = ViewModelFactory(repository)
 
         setContent {
             val isDarkMode by repository.darkModeFlow.collectAsState(initial = false)

@@ -370,8 +370,7 @@ fun WorkerFormDialog(
                                 age = age.trim(),
                                 workType = finalWorkType.trim(),
                                 wage = finalWage,
-                                contractorId = "",
-                                timestamp = worker?.timestamp ?: 0L
+                                contractorId = ""
                             )
                         )
                     }
