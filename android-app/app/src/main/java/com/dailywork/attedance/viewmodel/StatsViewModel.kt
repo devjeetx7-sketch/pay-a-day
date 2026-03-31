@@ -22,7 +22,10 @@ data class WorkerStats(
 data class ContractorStatsData(
     val totalCost: Double = 0.0,
     val totalDailyWorks: Double = 0.0,
-    val topWorkers: List<WorkerStats> = emptyList()
+    val topWorkers: List<WorkerStats> = emptyList(),
+    val allTimeCost: Double = 0.0,
+    val allTimeWorks: Double = 0.0,
+    val allTimeTopWorkers: List<WorkerStats> = emptyList()
 )
 
 data class PersonalStatsData(
@@ -90,6 +93,14 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
         setupListeners(_statsState.value.role)
     }
 
+    fun setMonth(date: Date) {
+        _statsState.value = _statsState.value.copy(
+            selectedMonthDate = date,
+            isLoading = true
+        )
+        setupListeners(_statsState.value.role)
+    }
+
     private fun setupListeners(role: String) {
         val user = auth.currentUser ?: return
 
@@ -151,12 +162,16 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
         var totalDays = 0.0
         val workerPerfMap = mutableMapOf<String, WorkerStats>()
 
+        var allTimeCost = 0.0
+        var allTimeDays = 0.0
+        val allTimeWorkerPerfMap = mutableMapOf<String, WorkerStats>()
+
         val workersMap = cachedWorkers.associateBy({ "worker_${it.id}" }, { it })
 
         attendanceDocs.forEach { doc ->
             val date = doc.getString("date") ?: ""
             val status = doc.getString("status") ?: ""
-            if (date.startsWith(yearMonth) && status == "present") {
+            if (status == "present") {
                 val userId = doc.getString("user_id") ?: ""
                 val workerDoc = workersMap[userId]
 
@@ -167,19 +182,32 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
                     val dayVal = if (type == "half") 0.5 else 1.0
                     val costVal = if (type == "half") wage / 2 else wage
 
-                    val currentStats = workerPerfMap[userId] ?: WorkerStats(workerDoc.getString("name") ?: "Unknown", 0.0, 0.0)
-                    workerPerfMap[userId] = currentStats.copy(
-                        days = currentStats.days + dayVal,
-                        cost = currentStats.cost + costVal
+                    // All time stats
+                    val allTimeStats = allTimeWorkerPerfMap[userId] ?: WorkerStats(workerDoc.getString("name") ?: "Unknown", 0.0, 0.0)
+                    allTimeWorkerPerfMap[userId] = allTimeStats.copy(
+                        days = allTimeStats.days + dayVal,
+                        cost = allTimeStats.cost + costVal
                     )
+                    allTimeDays += dayVal
+                    allTimeCost += costVal
 
-                    totalDays += dayVal
-                    totalCost += costVal
+                    // Current month stats
+                    if (date.startsWith(yearMonth)) {
+                        val currentStats = workerPerfMap[userId] ?: WorkerStats(workerDoc.getString("name") ?: "Unknown", 0.0, 0.0)
+                        workerPerfMap[userId] = currentStats.copy(
+                            days = currentStats.days + dayVal,
+                            cost = currentStats.cost + costVal
+                        )
+
+                        totalDays += dayVal
+                        totalCost += costVal
+                    }
                 }
             }
         }
 
         val topWorkers = workerPerfMap.values.toList().sortedByDescending { it.days }
+        val allTimeTopWorkers = allTimeWorkerPerfMap.values.toList().sortedByDescending { it.days }
 
         _statsState.value = _statsState.value.copy(
             isLoading = false,
@@ -187,7 +215,10 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
             contractorStats = ContractorStatsData(
                 totalCost = totalCost,
                 totalDailyWorks = totalDays,
-                topWorkers = topWorkers
+                topWorkers = topWorkers,
+                allTimeCost = allTimeCost,
+                allTimeWorks = allTimeDays,
+                allTimeTopWorkers = allTimeTopWorkers
             )
         )
     }
