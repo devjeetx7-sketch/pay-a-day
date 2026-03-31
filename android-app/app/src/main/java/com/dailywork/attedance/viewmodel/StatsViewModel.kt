@@ -123,6 +123,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
                     attendanceListener?.remove()
                     attendanceListener = db.collection("attendance")
                         .whereEqualTo("contractorId", user.uid)
+                        // .whereGreaterThanOrEqualTo("date", "$yearMonth-01") // Could optimize, but matching logic
                         .addSnapshotListener { attSnapshot, attError ->
                             if (attError != null || attSnapshot == null) {
                                 _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
@@ -132,6 +133,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
                         }
                 }
         } else {
+            // For personal, we fetch ALL to compute allTime stats just like web, but ideally should be optimized
             attendanceListener = db.collection("attendance")
                 .whereEqualTo("user_id", user.uid)
                 .addSnapshotListener { snapshot, error ->
@@ -152,8 +154,8 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
         val workersMap = cachedWorkers.associateBy({ "worker_${it.id}" }, { it })
 
         attendanceDocs.forEach { doc ->
-            val status = doc.getString("status") ?: ""
             val date = doc.getString("date") ?: ""
+            val status = doc.getString("status") ?: ""
             if (date.startsWith(yearMonth) && status == "present") {
                 val userId = doc.getString("user_id") ?: ""
                 val workerDoc = workersMap[userId]
