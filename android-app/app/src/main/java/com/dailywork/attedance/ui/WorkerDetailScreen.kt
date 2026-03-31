@@ -150,32 +150,9 @@ fun WorkerDetailScreenContent(
             _Generated automatically via DailyWork Pro App_ 📱
         """.trimIndent()
 
-        val file = PassbookPdfGenerator.generatePdf(context, generatePdfData())
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            if (file != null) {
-                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                putExtra(Intent.EXTRA_STREAM, uri)
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            }
-            putExtra(Intent.EXTRA_TEXT, text)
-            setPackage("com.whatsapp")
-        }
-        try {
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            // Fallback if WhatsApp is not installed
-            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/pdf"
-                if (file != null) {
-                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                }
-                putExtra(Intent.EXTRA_TEXT, text)
-            }
-            context.startActivity(Intent.createChooser(fallbackIntent, "Share PDF"))
-        }
+        val url = "https://wa.me/?text=${URLEncoder.encode(text, "UTF-8")}"
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        context.startActivity(intent)
     }
 
     Box(
