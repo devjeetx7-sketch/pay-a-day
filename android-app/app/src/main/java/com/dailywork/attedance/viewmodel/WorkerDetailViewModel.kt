@@ -61,6 +61,14 @@ class WorkerDetailViewModel : ViewModel() {
         setupListeners()
     }
 
+    fun setMonth(date: Date) {
+        _state.value = _state.value.copy(
+            selectedMonthDate = date,
+            isLoading = true
+        )
+        setupListeners()
+    }
+
     private fun setupListeners() {
         val user = auth.currentUser ?: return
         val wId = workerId ?: return

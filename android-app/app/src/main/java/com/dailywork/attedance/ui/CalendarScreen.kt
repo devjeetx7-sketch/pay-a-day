@@ -41,6 +41,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.rememberDatePickerState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -255,10 +258,12 @@ fun WorkerAttendanceCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.attedance.viewmodel.CalendarState) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedDay by remember { mutableStateOf<Int?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val currentMonthDate = state.currentMonthDate
     val cal = Calendar.getInstance()
@@ -272,6 +277,32 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
 
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(currentMonthDate)
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = currentMonthDate.time
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        viewModel.setPersonalMonth(Date(millis))
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     val todayCal = Calendar.getInstance()
     val isCurrentMonth = todayCal.get(Calendar.YEAR) == year && todayCal.get(Calendar.MONTH) == month
@@ -336,11 +367,14 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
             IconButton(onClick = { viewModel.changePersonalMonth(-1) }) {
                 Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
             }
-            Text(
-                text = monthYearStr,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { showDatePicker = true }.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(
+                    text = monthYearStr,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
             IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
                 Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
             }
