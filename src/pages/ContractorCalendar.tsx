@@ -5,11 +5,12 @@ import { collection, query, where, getDocs, doc, setDoc, serverTimestamp } from 
 import { Calendar, Check, X, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Worker, AttendanceRecord } from "@/types";
 
 export const ContractorCalendar = () => {
   const { user } = useAuth();
-  const [workers, setWorkers] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<any[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +25,7 @@ export const ContractorCalendar = () => {
       // 1. Get Workers
       const wQ = query(collection(db, "workers"), where("contractorId", "==", user.uid));
       const wSnap = await getDocs(wQ);
-      const wList = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const wList = wSnap.docs.map(d => ({ id: d.id, ...d.data() } as Worker));
       setWorkers(wList);
 
       // 2. Get Attendance for these workers on selected date
@@ -36,11 +37,10 @@ export const ContractorCalendar = () => {
         );
         const aSnap = await getDocs(aQ);
 
-        const aList: any[] = [];
+        const aList: AttendanceRecord[] = [];
         aSnap.docs.forEach(d => {
-          const data = d.data();
-          const workerId = data.user_id.replace("worker_", "");
-          aList.push({ id: d.id, workerId, ...data });
+          const data = d.data() as AttendanceRecord;
+          aList.push({ ...data, id: d.id });
         });
         setAttendance(aList);
       }
@@ -50,9 +50,9 @@ export const ContractorCalendar = () => {
     setLoading(false);
   };
 
-  const markAttendance = async (workerId: string, status: string, type: string = "full") => {
+  const markAttendance = async (workerId: string, status: 'present' | 'absent', type: 'full' | 'half' = "full") => {
     if (!user) return;
-    const existing = attendance.find(a => a.workerId === workerId && a.status !== 'advance');
+    const existing = attendance.find(a => a.user_id === `worker_${workerId}` && a.status !== 'advance');
 
     try {
       const docId = existing ? existing.id : `worker_${workerId}_${selectedDate}`;
@@ -71,7 +71,7 @@ export const ContractorCalendar = () => {
       // Optistic update
       setAttendance(prev => {
         const filtered = prev.filter(a => a.id !== docId);
-        return [...filtered, { id: docId, workerId, ...newData }];
+        return [...filtered, { id: docId, ...newData } as AttendanceRecord];
       });
     } catch (err) {
       console.error("Error marking worker attendance:", err);
@@ -97,7 +97,7 @@ export const ContractorCalendar = () => {
       ) : (
         <div className="space-y-3">
           {workers.map(w => {
-            const att = attendance.find(a => a.workerId === w.id && a.status !== 'advance');
+          const att = attendance.find(a => a.user_id === `worker_${w.id}` && a.status !== 'advance');
             const currentStatus = att?.status;
             const currentType = att?.type;
 
