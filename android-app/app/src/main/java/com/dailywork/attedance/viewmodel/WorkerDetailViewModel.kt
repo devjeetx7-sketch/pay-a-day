@@ -61,14 +61,6 @@ class WorkerDetailViewModel : ViewModel() {
         setupListeners()
     }
 
-    fun setMonth(date: Date) {
-        _state.value = _state.value.copy(
-            selectedMonthDate = date,
-            isLoading = true
-        )
-        setupListeners()
-    }
-
     private fun setupListeners() {
         val user = auth.currentUser ?: return
         val wId = workerId ?: return
@@ -79,20 +71,17 @@ class WorkerDetailViewModel : ViewModel() {
 
         workerListener = db.collection("workers").document(wId)
             .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null || !snapshot.exists()) {
-                    _state.value = _state.value.copy(isLoading = false, isRefreshing = false)
-                    return@addSnapshotListener
+                if (error == null && snapshot != null && snapshot.exists()) {
+                    val joinedDateLong = snapshot.getTimestamp("created_at")?.toDate()?.time ?: Date().time
+                    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                    _state.value = _state.value.copy(
+                        name = snapshot.getString("name") ?: "Worker",
+                        workType = snapshot.getString("workType") ?: "Labour",
+                        dailyWage = snapshot.getDouble("wage") ?: 500.0,
+                        joinedDate = sdf.format(Date(joinedDateLong))
+                    )
+                    calculatePassbook(cachedDocs)
                 }
-
-                val joinedDateLong = snapshot.getTimestamp("created_at")?.toDate()?.time ?: Date().time
-                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                _state.value = _state.value.copy(
-                    name = snapshot.getString("name") ?: "Worker",
-                    workType = snapshot.getString("workType") ?: "Labour",
-                    dailyWage = snapshot.getDouble("wage") ?: 500.0,
-                    joinedDate = sdf.format(Date(joinedDateLong))
-                )
-                calculatePassbook(cachedDocs)
             }
 
         val cal = Calendar.getInstance()

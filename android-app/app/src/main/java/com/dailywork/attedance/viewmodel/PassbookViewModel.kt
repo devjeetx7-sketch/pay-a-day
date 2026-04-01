@@ -77,14 +77,6 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
         setupListeners()
     }
 
-    fun setMonth(date: Date) {
-        _state.value = _state.value.copy(
-            selectedMonthDate = date,
-            isLoading = true
-        )
-        setupListeners()
-    }
-
     private fun setupListeners() {
         val user = auth.currentUser ?: return
 
