@@ -169,10 +169,11 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
         val workersMap = cachedWorkers.associateBy({ "worker_${it.id}" }, { it })
 
         attendanceDocs.forEach { doc ->
-            val date = doc.getString("date") ?: ""
             val status = doc.getString("status") ?: ""
+            val date = doc.getString("date") ?: ""
             if (status == "present") {
                 val userId = doc.getString("user_id") ?: ""
+
                 val workerDoc = workersMap[userId]
 
                 if (workerDoc != null) {

@@ -149,25 +149,6 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
             }
     }
 
-    fun changePersonalMonth(offset: Int) {
-        val cal = Calendar.getInstance()
-        cal.time = _calendarState.value.currentMonthDate
-        cal.add(Calendar.MONTH, offset)
-        _calendarState.value = _calendarState.value.copy(
-            currentMonthDate = cal.time,
-            isLoading = true
-        )
-        setupListeners(_calendarState.value.role)
-    }
-
-    fun setPersonalMonth(date: Date) {
-        _calendarState.value = _calendarState.value.copy(
-            currentMonthDate = date,
-            isLoading = true
-        )
-        setupListeners(_calendarState.value.role)
-    }
-
     private fun updatePersonalAttendanceListener() {
         val user = auth.currentUser ?: return
 
@@ -273,6 +254,16 @@ class CalendarViewModel(private val repository: UserPreferencesRepository) : Vie
 
     // --- Personal Actions ---
 
+    fun changePersonalMonth(offsetMonths: Int) {
+        val cal = Calendar.getInstance()
+        cal.time = _calendarState.value.currentMonthDate
+        cal.add(Calendar.MONTH, offsetMonths)
+        _calendarState.value = _calendarState.value.copy(
+            currentMonthDate = cal.time,
+            isLoading = true
+        )
+        updatePersonalAttendanceListener()
+    }
 
     fun markPersonalAttendance(
         date: String,
