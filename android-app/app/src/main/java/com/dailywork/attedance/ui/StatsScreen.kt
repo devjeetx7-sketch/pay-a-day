@@ -46,11 +46,35 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.animation.core.animateIntAsState
+
+@Composable
+fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") {
+    var animatedValue by remember { mutableStateOf(0) }
+
+    LaunchedEffect(targetValue) {
+        animatedValue = targetValue
+    }
+
+    val count by animateIntAsState(targetValue = animatedValue, animationSpec = tween(1500))
+    Text(
+        text = "$prefix$count$suffix",
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,6 +148,7 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
     val currentTotalCost = if (isAllTime) state.contractorStats.allTimeCost else state.contractorStats.totalCost
     val currentTotalDays = if (isAllTime) state.contractorStats.allTimeWorks else state.contractorStats.totalDailyWorks
     val currentTopWorkers = if (isAllTime) state.contractorStats.allTimeTopWorkers else state.contractorStats.topWorkers
+    val dailyRecords = if (isAllTime) emptyList() else state.contractorStats.dailyRecords
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -153,14 +178,26 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                     Column {
                         Text("TOTAL LABOUR COST", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("₹${currentTotalCost.toInt()}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        AnimatedCounter(targetValue = currentTotalCost.toInt(), prefix = "₹")
                     }
                 }
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
                         Text("TOTAL MAN DAYS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("$currentTotalDays", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        AnimatedCounter(targetValue = currentTotalDays.toInt())
+                    }
+                }
+            }
+        }
+
+        if (!isAllTime && dailyRecords.isNotEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                    Column {
+                        Text("Daily Costs", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        EarningsLineChart(dailyRecords = dailyRecords)
                     }
                 }
             }
@@ -213,6 +250,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
 
     val currentEarnings = if (isAllTime) state.personalStats.allTimeEarnings else state.personalStats.totalEarnings
     val currentDays = if (isAllTime) state.personalStats.allTimeDays else (state.personalStats.present + state.personalStats.halfDays)
+    val dailyRecords = if (isAllTime) emptyList() else state.personalStats.dailyRecords
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -241,14 +279,14 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                     Column {
                         Text("EARNINGS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("₹${currentEarnings.toInt()}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        AnimatedCounter(targetValue = currentEarnings.toInt(), prefix = "₹")
                     }
                 }
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
                         Text("TOTAL DAYS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("$currentDays", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        AnimatedCounter(targetValue = currentDays.toInt())
                     }
                 }
             }
@@ -260,68 +298,100 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                     Column {
                         Text("TOTAL OVERTIME", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("${state.personalStats.overtime} hrs", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        AnimatedCounter(targetValue = state.personalStats.overtime, suffix = " hrs")
                     }
                 }
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
                         Text("ADVANCE DEDUCTIONS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("₹${state.personalStats.advanceTotal.toInt()}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF97316))
+                        AnimatedCounter(targetValue = state.personalStats.advanceTotal.toInt(), prefix = "₹")
                     }
                 }
             }
         }
 
-        item {
+        if (!isAllTime && dailyRecords.isNotEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                    Column {
+                        Text("Daily Earnings", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        EarningsLineChart(dailyRecords = dailyRecords)
+                    }
+                }
+            }
+        }
+
+        if (!isAllTime) {
+            item {
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
                         Text("Attendance Breakdown", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        val total = (state.personalStats.present + state.personalStats.absent + state.personalStats.halfDays).toFloat()
+                        // Present includes half days in the count, so subtract them for purely full-day slices
+                        val purePresent = state.personalStats.present - state.personalStats.halfDays
+                        val total = (purePresent + state.personalStats.absent + state.personalStats.halfDays).toFloat()
                         if (total > 0) {
-                            val presentSweep = (state.personalStats.present / total) * 360f
-                            val absentSweep = (state.personalStats.absent / total) * 360f
+                            val presentSweep = (purePresent / total) * 360f
                             val halfSweep = (state.personalStats.halfDays / total) * 360f
+                            val absentSweep = (state.personalStats.absent / total) * 360f
 
                             val animatedPresentSweep by animateFloatAsState(targetValue = presentSweep, animationSpec = tween(1000))
-                            val animatedAbsentSweep by animateFloatAsState(targetValue = absentSweep, animationSpec = tween(1000))
                             val animatedHalfSweep by animateFloatAsState(targetValue = halfSweep, animationSpec = tween(1000))
+                            val animatedAbsentSweep by animateFloatAsState(targetValue = absentSweep, animationSpec = tween(1000))
 
-                            val presentColor = MaterialTheme.colorScheme.primary
-                            val absentColor = MaterialTheme.colorScheme.error
+                            val presentColor = Color(0xFF39b27d)
                             val halfColor = Color(0xFFF97316)
+                            val absentColor = MaterialTheme.colorScheme.error
 
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
                                     Canvas(modifier = Modifier.size(100.dp)) {
                                         val strokeWidth = 24.dp.toPx()
+
+                                        // Draw base circle
+                                        drawArc(
+                                            color = Color.LightGray.copy(alpha = 0.3f),
+                                            startAngle = 0f,
+                                            sweepAngle = 360f,
+                                            useCenter = false,
+                                            style = Stroke(strokeWidth, cap = StrokeCap.Round)
+                                        )
+
+                                        var currentStartAngle = -90f
+
                                         drawArc(
                                             color = presentColor,
-                                            startAngle = -90f,
+                                            startAngle = currentStartAngle,
                                             sweepAngle = animatedPresentSweep,
                                             useCenter = false,
-                                            style = Stroke(strokeWidth, cap = StrokeCap.Round)
+                                            style = Stroke(strokeWidth, cap = StrokeCap.Butt)
                                         )
-                                        drawArc(
-                                            color = absentColor,
-                                            startAngle = -90f + animatedPresentSweep,
-                                            sweepAngle = animatedAbsentSweep,
-                                            useCenter = false,
-                                            style = Stroke(strokeWidth, cap = StrokeCap.Round)
-                                        )
+                                        currentStartAngle += animatedPresentSweep
+
                                         drawArc(
                                             color = halfColor,
-                                            startAngle = -90f + animatedPresentSweep + animatedAbsentSweep,
+                                            startAngle = currentStartAngle,
                                             sweepAngle = animatedHalfSweep,
                                             useCenter = false,
-                                            style = Stroke(strokeWidth, cap = StrokeCap.Round)
+                                            style = Stroke(strokeWidth, cap = StrokeCap.Butt)
+                                        )
+                                        currentStartAngle += animatedHalfSweep
+
+                                        drawArc(
+                                            color = absentColor,
+                                            startAngle = currentStartAngle,
+                                            sweepAngle = animatedAbsentSweep,
+                                            useCenter = false,
+                                            style = Stroke(strokeWidth, cap = StrokeCap.Butt)
                                         )
                                     }
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("${((state.personalStats.present / total) * 100).toInt()}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                                        Text("Rate", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        val attendanceRate = if (total > 0) ((purePresent + state.personalStats.halfDays * 0.5) / total * 100).toInt() else 0
+                                        Text("${attendanceRate}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                                        Text("Attendance", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
 
@@ -331,7 +401,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(presentColor))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Present (${state.personalStats.present})", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                        Text("Present (${purePresent})", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                     }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(halfColor))
@@ -347,8 +417,9 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                             }
                         } else {
                             Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text("No records found.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("No data.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
+                        }
                     }
                 }
             }
@@ -362,15 +433,138 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                     Column {
                         Text("TOTAL EARNINGS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("₹${state.personalStats.allTimeEarnings.toInt()}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
                     }
                 }
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
                         Text("TOTAL DAYS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("${state.personalStats.allTimeDays}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        AnimatedCounter(targetValue = state.personalStats.allTimeDays)
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EarningsLineChart(dailyRecords: List<com.dailywork.attedance.viewmodel.DailyRecord>) {
+    if (dailyRecords.isEmpty()) return
+
+    val maxEarning = dailyRecords.maxOfOrNull { it.earnings } ?: 1.0
+    val maxChartVal = if (maxEarning == 0.0) 1.0 else maxEarning * 1.2
+
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+
+    val animationProgress by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(1500)
+    )
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
+    Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
+        Canvas(
+            modifier = Modifier.fillMaxSize().pointerInput(dailyRecords) {
+                detectTapGestures { offset ->
+                    val spacing = size.width / (dailyRecords.size.coerceAtLeast(2) - 1)
+                    val index = (offset.x / spacing).toInt().coerceIn(0, dailyRecords.size - 1)
+                    selectedIndex = index
+                }
+            }
+        ) {
+            val width = size.width
+            val height = size.height
+
+            val spacing = if (dailyRecords.size > 1) width / (dailyRecords.size - 1) else width
+
+            val path = Path()
+            val points = mutableListOf<Offset>()
+
+            dailyRecords.forEachIndexed { index, record ->
+                val x = index * spacing
+                val y = height - ((record.earnings / maxChartVal) * height).toFloat()
+                points.add(Offset(x, y))
+
+                if (index == 0) {
+                    path.moveTo(x, y)
+                } else {
+                    path.lineTo(x, y)
+                }
+            }
+
+            val animPath = Path()
+            val pathMeasure = android.graphics.PathMeasure(path.asAndroidPath(), false)
+            val length = pathMeasure.length
+            val dst = android.graphics.Path()
+            pathMeasure.getSegment(0f, length * animationProgress, dst, true)
+            animPath.addPath(dst.asComposePath())
+
+            drawPath(
+                path = animPath,
+                color = primaryColor,
+                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+            )
+
+            // Draw points
+            val visiblePoints = (points.size * animationProgress).toInt()
+            points.take(visiblePoints).forEach { point ->
+                drawCircle(
+                    color = primaryColor,
+                    radius = 4.dp.toPx(),
+                    center = point
+                )
+                drawCircle(
+                    color = androidx.compose.ui.graphics.Color.White,
+                    radius = 2.dp.toPx(),
+                    center = point
+                )
+            }
+
+            // Tooltip
+            selectedIndex?.let { index ->
+                if (index < points.size) {
+                    val point = points[index]
+                    val record = dailyRecords[index]
+
+                    val textPaint = android.graphics.Paint().apply {
+                        color = android.graphics.Color.WHITE
+                        textSize = 12.sp.toPx()
+                        textAlign = android.graphics.Paint.Align.CENTER
+                        isAntiAlias = true
+                    }
+
+                    val bgPaint = android.graphics.Paint().apply {
+                        color = android.graphics.Color.DKGRAY
+                        isAntiAlias = true
+                    }
+
+                    val text = "₹${record.earnings.toInt()} (${record.dateStr.takeLast(2)})"
+                    val textBounds = android.graphics.Rect()
+                    textPaint.getTextBounds(text, 0, text.length, textBounds)
+
+                    val tooltipWidth = textBounds.width() + 32f
+                    val tooltipHeight = textBounds.height() + 24f
+
+                    val tooltipX = point.x.coerceIn(tooltipWidth / 2, width - tooltipWidth / 2)
+                    val tooltipY = (point.y - tooltipHeight - 16f).coerceAtLeast(0f)
+
+                    drawContext.canvas.nativeCanvas.drawRoundRect(
+                        tooltipX - tooltipWidth / 2,
+                        tooltipY,
+                        tooltipX + tooltipWidth / 2,
+                        tooltipY + tooltipHeight,
+                        8f, 8f, bgPaint
+                    )
+
+                    drawContext.canvas.nativeCanvas.drawText(
+                        text,
+                        tooltipX,
+                        tooltipY + tooltipHeight / 2 + textBounds.height() / 2,
+                        textPaint
+                    )
                 }
             }
         }

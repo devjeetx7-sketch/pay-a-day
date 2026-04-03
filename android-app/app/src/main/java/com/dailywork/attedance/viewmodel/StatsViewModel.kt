@@ -13,6 +13,12 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+data class DailyRecord(
+    val dateStr: String,
+    val earnings: Double,
+    val attendance: Double
+)
+
 data class WorkerStats(
     val name: String,
     val days: Double,
@@ -23,6 +29,7 @@ data class ContractorStatsData(
     val totalCost: Double = 0.0,
     val totalDailyWorks: Double = 0.0,
     val topWorkers: List<WorkerStats> = emptyList(),
+    val dailyRecords: List<DailyRecord> = emptyList(),
     val allTimeCost: Double = 0.0,
     val allTimeWorks: Double = 0.0,
     val allTimeTopWorkers: List<WorkerStats> = emptyList()
@@ -35,6 +42,7 @@ data class PersonalStatsData(
     val overtime: Int = 0,
     val advanceTotal: Double = 0.0,
     val totalEarnings: Double = 0.0,
+    val dailyRecords: List<DailyRecord> = emptyList(),
     val allTimeDays: Int = 0,
     val allTimeEarnings: Double = 0.0
 )
@@ -161,6 +169,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
         var totalCost = 0.0
         var totalDays = 0.0
         val workerPerfMap = mutableMapOf<String, WorkerStats>()
+        val dailyMap = mutableMapOf<String, DailyRecord>()
 
         var allTimeCost = 0.0
         var allTimeDays = 0.0
@@ -202,6 +211,12 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
 
                         totalDays += dayVal
                         totalCost += costVal
+
+                        val existingDaily = dailyMap[date] ?: DailyRecord(date, 0.0, 0.0)
+                        dailyMap[date] = existingDaily.copy(
+                            earnings = existingDaily.earnings + costVal,
+                            attendance = existingDaily.attendance + dayVal
+                        )
                     }
                 }
             }
@@ -209,6 +224,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
 
         val topWorkers = workerPerfMap.values.toList().sortedByDescending { it.days }
         val allTimeTopWorkers = allTimeWorkerPerfMap.values.toList().sortedByDescending { it.days }
+        val sortedDailyRecords = dailyMap.values.toList().sortedBy { it.dateStr }
 
         _statsState.value = _statsState.value.copy(
             isLoading = false,
@@ -217,6 +233,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
                 totalCost = totalCost,
                 totalDailyWorks = totalDays,
                 topWorkers = topWorkers,
+                dailyRecords = sortedDailyRecords,
                 allTimeCost = allTimeCost,
                 allTimeWorks = allTimeDays,
                 allTimeTopWorkers = allTimeTopWorkers
@@ -236,6 +253,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
         var overtime = 0
         var advanceTotal = 0.0
         var totalEarnings = 0.0
+        val dailyMap = mutableMapOf<String, DailyRecord>()
 
         var allTimeDays = 0
         var allTimeEarnings = 0.0
@@ -257,19 +275,38 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
 
             // Current month
             if (date.startsWith(yearMonth)) {
+                var dayVal = 0.0
+                var dayEarn = 0.0
+
                 if (status == "present") {
                     present++
-                    if (type == "half") halfDays++
+                    if (type == "half") {
+                        halfDays++
+                        dayVal = 0.5
+                    } else {
+                        dayVal = 1.0
+                    }
                     overtime += ot
                     totalEarnings += costVal
+                    dayEarn = costVal
                 } else if (status == "absent") {
                     absent++
                 }
                 if (adv > 0) {
                     advanceTotal += adv
                 }
+
+                if (status == "present" || status == "absent") {
+                    val existingDaily = dailyMap[date] ?: DailyRecord(date, 0.0, 0.0)
+                    dailyMap[date] = existingDaily.copy(
+                        earnings = existingDaily.earnings + dayEarn,
+                        attendance = existingDaily.attendance + dayVal
+                    )
+                }
             }
         }
+
+        val sortedDailyRecords = dailyMap.values.toList().sortedBy { it.dateStr }
 
         _statsState.value = _statsState.value.copy(
             isLoading = false,
@@ -281,6 +318,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
                 overtime = overtime,
                 advanceTotal = advanceTotal,
                 totalEarnings = totalEarnings,
+                dailyRecords = sortedDailyRecords,
                 allTimeDays = allTimeDays,
                 allTimeEarnings = allTimeEarnings
             )
