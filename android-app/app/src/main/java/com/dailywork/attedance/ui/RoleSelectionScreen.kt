@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,11 +27,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dailywork.attedance.R
 import com.dailywork.attedance.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -65,9 +69,18 @@ fun RoleSelectionScreen(authViewModel: AuthViewModel, onComplete: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("Select Role", fontSize = 24.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
-            Text("How will you use this app?", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, bottom = 24.dp))
+            Text("How will you use this app?", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Image(
+                painter = painterResource(id = R.drawable.illustration_role_selection),
+                contentDescription = "Role Selection Illustration",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .padding(bottom = 24.dp)
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 roles.forEach { role ->
                     RoleCard(role, selectedRole == role.id) { selectedRole = role.id }
                 }
@@ -107,8 +120,13 @@ fun RoleCard(role: RoleOption, isSelected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .pressScaleEffect()
+            .shadow(
+                elevation = if (isSelected) 8.dp else 2.dp,
+                shape = RoundedCornerShape(16.dp)
+            )
             .clip(RoundedCornerShape(16.dp))
-            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent)
+            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface)
             .border(
                 2.dp,
                 if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
