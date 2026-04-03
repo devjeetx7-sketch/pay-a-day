@@ -300,6 +300,9 @@ fun SettingsScreenContent(
                                     if (state.isPremium) {
                                         Text("DailyWork Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                                         Text("Thank you for your purchase ❤️", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    } else {
+                                        Text("Upgrade to Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Unlock all features", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }

@@ -115,6 +115,7 @@ dependencies {
 
     // ZXing for QR Code Scanning (Aadhaar)
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     testImplementation("junit:junit:4.13.2")

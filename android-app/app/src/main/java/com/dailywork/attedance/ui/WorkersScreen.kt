@@ -371,6 +371,8 @@ fun WorkerFormDialog(
                             setCameraId(0)
                             setBeepEnabled(true)
                             setBarcodeImageEnabled(false)
+                            setOrientationLocked(true)
+                            setCaptureActivity(CustomScannerActivity::class.java)
                         }
                         scanLauncher.launch(options)
                     },
