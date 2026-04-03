@@ -30,7 +30,8 @@ data class SettingsState(
     val isDarkMode: Boolean = false,
     val isRemindersEnabled: Boolean = false,
     val isSaving: Boolean = false,
-    val savedMessage: String? = null
+    val savedMessage: String? = null,
+    val isPremium: Boolean = false
 )
 
 class SettingsViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
@@ -79,6 +80,7 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
                     val currentRole = snapshot.getString("role") ?: ""
                     val currentPhone = snapshot.getString("phone") ?: ""
                     val currentProfileImageUrl = snapshot.getString("profileImageUrl") ?: ""
+                    val isPremium = snapshot.getBoolean("isPremium") ?: false
 
                     _state.value = _state.value.copy(
                         name = currentName,
@@ -92,7 +94,8 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
                         originalPhone = currentPhone,
                         profileImageUrl = currentProfileImageUrl,
                         originalProfileImageUrl = currentProfileImageUrl,
-                        language = snapshot.getString("language") ?: "en"
+                        language = snapshot.getString("language") ?: "en",
+                        isPremium = isPremium
                     )
                 }
             }

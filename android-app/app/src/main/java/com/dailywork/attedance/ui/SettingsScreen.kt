@@ -33,7 +33,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreenContent(
     viewModel: SettingsViewModel,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToPremium: () -> Unit = {},
+    onNavigateToWorkerHistory: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -45,15 +47,15 @@ fun SettingsScreenContent(
         }
     }
 
-    var editWorkType by remember(state.workType) { mutableStateOf(state.workType) }
-    var customWorkType by remember { mutableStateOf("") }
-    var isAddingCustomType by remember { mutableStateOf(false) }
-    var showHowToUseDialog by remember { mutableStateOf(false) }
+    var showHowToUseBottomSheet by remember { mutableStateOf(false) }
+    var showPrivacyBottomSheet by remember { mutableStateOf(false) }
+    var showDeveloperBottomSheet by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
-    val defaultWorkTypes = listOf("Labour", "Helper", "Mistry", "Custom")
-    var expandedWorkTypeMenu by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     var expandedLanguageMenu by remember { mutableStateOf(false) }
-    var expandedRoleMenu by remember { mutableStateOf(false) }
+    var showRoleBottomSheet by remember { mutableStateOf(false) }
     val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी", "bn" to "বাংলা", "te" to "తెలుగు", "mr" to "मराठी", "ta" to "தமிழ்", "gu" to "ગુજરાતી")
 
     val hasChanges = state.name != state.originalName ||
@@ -189,115 +191,6 @@ fun SettingsScreenContent(
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
-
-                        // Role Dropdown
-                        ExposedDropdownMenuBox(
-                            expanded = expandedRoleMenu,
-                            onExpandedChange = { expandedRoleMenu = it },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedTextField(
-                                value = state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Role") },
-                                leadingIcon = { Icon(Icons.Default.Work, null) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRoleMenu) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                )
-                            )
-                            ExposedDropdownMenu(
-                                expanded = expandedRoleMenu,
-                                onDismissRequest = { expandedRoleMenu = false },
-                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                            ) {
-                                listOf("contractor", "personal").forEach { roleOption ->
-                                    DropdownMenuItem(
-                                        text = { Text(roleOption.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }, fontWeight = FontWeight.Bold) },
-                                        onClick = {
-                                            expandedRoleMenu = false
-                                            viewModel.onRoleChange(roleOption)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Work Type
-                        Column {
-                            Text("Work Role / Type", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    OutlinedButton(
-                                        onClick = { expandedWorkTypeMenu = true },
-                                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
-                                    ) {
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                            Text(if (editWorkType.isEmpty()) "Select Work Type" else editWorkType, fontWeight = FontWeight.Bold)
-                                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                                        }
-                                    }
-                                    DropdownMenu(
-                                        expanded = expandedWorkTypeMenu,
-                                        onDismissRequest = { expandedWorkTypeMenu = false },
-                                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                                    ) {
-                                        defaultWorkTypes.forEach { type ->
-                                            DropdownMenuItem(
-                                                text = { Text(type, fontWeight = FontWeight.Bold) },
-                                                onClick = {
-                                                    expandedWorkTypeMenu = false
-                                                    if (type == "Custom") {
-                                                        isAddingCustomType = true
-                                                    } else {
-                                                        editWorkType = type
-                                                        isAddingCustomType = false
-                                                        viewModel.saveWorkType(type)
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            if (isAddingCustomType) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    OutlinedTextField(
-                                        value = customWorkType,
-                                        onValueChange = { customWorkType = it },
-                                        modifier = Modifier.weight(1f),
-                                        placeholder = { Text("e.g. Plumber") },
-                                        shape = RoundedCornerShape(12.dp),
-                                        singleLine = true,
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Button(
-                                        onClick = {
-                                            if (customWorkType.trim().isNotEmpty()) {
-                                                editWorkType = customWorkType.trim()
-                                                viewModel.saveWorkType(editWorkType)
-                                                isAddingCustomType = false
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.height(56.dp)
-                                    ) {
-                                        Text("Add", fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -366,18 +259,49 @@ fun SettingsScreenContent(
                             }
                         }
                         Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showRoleBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFFEAB308).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color(0xFFEAB308))
+                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Work, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("DailyWork Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Upgrade your account", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Role Management", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text("Current: ${state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        }
+                        Divider(color = MaterialTheme.colorScheme.outline)
+                        Row(modifier = Modifier.fillMaxWidth().clickable { if (!state.isPremium) onNavigateToPremium() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if (state.isPremium) Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFEAB308).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    if (state.isPremium) {
+                                        Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFF10B981))
+                                    } else {
+                                        Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color(0xFFEAB308))
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    if (state.isPremium) {
+                                        Text("DailyWork Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                        Text("Thank you for your purchase ❤️", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    } else {
+                                        Text("Upgrade to Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Unlock all features", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                            if (!state.isPremium) {
+                                Button(
+                                    onClick = onNavigateToPremium,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEAB308))
+                                ) {
+                                    Text("Upgrade Now", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
+                                }
+                            }
                         }
                     }
                 }
@@ -389,19 +313,36 @@ fun SettingsScreenContent(
 
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        if (state.role == "contractor") {
+                            Row(modifier = Modifier.fillMaxWidth().clickable { onNavigateToWorkerHistory() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text("Worker History", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Attendance & Payment logs", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Export as PDF", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Only Contractor Premium", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Divider(color = MaterialTheme.colorScheme.outline)
+                            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text("Export as PDF", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Only Contractor Premium", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
                             }
+                            Divider(color = MaterialTheme.colorScheme.outline)
                         }
-                        Divider(color = MaterialTheme.colorScheme.outline)
+
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF25D366).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -414,20 +355,6 @@ fun SettingsScreenContent(
                                 }
                             }
                         }
-                        Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color.Blue.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.CloudUpload, contentDescription = null, tint = Color.Blue)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Auto Backup", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Premium feature", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            Switch(checked = false, onCheckedChange = { })
-                        }
                     }
                 }
             }
@@ -438,7 +365,7 @@ fun SettingsScreenContent(
 
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showHowToUseDialog = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showHowToUseBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
@@ -451,7 +378,7 @@ fun SettingsScreenContent(
                             }
                         }
                         Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showPrivacyBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -464,15 +391,15 @@ fun SettingsScreenContent(
                             }
                         }
                         Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showDeveloperBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF16A34A).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF16A34A))
+                                    Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF16A34A))
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Contact Support", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("WhatsApp us for help", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Developer Contact", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text("Reach out for feedback", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -483,50 +410,201 @@ fun SettingsScreenContent(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = onLogout,
+                onClick = { showLogoutDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
             ) {
+                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
 
-        if (showHowToUseDialog) {
+        if (showLogoutDialog) {
             AlertDialog(
-                onDismissRequest = { showHowToUseDialog = false },
-                title = {
-                    Column {
-                        Text("How to Use DailyWork", fontWeight = FontWeight.Bold)
-                        Text("A quick guide to tracking your work effectively", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Column {
-                            Text("Marking Attendance", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
-                            Text("On the Dashboard, click Full Day or Half Day to mark today's attendance. Add overtime using the + / - buttons before saving. If you didn't work, click Mark Absent.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Column {
-                            Text("Net Payable & Earnings", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF16A34A))
-                            Text("Your Earnings are automatically calculated by multiplying your working days with your Daily Wage. Net Payable shows your final take-home amount: (Total Earnings - Advance).", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Column {
-                            Text("Advance Payments", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFF97316))
-                            Text("If you receive money ahead of time, click Add Advance on the Dashboard or add it directly on a specific date inside the Calendar. This is automatically deducted.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Column {
-                            Text("Calendar & History", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Blue)
-                            Text("Use the Calendar to edit past records (e.g. if you forgot to mark attendance yesterday). Use Passbook to export your monthly logs as a PDF or CSV.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                },
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text("Log Out", fontWeight = FontWeight.Bold) },
+                text = { Text("Are you sure you want to log out of your account?") },
                 confirmButton = {
-                    Button(onClick = { showHowToUseDialog = false }) { Text("Got it") }
+                    Button(
+                        onClick = {
+                            showLogoutDialog = false
+                            onLogout()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Log Out", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLogoutDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
             )
+        }
+
+        if (showHowToUseBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showHowToUseBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .padding(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("How to Use DailyWork", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("A quick guide to tracking your work effectively", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Divider(color = MaterialTheme.colorScheme.outline)
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("1. Marking Attendance", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("On the Dashboard, click Full Day or Half Day to mark today's attendance. Add overtime using the + / - buttons before saving. If you didn't work, click Mark Absent.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("2. Net Payable & Earnings", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF16A34A))
+                        Text("Your Earnings are automatically calculated by multiplying your working days with your Daily Wage. Net Payable shows your final take-home amount: (Total Earnings - Advance).", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("3. Advance Payments", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFFF97316))
+                        Text("If you receive money ahead of time, click Add Advance on the Dashboard or add it directly on a specific date inside the Calendar. This is automatically deducted.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("4. Calendar & History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Blue)
+                        Text("Use the Calendar to edit past records (e.g. if you forgot to mark attendance yesterday). Use Passbook to export your monthly logs as a PDF or CSV.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+
+        if (showPrivacyBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showPrivacyBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .padding(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Data & Privacy Policy", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Stored securely in the cloud", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Divider(color = MaterialTheme.colorScheme.outline)
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Data Collection", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("We collect your name, phone number, and attendance records to provide the core functionality of the app.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Storage Method", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Your data is securely stored on Firebase, protected by industry-standard security measures.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Security Practices", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Access to your data is restricted to your authenticated account.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("User Control", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("You can delete your data by deleting your account, or export your records from the app.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+
+        if (showDeveloperBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showDeveloperBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .padding(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Developer Contact", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Reach out to us for any feedback or support", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Divider(color = MaterialTheme.colorScheme.outline)
+
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                        Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text("support@dailywork.com", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                        Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text("+91 98765 43210", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                        Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text("www.dailywork.com", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+        }
+
+        if (showRoleBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showRoleBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .padding(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Role Management", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Switch between Contractor and Personal mode", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Divider(color = MaterialTheme.colorScheme.outline)
+
+                    listOf("contractor", "personal").forEach { roleOption ->
+                        val isSelected = state.role == roleOption
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
+                                .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+                                .clickable {
+                                    if (!isSelected) {
+                                        viewModel.onRoleChange(roleOption)
+                                        viewModel.saveChanges()
+                                    }
+                                    showRoleBottomSheet = false
+                                }
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = roleOption.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                            )
+                            if (isSelected) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

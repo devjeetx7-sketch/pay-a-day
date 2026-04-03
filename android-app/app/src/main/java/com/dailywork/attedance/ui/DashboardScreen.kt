@@ -171,7 +171,12 @@ fun DashboardScreen(
                             StatsScreenContent(viewModel = statsViewModel)
                         }
                         3 -> {
-                            SettingsScreenContent(viewModel = settingsViewModel, onLogout = onLogout)
+                            SettingsScreenContent(
+                                viewModel = settingsViewModel,
+                                onLogout = onLogout,
+                                onNavigateToPremium = { navController.navigate("premium") },
+                                onNavigateToWorkerHistory = { bottomNavController.navigate("worker_history") }
+                            )
                         }
                     }
                 }
@@ -191,6 +196,9 @@ fun DashboardScreen(
                     viewModel = workerDetailViewModel,
                     navController = bottomNavController
                 )
+            }
+            composable("worker_history") {
+                WorkerHistoryScreen(navController = bottomNavController)
             }
         }
 
