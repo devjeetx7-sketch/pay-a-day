@@ -31,7 +31,8 @@ data class SettingsState(
     val isRemindersEnabled: Boolean = false,
     val isSaving: Boolean = false,
     val savedMessage: String? = null,
-    val isPremium: Boolean = false
+    val isPremium: Boolean = false,
+    val triggerRestart: Boolean = false
 )
 
 class SettingsViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
@@ -162,7 +163,8 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
                     originalProfileImageUrl = finalImageUrl,
                     profileImageUri = null,
                     savedMessage = "Profile updated successfully!",
-                    isSaving = false
+                    isSaving = false,
+                    triggerRestart = roleChanged
                 )
 
             } catch (e: Exception) {
