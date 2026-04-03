@@ -47,7 +47,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 @Composable
 fun WorkersScreenContent(
     viewModel: WorkersViewModel,
-    navController: NavController
+    onNavigateToWorkerDetail: (String) -> Unit,
+    onNavigateToPremium: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
@@ -114,7 +115,7 @@ fun WorkersScreenContent(
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(onClick = {
                                 if (!state.isPremium && state.workers.size >= 10) {
-                                    navController.navigate("premium")
+                                    onNavigateToPremium()
                                 } else {
                                     editingWorker = null
                                     showFormDialog = true
@@ -129,7 +130,7 @@ fun WorkersScreenContent(
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(filteredWorkers) { worker ->
                         Card(
-                            modifier = Modifier.fillMaxWidth().clickable { navController.navigate("worker_detail/${worker.id}") },
+                            modifier = Modifier.fillMaxWidth().clickable { onNavigateToWorkerDetail(worker.id) },
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
@@ -146,7 +147,7 @@ fun WorkersScreenContent(
                                             Text(worker.workType, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
-                                    IconButton(onClick = { navController.navigate("worker_detail/${worker.id}") }) {
+                                    IconButton(onClick = { onNavigateToWorkerDetail(worker.id) }) {
                                         Icon(Icons.Default.ChevronRight, contentDescription = "View Details")
                                     }
                                 }
@@ -207,7 +208,7 @@ fun WorkersScreenContent(
         FloatingActionButton(
             onClick = {
                 if (!state.isPremium && state.workers.size >= 10) {
-                    navController.navigate("premium")
+                    onNavigateToPremium()
                 } else {
                     editingWorker = null
                     showFormDialog = true
