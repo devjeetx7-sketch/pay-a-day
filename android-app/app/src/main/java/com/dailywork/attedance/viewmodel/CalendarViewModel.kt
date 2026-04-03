@@ -98,7 +98,7 @@ class CalendarViewModel(
         _calendarState.value = _calendarState.value.copy(isLoading = true)
 
         if (role == "contractor") {
-            workersListener = firestoreRepository.workersCollection()
+            workersListener = firestoreRepository.getContractorWorkers()
             ?.limit(50)
                 ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) {
@@ -131,7 +131,7 @@ class CalendarViewModel(
         val workers = _calendarState.value.workers
 
         workers.forEach { worker ->
-            val listener = firestoreRepository.workerAttendanceCollection(worker.id)
+            val listener = firestoreRepository.getContractorAttendance(worker.id)
                 ?.document(date) // Assuming attendanceId is the date
                 ?.addSnapshotListener { snapshot, error ->
                     if (error == null && snapshot != null) {
@@ -178,7 +178,7 @@ class CalendarViewModel(
         val startDate = "$monthPrefix-01"
         val endDate = "$monthPrefix-31"
 
-        personalAttendanceListener = firestoreRepository.personalAttendanceCollection()
+        personalAttendanceListener = firestoreRepository.getPersonalAttendance()
             ?.whereGreaterThanOrEqualTo("date", startDate)
             ?.whereLessThanOrEqualTo("date", endDate)
             ?.limit(100)

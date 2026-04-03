@@ -73,7 +73,7 @@ class WorkerDetailViewModel(
         attendanceListener?.remove()
         userListener?.remove()
 
-        workerListener = firestoreRepository.workersCollection()?.document(wId)
+        workerListener = firestoreRepository.getContractorWorkers()?.document(wId)
             ?.addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && snapshot.exists()) {
                     val joinedDateLong = snapshot.getTimestamp("created_at")?.toDate()?.time ?: Date().time
@@ -93,7 +93,7 @@ class WorkerDetailViewModel(
         val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         val yearMonth = sdfMonth.format(cal.time)
 
-        attendanceListener = firestoreRepository.workerAttendanceCollection(wId)
+        attendanceListener = firestoreRepository.getContractorAttendance(wId)
             ?.whereGreaterThanOrEqualTo("date", "$yearMonth-01")
             ?.whereLessThanOrEqualTo("date", "$yearMonth-31")
             ?.limit(100)

@@ -4,14 +4,17 @@ This document outlines the best practices and architectural changes implemented 
 
 ## 🏗️ New Nested Structure
 
-The application has moved from a flat structure to a nested, user-based hierarchy:
+The application has moved from a flat structure to a strictly isolated, role-based nested hierarchy under each user:
 
 - `users/{userId}`
-  - `workers/{workerId}`
+  - `contractor/data/`
+    - `workers/{workerId}`
+      - `attendance/{date}`
+    - `workTypes/{typeId}`
+    - `summaries/{YYYY-MM}`
+  - `personal/data/`
     - `attendance/{date}`
-  - `personal_attendance/{date}`
-  - `workTypes/{typeId}`
-  - `summaries/{YYYY-MM}`
+    - `summaries/{YYYY-MM}`
 
 ## ✅ Key Benefits
 

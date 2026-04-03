@@ -82,7 +82,7 @@ class WorkersViewModel(
         workersListener?.remove()
         userListener?.remove()
 
-        workersListener = firestoreRepository.workersCollection()
+        workersListener = firestoreRepository.getContractorWorkers()
             ?.limit(50) // Basic pagination limit
             ?.addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {

@@ -112,7 +112,7 @@ class PassbookViewModel(
         val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         val yearMonth = sdfMonth.format(cal.time)
 
-        attendanceListener = firestoreRepository.personalAttendanceCollection()
+        attendanceListener = firestoreRepository.getPersonalAttendance()
             ?.whereGreaterThanOrEqualTo("date", "$yearMonth-01")
             ?.whereLessThanOrEqualTo("date", "$yearMonth-31")
             ?.limit(100)

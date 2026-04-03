@@ -137,7 +137,7 @@ class StatsViewModel(
 
         if (role == "contractor") {
             summaryListener?.remove()
-            workersListener = firestoreRepository.workersCollection()
+            workersListener = firestoreRepository.getContractorWorkers()
                 ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) {
                         _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
@@ -146,7 +146,7 @@ class StatsViewModel(
                     cachedWorkers = snapshot.documents
 
                     // Fetching nested summaries instead of full attendance lists for stats
-                    summaryListener = firestoreRepository.summariesCollection()?.document(yearMonth)
+                    summaryListener = firestoreRepository.contractorSummariesCollection()?.document(yearMonth)
                         ?.addSnapshotListener { summarySnapshot, _ ->
                             if (summarySnapshot != null && summarySnapshot.exists()) {
                                 // For now, we still use calculateContractorStats for backward compatibility
@@ -163,7 +163,7 @@ class StatsViewModel(
                     calculateStatsFromSummaries(yearMonth)
                 }
         } else {
-            attendanceListener = firestoreRepository.personalAttendanceCollection()
+            attendanceListener = firestoreRepository.getPersonalAttendance()
                 ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) {
                         _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
@@ -176,7 +176,7 @@ class StatsViewModel(
 
     private fun calculateStatsFromSummaries(yearMonth: String) {
         viewModelScope.launch {
-            val summary = firestoreRepository.summariesCollection()?.document(yearMonth)?.get()?.await()
+            val summary = firestoreRepository.contractorSummariesCollection()?.document(yearMonth)?.get()?.await()
             if (summary == null || !summary.exists()) {
                 _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
                 return@launch

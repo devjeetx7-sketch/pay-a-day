@@ -105,7 +105,7 @@ class DashboardViewModel(
             }
 
         if (role == "contractor") {
-            workersListener = firestoreRepository.workersCollection()
+            workersListener = firestoreRepository.getContractorWorkers()
                 ?.limit(100)
                 ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) return@addSnapshotListener
@@ -117,7 +117,7 @@ class DashboardViewModel(
             val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
             val currentMonthStr = sdfMonth.format(java.util.Date())
             attendanceListener?.remove()
-            attendanceListener = firestoreRepository.summariesCollection()?.document(currentMonthStr)
+            attendanceListener = firestoreRepository.contractorSummariesCollection()?.document(currentMonthStr)
                 ?.addSnapshotListener { snapshot, _ ->
                     if (snapshot != null && snapshot.exists()) {
                          val totalPaid = snapshot.getDouble("total_advance") ?: 0.0
@@ -131,7 +131,7 @@ class DashboardViewModel(
                     }
                 }
         } else {
-            attendanceListener = firestoreRepository.personalAttendanceCollection()
+            attendanceListener = firestoreRepository.getPersonalAttendance()
                 ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) return@addSnapshotListener
                     cachedAttendance = snapshot.documents

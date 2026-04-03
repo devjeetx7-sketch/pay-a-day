@@ -197,11 +197,11 @@ class SettingsViewModel(
 
     fun saveWorkType(newWorkType: String) {
         viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
+            auth.currentUser ?: return@launch
             _state.value = _state.value.copy(isSaving = true)
             try {
                 val data = mapOf("name" to newWorkType)
-                firestoreRepository.workTypesCollection()?.add(data)?.await()
+                firestoreRepository.contractorWorkTypesCollection()?.add(data)?.await()
                 _state.value = _state.value.copy(savedMessage = "Work type saved successfully!")
             } catch (e: Exception) {
                 _state.value = _state.value.copy(savedMessage = "Failed to save work type.")
