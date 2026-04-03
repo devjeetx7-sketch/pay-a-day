@@ -187,7 +187,8 @@ fun DashboardScreen(
             composable("workers") {
                 WorkersScreenContent(
                     viewModel = workersViewModel,
-                    navController = navController
+                    onNavigateToWorkerDetail = { bottomNavController.navigate("worker_detail/$it") },
+                    onNavigateToPremium = { navController.navigate("premium") }
                 )
             }
             composable("worker_detail/{workerId}") { backStackEntry ->
