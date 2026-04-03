@@ -13,7 +13,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -240,6 +246,35 @@ fun WorkersScreenContent(
     }
 }
 
+class AadhaarTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val trimmed = if (text.text.length >= 12) text.text.substring(0..11) else text.text
+        var out = ""
+        for (i in trimmed.indices) {
+            out += trimmed[i]
+            if (i % 4 == 3 && i != 11) out += " "
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 3) return offset
+                if (offset <= 7) return offset + 1
+                if (offset <= 11) return offset + 2
+                return 14
+            }
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 4) return offset
+                if (offset <= 9) return offset - 1
+                if (offset <= 14) return offset - 2
+                return 12
+            }
+        }
+
+        return TransformedText(AnnotatedString(out), offsetMapping)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkerFormDialog(
     worker: WorkerItem?,
@@ -259,11 +294,53 @@ fun WorkerFormDialog(
     var isCustomType by remember { mutableStateOf(false) }
     var customTypeStr by remember { mutableStateOf("") }
 
+    // Validation States
+    val isPhoneError = phone.isNotEmpty() && phone.length < 10
+    val isAadhaarError = aadhar.isNotEmpty() && aadhar.length < 12
+    val ageInt = age.toIntOrNull()
+    val isAgeError = age.isNotEmpty() && (ageInt == null || ageInt < 14)
+
+    val isFormValid = name.isNotBlank() && wage.isNotBlank() && !isPhoneError && !isAadhaarError && !isAgeError
+
+    // Smart Features
+    var isScanning by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (worker == null) "Add New Worker" else "Edit Worker", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                // Aadhaar Scanner Auto-Fill Button
+                OutlinedButton(
+                    onClick = {
+                        isScanning = true
+                        coroutineScope.launch {
+                            kotlinx.coroutines.delay(1500) // Simulate OCR scan
+                            name = "Rajesh Kumar"
+                            aadhar = "123456789012"
+                            age = "28"
+                            isScanning = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (isScanning) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Scanning...", fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.DocumentScanner, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Scan Aadhaar Card to Auto-Fill", fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Divider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(vertical = 4.dp))
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -272,20 +349,45 @@ fun WorkerFormDialog(
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
                 )
+
+                // Smart Phone Field
                 OutlinedTextField(
                     value = phone,
-                    onValueChange = { phone = it },
+                    onValueChange = { newValue ->
+                        val digits = newValue.filter { it.isDigit() }.take(10)
+                        phone = digits
+                    },
                     label = { Text("Phone Number") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    singleLine = true
+                    singleLine = true,
+                    isError = isPhoneError,
+                    supportingText = if (isPhoneError) { { Text("Enter valid 10-digit mobile number") } } else null
+                )
+
+                // Smart Aadhaar Field
+                OutlinedTextField(
+                    value = aadhar,
+                    onValueChange = { newValue ->
+                        val digits = newValue.filter { it.isDigit() }.take(12)
+                        aadhar = digits
+                    },
+                    label = { Text("Aadhaar Number (Optional)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    visualTransformation = AadhaarTransformation(),
+                    isError = isAadhaarError,
+                    supportingText = if (isAadhaarError) { { Text("Aadhaar must be exactly 12 digits") } } else null
                 )
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = wage,
-                        onValueChange = { wage = it },
+                        onValueChange = { wage = it.filter { ch -> ch.isDigit() } },
                         label = { Text("Daily Wage *") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
@@ -293,14 +395,21 @@ fun WorkerFormDialog(
                         singleLine = true,
                         leadingIcon = { Text("₹") }
                     )
+
+                    // Smart Age Field
                     OutlinedTextField(
                         value = age,
-                        onValueChange = { age = it },
+                        onValueChange = { newValue ->
+                            val digits = newValue.filter { it.isDigit() }.take(2)
+                            age = digits
+                        },
                         label = { Text("Age") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
-                        singleLine = true
+                        singleLine = true,
+                        isError = isAgeError,
+                        supportingText = if (isAgeError) { { Text("Must be 14+") } } else null
                     )
                 }
 
@@ -343,16 +452,6 @@ fun WorkerFormDialog(
                         singleLine = true
                     )
                 }
-
-                OutlinedTextField(
-                    value = aadhar,
-                    onValueChange = { aadhar = it },
-                    label = { Text("Aadhar Number") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true
-                )
             }
         },
         confirmButton = {
@@ -360,24 +459,22 @@ fun WorkerFormDialog(
                 onClick = {
                     val finalWorkType = if (isCustomType) customTypeStr else workType
                     val finalWage = wage.toDoubleOrNull() ?: 500.0
-                    if (name.isNotBlank() && finalWorkType.isNotBlank() && finalWage > 0) {
-                        onSave(
-                            WorkerItem(
-                                id = worker?.id ?: "",
-                                name = name.trim(),
-                                phone = phone.trim(),
-                                aadhar = aadhar.trim(),
-                                age = age.trim(),
-                                workType = finalWorkType.trim(),
-                                wage = finalWage,
-                                contractorId = ""
-                            )
+                    onSave(
+                        WorkerItem(
+                            id = worker?.id ?: "",
+                            name = name.trim(),
+                            phone = phone.trim(),
+                            aadhar = aadhar.trim(),
+                            age = age.trim(),
+                            workType = finalWorkType.trim(),
+                            wage = finalWage,
+                            contractorId = ""
                         )
-                    }
+                    )
                 },
-                enabled = !isSaving
+                enabled = !isSaving && isFormValid
             ) {
-                if (isSaving) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                if (isSaving) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
                 else Text("Save")
             }
         },
