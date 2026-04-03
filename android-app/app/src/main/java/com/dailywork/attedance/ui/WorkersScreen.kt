@@ -17,6 +17,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.OffsetMapping
+import androidx.activity.compose.rememberLauncherForActivityResult
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
+import java.io.StringReader
+import java.util.Calendar
 import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -302,9 +309,52 @@ fun WorkerFormDialog(
 
     val isFormValid = name.isNotBlank() && wage.isNotBlank() && !isPhoneError && !isAadhaarError && !isAgeError
 
-    // Smart Features
-    var isScanning by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
+    // Realtime Aadhaar Scanner
+    val scanLauncher = rememberLauncherForActivityResult(contract = ScanContract()) { result ->
+        if (result.contents != null) {
+            val xmlData = result.contents
+            try {
+                // Parse Aadhaar Secure QR XML (PrintLetterBarcodeData)
+                val factory = XmlPullParserFactory.newInstance()
+                val parser = factory.newPullParser()
+                parser.setInput(StringReader(xmlData))
+
+                var eventType = parser.eventType
+                while (eventType != XmlPullParser.END_DOCUMENT) {
+                    if (eventType == XmlPullParser.START_TAG && parser.name == "PrintLetterBarcodeData") {
+                        val scannedUid = parser.getAttributeValue(null, "uid") ?: ""
+                        val scannedName = parser.getAttributeValue(null, "name") ?: ""
+                        val scannedDob = parser.getAttributeValue(null, "dob") ?: parser.getAttributeValue(null, "yob") ?: ""
+
+                        if (scannedUid.length == 12) aadhar = scannedUid
+                        if (scannedName.isNotEmpty()) name = scannedName
+
+                        // Basic DOB to Age conversion
+                        if (scannedDob.isNotEmpty()) {
+                            try {
+                                val yearStr = if (scannedDob.contains("-") || scannedDob.contains("/")) {
+                                    val parts = scannedDob.split("-", "/")
+                                    parts.find { it.length == 4 } ?: scannedDob.takeLast(4)
+                                } else {
+                                    scannedDob.takeLast(4)
+                                }
+                                val yob = yearStr.toInt()
+                                val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+                                val calculatedAge = currentYear - yob
+                                if (calculatedAge in 14..100) {
+                                    age = calculatedAge.toString()
+                                }
+                            } catch (e: Exception) {
+                            }
+                        }
+                        break
+                    }
+                    eventType = parser.next()
+                }
+            } catch (e: Exception) {
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -315,28 +365,22 @@ fun WorkerFormDialog(
                 // Aadhaar Scanner Auto-Fill Button
                 OutlinedButton(
                     onClick = {
-                        isScanning = true
-                        coroutineScope.launch {
-                            kotlinx.coroutines.delay(1500) // Simulate OCR scan
-                            name = "Rajesh Kumar"
-                            aadhar = "123456789012"
-                            age = "28"
-                            isScanning = false
+                        val options = ScanOptions().apply {
+                            setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                            setPrompt("Scan Aadhaar QR Code")
+                            setCameraId(0)
+                            setBeepEnabled(true)
+                            setBarcodeImageEnabled(false)
                         }
+                        scanLauncher.launch(options)
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    if (isScanning) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Scanning...", fontWeight = FontWeight.Bold)
-                    } else {
-                        Icon(Icons.Default.DocumentScanner, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Scan Aadhaar Card to Auto-Fill", fontWeight = FontWeight.Bold)
-                    }
+                    Icon(Icons.Default.DocumentScanner, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Scan Aadhaar QR Code", fontWeight = FontWeight.Bold)
                 }
 
                 Divider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(vertical = 4.dp))
