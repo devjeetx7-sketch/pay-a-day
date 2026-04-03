@@ -43,7 +43,9 @@ import androidx.compose.runtime.LaunchedEffect
 @Composable
 fun PassbookScreenContent(
     viewModel: PassbookViewModel,
-    navController: NavController
+    onNavigateBack: () -> Unit,
+    onNavigateToCalendar: () -> Unit,
+    onNavigateToPremium: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
@@ -191,7 +193,7 @@ fun PassbookScreenContent(
             ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                IconButton(onClick = { navController.navigateUp() }) {
+                IconButton(onClick = onNavigateBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -230,13 +232,13 @@ fun PassbookScreenContent(
 
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                OutlinedButton(onClick = { navController.navigate("calendar") }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
+                OutlinedButton(onClick = onNavigateToCalendar, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Mark Today", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                OutlinedButton(onClick = { navController.navigate("calendar") }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
+                OutlinedButton(onClick = onNavigateToCalendar, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -266,7 +268,7 @@ fun PassbookScreenContent(
                         if (state.isPremium) {
                             exportPDF()
                         } else {
-                            navController.navigate("premium")
+                            onNavigateToPremium()
                         }
                     },
                     modifier = Modifier.weight(1f).height(48.dp),
@@ -284,7 +286,7 @@ fun PassbookScreenContent(
                         if (state.isPremium) {
                             shareViaWhatsApp()
                         } else {
-                            navController.navigate("premium")
+                            onNavigateToPremium()
                         }
                     },
                     modifier = Modifier.weight(1f).height(48.dp),

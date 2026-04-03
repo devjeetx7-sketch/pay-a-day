@@ -19,10 +19,8 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
 
     private fun userDoc(): DocumentReference? = userId?.let { db.collection("users").document(it) }
 
-    private fun contractorDoc(): DocumentReference? = userDoc()?.collection("contractor")?.document("data")
-    private fun personalDoc(): DocumentReference? = userDoc()?.collection("personal")?.document("data")
-
-    // --- Contractor Paths ---
+    fun contractorDoc(): DocumentReference? = userDoc()?.collection("contractor")?.document("data")
+    fun personalDoc(): DocumentReference? = userDoc()?.collection("personal")?.document("data")
     fun workersCollection(): CollectionReference? = contractorDoc()?.collection("workers")
 
     fun workerAttendanceCollection(workerId: String): CollectionReference? =

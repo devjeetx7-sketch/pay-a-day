@@ -20,7 +20,7 @@ class WorkerDetailViewModel(
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
-    private val _state = MutableStateFlow(PassbookState())
+    private val _state = MutableStateFlow(PassbookState(role = "contractor"))
     val state: StateFlow<PassbookState> = _state
 
     private var workerId: String? = null
