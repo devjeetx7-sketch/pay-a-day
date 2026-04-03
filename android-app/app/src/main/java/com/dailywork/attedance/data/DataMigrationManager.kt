@@ -99,7 +99,7 @@ class DataMigrationManager(
             val data = doc.data?.toMutableMap() ?: continue
             data.remove("createdBy")
 
-            repository.workTypesCollection()?.document(doc.id)?.set(data)?.await()
+            repository.contractorWorkTypesCollection()?.document(doc.id)?.set(data)?.await()
         }
         Log.d("Migration", "Migrated work types for user: $uid")
 
@@ -145,7 +145,11 @@ class DataMigrationManager(
 
     private suspend fun updateSummaryDuringMigration(uid: String, date: String, data: Map<String, Any>, workerWage: Double?, workerId: String?) {
         val monthId = date.substring(0, 7)
-        val summaryDoc = db.collection("users").document(uid).collection("summaries").document(monthId)
+        val summaryDoc = if (workerId != null) {
+             db.collection("users").document(uid).collection("contractor").document("data").collection("summaries").document(monthId)
+        } else {
+             db.collection("users").document(uid).collection("personal").document("data").collection("summaries").document(monthId)
+        }
 
         val status = data["status"] as? String
         val type = data["type"] as? String

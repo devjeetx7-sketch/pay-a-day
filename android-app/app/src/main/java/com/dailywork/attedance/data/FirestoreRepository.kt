@@ -19,16 +19,29 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
 
     private fun userDoc(): DocumentReference? = userId?.let { db.collection("users").document(it) }
 
-    fun workersCollection(): CollectionReference? = userDoc()?.collection("workers")
+    private fun contractorDoc(): DocumentReference? = userDoc()?.collection("contractor")?.document("data")
+    private fun personalDoc(): DocumentReference? = userDoc()?.collection("personal")?.document("data")
+
+    // --- Contractor Paths ---
+    fun workersCollection(): CollectionReference? = contractorDoc()?.collection("workers")
 
     fun workerAttendanceCollection(workerId: String): CollectionReference? =
         workersCollection()?.document(workerId)?.collection("attendance")
 
-    fun personalAttendanceCollection(): CollectionReference? = userDoc()?.collection("personal_attendance")
+    fun contractorWorkTypesCollection(): CollectionReference? = contractorDoc()?.collection("workTypes")
 
-    fun workTypesCollection(): CollectionReference? = userDoc()?.collection("workTypes")
+    fun contractorSummariesCollection(): CollectionReference? = contractorDoc()?.collection("summaries")
 
-    fun summariesCollection(): CollectionReference? = userDoc()?.collection("summaries")
+    // --- Personal Paths ---
+    fun personalAttendanceCollection(): CollectionReference? = personalDoc()?.collection("attendance")
+
+    fun personalSummariesCollection(): CollectionReference? = personalDoc()?.collection("summaries")
+
+    // --- Explicit Role-Based Methods ---
+
+    fun getContractorWorkers() = workersCollection()
+    fun getContractorAttendance(workerId: String) = workerAttendanceCollection(workerId)
+    fun getPersonalAttendance() = personalAttendanceCollection()
 
     // --- Worker Operations ---
 
@@ -64,7 +77,7 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         val oldData = if (oldDoc.exists()) oldDoc.data else null
 
         docRef.set(data, SetOptions.merge()).await()
-        updateSummaryWithDifference(date, oldData, data, workerId)
+        updateContractorSummary(date, oldData, data, workerId)
     }
 
     suspend fun markPersonalAttendance(attendanceId: String, data: Map<String, Any>) {
@@ -76,7 +89,7 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         val oldData = if (oldDoc.exists()) oldDoc.data else null
 
         docRef.set(data, SetOptions.merge()).await()
-        updateSummaryWithDifference(date, oldData, data, null)
+        updatePersonalSummary(date, oldData, data)
     }
 
     suspend fun deletePersonalAttendance(attendanceId: String, date: String) {
@@ -85,15 +98,15 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         if (oldDoc.exists()) {
             val oldData = oldDoc.data
             docRef.delete().await()
-            updateSummaryWithDifference(date, oldData, null, null)
+            updatePersonalSummary(date, oldData, null)
         }
     }
 
     // --- Summary Optimization ---
 
-    private suspend fun updateSummaryWithDifference(date: String, oldData: Map<String, Any>?, newData: Map<String, Any>?, workerId: String?) {
+    private suspend fun updateContractorSummary(date: String, oldData: Map<String, Any>?, newData: Map<String, Any>?, workerId: String?) {
         val monthId = date.substring(0, 7) // YYYY-MM
-        val summaryDoc = summariesCollection()?.document(monthId) ?: return
+        val summaryDoc = contractorSummariesCollection()?.document(monthId) ?: return
 
         val updates = mutableMapOf<String, Any>()
 
@@ -136,6 +149,44 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         if (date == today) {
             if (diffDay != 0.0) updates["today.present_count"] = FieldValue.increment(if (newDay > 0) 1.0 else -1.0)
         }
+
+        if (updates.isNotEmpty()) {
+            summaryDoc.set(updates, SetOptions.merge()).await()
+        }
+    }
+
+    private suspend fun updatePersonalSummary(date: String, oldData: Map<String, Any>?, newData: Map<String, Any>?) {
+        val monthId = date.substring(0, 7) // YYYY-MM
+        val summaryDoc = personalSummariesCollection()?.document(monthId) ?: return
+
+        val updates = mutableMapOf<String, Any>()
+
+        fun getStats(data: Map<String, Any>?): Triple<Double, Double, Double> {
+            if (data == null) return Triple(0.0, 0.0, 0.0)
+            val status = data["status"] as? String
+            val type = data["type"] as? String
+            val advance = (data["advance_amount"] as? Number)?.toDouble() ?: 0.0
+            val wage = (data["daily_wage"] as? Number)?.toDouble() ?: 500.0
+
+            var dayVal = 0.0
+            var costVal = 0.0
+            if (status == "present") {
+                dayVal = if (type == "half") 0.5 else 1.0
+                costVal = if (type == "half") wage / 2 else wage
+            }
+            return Triple(dayVal, costVal, advance)
+        }
+
+        val (oldDay, oldCost, oldAdv) = getStats(oldData)
+        val (newDay, newCost, newAdv) = getStats(newData)
+
+        val diffDay = newDay - oldDay
+        val diffCost = newCost - oldCost
+        val diffAdv = newAdv - oldAdv
+
+        if (diffDay != 0.0) updates["total_present"] = FieldValue.increment(diffDay)
+        if (diffCost != 0.0) updates["total_wages"] = FieldValue.increment(diffCost)
+        if (diffAdv != 0.0) updates["total_advance"] = FieldValue.increment(diffAdv)
 
         if (updates.isNotEmpty()) {
             summaryDoc.set(updates, SetOptions.merge()).await()
