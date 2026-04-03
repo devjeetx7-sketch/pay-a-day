@@ -8,7 +8,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -63,6 +68,9 @@ class CrashActivity : ComponentActivity() {
 
 @Composable
 fun CrashScreen(errorTrace: String, onRestart: () -> Unit, onClose: () -> Unit) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -98,16 +106,30 @@ fun CrashScreen(errorTrace: String, onRestart: () -> Unit, onClose: () -> Unit) 
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(12.dp)
         ) {
-            Text(
-                text = errorTrace,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.verticalScroll(rememberScrollState())
-            )
+            SelectionContainer {
+                Text(
+                    text = errorTrace,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedButton(
+            onClick = {
+                clipboardManager.setText(AnnotatedString(errorTrace))
+                Toast.makeText(context, "Error trace copied to clipboard", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Copy Error")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
