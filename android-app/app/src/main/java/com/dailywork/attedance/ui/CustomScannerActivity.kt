@@ -1,14 +1,14 @@
 package com.dailywork.attedance.ui
 
+import android.app.Activity
 import android.os.Bundle
 import android.view.KeyEvent
 import android.widget.Button
 import com.dailywork.attedance.R
 import com.journeyapps.barcodescanner.CaptureManager
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
-import androidx.appcompat.app.AppCompatActivity
 
-class CustomScannerActivity : AppCompatActivity() {
+class CustomScannerActivity : Activity() {
     private lateinit var capture: CaptureManager
     private lateinit var barcodeScannerView: DecoratedBarcodeView
     private lateinit var switchFlashlightButton: Button
