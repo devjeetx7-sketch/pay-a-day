@@ -28,6 +28,9 @@ import com.dailywork.attedance.viewmodel.SettingsViewModel
 import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import com.dailywork.attedance.viewmodel.ViewModelFactory
+import com.dailywork.attedance.data.DataMigrationManager
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,6 +38,15 @@ class MainActivity : ComponentActivity() {
 
         val repository = UserPreferencesRepository(applicationContext)
         val factory = ViewModelFactory(repository)
+
+        // Trigger Migration
+        lifecycleScope.launch {
+            val migrationManager = DataMigrationManager()
+            if (!migrationManager.isMigrationCompleted()) {
+                migrationManager.migrate()
+            }
+            // migrationManager.cleanupOldCollections() // Safe cleanup after verification
+        }
 
         setContent {
             val isDarkMode by repository.darkModeFlow.collectAsState(initial = false)

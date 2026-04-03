@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import com.dailywork.attedance.data.FirestoreRepository
 
 data class SettingsState(
     val name: String = "",
@@ -35,7 +36,10 @@ data class SettingsState(
     val triggerRestart: Boolean = false
 )
 
-class SettingsViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
+class SettingsViewModel(
+    private val repository: UserPreferencesRepository,
+    private val firestoreRepository: FirestoreRepository
+) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
@@ -196,7 +200,8 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
             val user = auth.currentUser ?: return@launch
             _state.value = _state.value.copy(isSaving = true)
             try {
-                db.collection("users").document(user.uid).set(mapOf("workType" to newWorkType), SetOptions.merge()).await()
+                val data = mapOf("name" to newWorkType)
+                firestoreRepository.workTypesCollection()?.add(data)?.await()
                 _state.value = _state.value.copy(savedMessage = "Work type saved successfully!")
             } catch (e: Exception) {
                 _state.value = _state.value.copy(savedMessage = "Failed to save work type.")

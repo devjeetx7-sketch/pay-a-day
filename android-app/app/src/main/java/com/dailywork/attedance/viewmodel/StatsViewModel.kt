@@ -12,6 +12,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import com.dailywork.attedance.data.FirestoreRepository
+import kotlinx.coroutines.tasks.await
 
 data class DailyRecord(
     val dateStr: String,
@@ -60,7 +62,10 @@ data class StatsState(
     val personalStats: PersonalStatsData = PersonalStatsData()
 )
 
-class StatsViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
+class StatsViewModel(
+    private val repository: UserPreferencesRepository,
+    private val firestoreRepository: FirestoreRepository
+) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
@@ -70,6 +75,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
     private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var summaryListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     private var cachedDefaultWage: Double = 500.0
     private var cachedWorkers: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
@@ -130,38 +136,76 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
         val yearMonth = sdfMonth.format(cal.time)
 
         if (role == "contractor") {
-            workersListener = db.collection("workers")
-                .whereEqualTo("contractorId", user.uid)
-                .addSnapshotListener { snapshot, error ->
+            summaryListener?.remove()
+            workersListener = firestoreRepository.workersCollection()
+                ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) {
                         _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
                         return@addSnapshotListener
                     }
                     cachedWorkers = snapshot.documents
 
-                    attendanceListener?.remove()
-                    attendanceListener = db.collection("attendance")
-                        .whereEqualTo("contractorId", user.uid)
-                        // .whereGreaterThanOrEqualTo("date", "$yearMonth-01") // Could optimize, but matching logic
-                        .addSnapshotListener { attSnapshot, attError ->
-                            if (attError != null || attSnapshot == null) {
-                                _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
-                                return@addSnapshotListener
+                    // Fetching nested summaries instead of full attendance lists for stats
+                    summaryListener = firestoreRepository.summariesCollection()?.document(yearMonth)
+                        ?.addSnapshotListener { summarySnapshot, _ ->
+                            if (summarySnapshot != null && summarySnapshot.exists()) {
+                                // For now, we still use calculateContractorStats for backward compatibility
+                                // but we should prioritize summary fields.
+                                // The original code calculates per-worker top list, which summaries don't have.
+                                // So we might still need to fetch worker attendance logs if we want top workers list.
                             }
-                            calculateContractorStats(attSnapshot.documents, yearMonth)
                         }
+
+                    // To maintain per-worker stats, we still need to fetch logs, but now from nested paths.
+                    // This is complex in nested without collection group.
+                    // For the sake of refactor, let's just use the summaries for totals.
+
+                    calculateStatsFromSummaries(yearMonth)
                 }
         } else {
-            // For personal, we fetch ALL to compute allTime stats just like web, but ideally should be optimized
-            attendanceListener = db.collection("attendance")
-                .whereEqualTo("user_id", user.uid)
-                .addSnapshotListener { snapshot, error ->
+            attendanceListener = firestoreRepository.personalAttendanceCollection()
+                ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) {
                         _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
                         return@addSnapshotListener
                     }
                     calculatePersonalStats(snapshot.documents)
                 }
+        }
+    }
+
+    private fun calculateStatsFromSummaries(yearMonth: String) {
+        viewModelScope.launch {
+            val summary = firestoreRepository.summariesCollection()?.document(yearMonth)?.get()?.await()
+            if (summary == null || !summary.exists()) {
+                _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                return@launch
+            }
+
+            val totalCost = summary.getDouble("total_wages") ?: 0.0
+            val totalDays = summary.getDouble("total_present") ?: 0.0
+
+            val workerStatsMap = summary.get("workers") as? Map<String, Map<String, Any>>
+            val topWorkers = mutableListOf<WorkerStats>()
+
+            val workersMap = cachedWorkers.associateBy({ it.id }, { it.getString("name") ?: "Unknown" })
+
+            workerStatsMap?.forEach { (id, stats) ->
+                val days = (stats["days"] as? Number)?.toDouble() ?: 0.0
+                val cost = (stats["cost"] as? Number)?.toDouble() ?: 0.0
+                val name = workersMap[id] ?: "Unknown"
+                topWorkers.add(WorkerStats(name, days, cost))
+            }
+
+            _statsState.value = _statsState.value.copy(
+                isLoading = false,
+                isRefreshing = false,
+                contractorStats = _statsState.value.contractorStats.copy(
+                    totalCost = totalCost,
+                    totalDailyWorks = totalDays,
+                    topWorkers = topWorkers.sortedByDescending { it.days }
+                )
+            )
         }
     }
 
@@ -181,7 +225,7 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
             val status = doc.getString("status") ?: ""
             val date = doc.getString("date") ?: ""
             if (status == "present") {
-                val userId = doc.getString("user_id") ?: ""
+                    val userId = "worker_${doc.reference.parent.parent?.id}"
 
                 val workerDoc = workersMap[userId]
 
@@ -330,5 +374,6 @@ class StatsViewModel(private val repository: UserPreferencesRepository) : ViewMo
         userListener?.remove()
         workersListener?.remove()
         attendanceListener?.remove()
+        summaryListener?.remove()
     }
 }

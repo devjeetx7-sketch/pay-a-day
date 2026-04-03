@@ -8,12 +8,13 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.dailywork.attedance.data.FirestoreRepository
 
 data class DashboardState(
     val role: String = "",
@@ -41,7 +42,10 @@ data class DashboardState(
     val isPremium: Boolean = false
 )
 
-class DashboardViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
+class DashboardViewModel(
+    private val repository: UserPreferencesRepository,
+    private val firestoreRepository: FirestoreRepository
+) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
@@ -101,25 +105,34 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             }
 
         if (role == "contractor") {
-            workersListener = db.collection("workers")
-                .whereEqualTo("contractorId", user.uid)
-                .addSnapshotListener { snapshot, error ->
+            workersListener = firestoreRepository.workersCollection()
+                ?.limit(100)
+                ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) return@addSnapshotListener
                     cachedWorkers = snapshot.documents
                     recalculateStats()
                 }
 
-            attendanceListener = db.collection("attendance")
-                .whereEqualTo("contractorId", user.uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null || snapshot == null) return@addSnapshotListener
-                    cachedAttendance = snapshot.documents
-                    recalculateStats()
+            // For general month stats, we'll fetch from summaries
+            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+            val currentMonthStr = sdfMonth.format(java.util.Date())
+            attendanceListener?.remove()
+            attendanceListener = firestoreRepository.summariesCollection()?.document(currentMonthStr)
+                ?.addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null && snapshot.exists()) {
+                         val totalPaid = snapshot.getDouble("total_advance") ?: 0.0
+                         val todayPresent = snapshot.getDouble("today.present_count") ?: 0.0
+
+                         // We can update monthly stats here
+                         _dashboardState.update { it.copy(
+                             totalPaidMonth = totalPaid.toInt().toString(),
+                             todayPresent = todayPresent.toInt().toString()
+                         ) }
+                    }
                 }
         } else {
-            attendanceListener = db.collection("attendance")
-                .whereEqualTo("user_id", user.uid)
-                .addSnapshotListener { snapshot, error ->
+            attendanceListener = firestoreRepository.personalAttendanceCollection()
+                ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) return@addSnapshotListener
                     cachedAttendance = snapshot.documents
                     recalculateStats()
@@ -218,10 +231,10 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
 
     fun markAttendance(type: String, overtimeHours: Int, note: String) {
         viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
+            auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val todayStr = sdf.format(Date())
-            val docId = "${user.uid}_$todayStr"
+            val docId = todayStr
 
             _dashboardState.value = _dashboardState.value.copy(
                 todayStatus = "present",
@@ -230,7 +243,6 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             )
 
             val attendanceData = hashMapOf(
-                "user_id" to user.uid,
                 "date" to todayStr,
                 "status" to "present",
                 "type" to type,
@@ -241,7 +253,7 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             )
 
             try {
-                db.collection("attendance").document(docId).set(attendanceData, SetOptions.merge()).await()
+                firestoreRepository.markPersonalAttendance(docId, attendanceData)
             } catch (e: Exception) {
             }
         }
@@ -249,10 +261,10 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
 
     fun markAbsent(reason: String, note: String) {
         viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
+            auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val todayStr = sdf.format(Date())
-            val docId = "${user.uid}_$todayStr"
+            val docId = todayStr
 
             _dashboardState.value = _dashboardState.value.copy(
                 todayStatus = "absent",
@@ -261,7 +273,6 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             )
 
             val attendanceData = hashMapOf(
-                "user_id" to user.uid,
                 "date" to todayStr,
                 "status" to "absent",
                 "reason" to reason,
@@ -270,7 +281,7 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             )
 
             try {
-                db.collection("attendance").document(docId).set(attendanceData, SetOptions.merge()).await()
+                firestoreRepository.markPersonalAttendance(docId, attendanceData)
             } catch (e: Exception) {
             }
         }
@@ -278,29 +289,26 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
 
     fun addAdvance(amount: Double, workerId: String? = null) {
         viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
+            auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val todayStr = sdf.format(Date())
 
             val isContractor = _dashboardState.value.role == "contractor"
-            val targetUserId = if (isContractor && workerId != null) "worker_$workerId" else user.uid
-
-            val docId = "${targetUserId}_${todayStr}_advance"
+            val docId = "${todayStr}_advance"
 
             val advanceData = hashMapOf(
-                "user_id" to targetUserId,
                 "date" to todayStr,
                 "status" to "advance",
                 "advance_amount" to amount,
                 "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
             )
 
-            if (isContractor) {
-                advanceData["contractorId"] = user.uid
-            }
-
             try {
-                db.collection("attendance").document(docId).set(advanceData, SetOptions.merge()).await()
+                if (isContractor && workerId != null) {
+                    firestoreRepository.markWorkerAttendance(workerId, docId, advanceData)
+                } else {
+                    firestoreRepository.markPersonalAttendance(docId, advanceData)
+                }
             } catch (e: Exception) {
             }
         }
@@ -308,10 +316,10 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
 
     fun removeAttendance() {
         viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
+            auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val todayStr = sdf.format(Date())
-            val docId = "${user.uid}_$todayStr"
+            val docId = todayStr
 
             _dashboardState.value = _dashboardState.value.copy(
                 todayStatus = null,
@@ -320,7 +328,7 @@ class DashboardViewModel(private val repository: UserPreferencesRepository) : Vi
             )
 
             try {
-                db.collection("attendance").document(docId).delete().await()
+                firestoreRepository.deletePersonalAttendance(docId, todayStr)
             } catch (e: Exception) {
             }
         }

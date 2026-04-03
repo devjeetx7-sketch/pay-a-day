@@ -513,8 +513,7 @@ fun WorkerFormDialog(
                             aadhar = aadhar.trim(),
                             age = age.trim(),
                             workType = finalWorkType.trim(),
-                            wage = finalWage,
-                            contractorId = ""
+                            wage = finalWage
                         )
                     )
                 },
