@@ -127,13 +127,14 @@ fun SettingsScreenContent(
                             modifier = Modifier
                                 .size(80.dp)
                                 .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(Color(0xFF39b27d)), // explicitly using main green color
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             if (state.role == "contractor") {
-                                Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(40.dp), tint = Color.White)
+                                Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurface)
                             } else {
-                                Icon(randomPersonalIcon, contentDescription = null, modifier = Modifier.size(40.dp), tint = Color.White)
+                                Icon(randomPersonalIcon, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurface)
                             }
                         }
 
@@ -188,13 +189,16 @@ fun SettingsScreenContent(
                         // Phone Number
                         OutlinedTextField(
                             value = state.phone,
-                            onValueChange = { viewModel.onPhoneChange(it) },
+                            onValueChange = { newValue ->
+                                val digits = newValue.filter { it.isDigit() }.take(10)
+                                viewModel.onPhoneChange(digits)
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("Phone Number") },
-                            leadingIcon = { Icon(Icons.Default.Phone, null) },
+                            leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -296,6 +300,9 @@ fun SettingsScreenContent(
                                     if (state.isPremium) {
                                         Text("DailyWork Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                                         Text("Thank you for your purchase ❤️", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    } else {
+                                        Text("Upgrade to Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Unlock all features", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -465,19 +472,19 @@ fun SettingsScreenContent(
                     Divider(color = MaterialTheme.colorScheme.outline)
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("1. Marking Attendance", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("1. Marking Attendance", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text("On the Dashboard, click Full Day or Half Day to mark today's attendance. Add overtime using the + / - buttons before saving. If you didn't work, click Mark Absent.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("2. Net Payable & Earnings", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("2. Net Payable & Earnings", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text("Your Earnings are automatically calculated by multiplying your working days with your Daily Wage. Net Payable shows your final take-home amount: (Total Earnings - Advance).", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("3. Advance Payments", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("3. Advance Payments", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text("If you receive money ahead of time, click Add Advance on the Dashboard or add it directly on a specific date inside the Calendar. This is automatically deducted.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("4. Calendar & History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("4. Calendar & History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text("Use the Calendar to edit past records (e.g. if you forgot to mark attendance yesterday). Use Passbook to export your monthly logs as a PDF or CSV.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
