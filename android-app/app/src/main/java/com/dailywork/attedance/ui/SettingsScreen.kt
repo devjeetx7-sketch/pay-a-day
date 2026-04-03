@@ -25,6 +25,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import coil.compose.AsyncImage
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import com.dailywork.attedance.ui.MainActivity
 import com.dailywork.attedance.viewmodel.SettingsViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -40,10 +43,22 @@ fun SettingsScreenContent(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val context = LocalContext.current
+
     LaunchedEffect(state.savedMessage) {
         state.savedMessage?.let { msg ->
             snackbarHostState.showSnackbar(msg)
             viewModel.clearMessage()
+        }
+    }
+
+    LaunchedEffect(state.triggerRestart) {
+        if (state.triggerRestart) {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            }
+            context.startActivity(intent)
+            Runtime.getRuntime().exit(0)
         }
     }
 
@@ -63,12 +78,6 @@ fun SettingsScreenContent(
             state.role != state.originalRole ||
             state.phone != state.originalPhone ||
             state.profileImageUri != null
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        viewModel.onProfileImageSelected(uri)
-    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -110,21 +119,21 @@ fun SettingsScreenContent(
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 
-                        // Profile Image
+                        // Profile Image (Role-Based Icon)
+                        val personalIcons = listOf(Icons.Default.Construction, Icons.Default.FormatPaint, Icons.Default.Build, Icons.Default.Plumbing)
+                        val randomPersonalIcon = remember(state.role) { personalIcons.random() }
+
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
                                 .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .clickable { imagePickerLauncher.launch("image/*") },
+                                .background(Color(0xFF39b27d)), // explicitly using main green color
                             contentAlignment = Alignment.Center
                         ) {
-                            if (state.profileImageUri != null) {
-                                AsyncImage(model = state.profileImageUri, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
-                            } else if (state.profileImageUrl.isNotEmpty()) {
-                                AsyncImage(model = state.profileImageUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                            if (state.role == "contractor") {
+                                Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(40.dp), tint = Color.White)
                             } else {
-                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(randomPersonalIcon, contentDescription = null, modifier = Modifier.size(40.dp), tint = Color.White)
                             }
                         }
 
@@ -287,20 +296,11 @@ fun SettingsScreenContent(
                                     if (state.isPremium) {
                                         Text("DailyWork Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                                         Text("Thank you for your purchase ❤️", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    } else {
-                                        Text("Upgrade to Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text("Unlock all features", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
                             if (!state.isPremium) {
-                                Button(
-                                    onClick = onNavigateToPremium,
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEAB308))
-                                ) {
-                                    Text("Upgrade Now", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
-                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -469,15 +469,15 @@ fun SettingsScreenContent(
                         Text("On the Dashboard, click Full Day or Half Day to mark today's attendance. Add overtime using the + / - buttons before saving. If you didn't work, click Mark Absent.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("2. Net Payable & Earnings", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF16A34A))
+                        Text("2. Net Payable & Earnings", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
                         Text("Your Earnings are automatically calculated by multiplying your working days with your Daily Wage. Net Payable shows your final take-home amount: (Total Earnings - Advance).", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("3. Advance Payments", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFFF97316))
+                        Text("3. Advance Payments", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
                         Text("If you receive money ahead of time, click Add Advance on the Dashboard or add it directly on a specific date inside the Calendar. This is automatically deducted.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("4. Calendar & History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Blue)
+                        Text("4. Calendar & History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
                         Text("Use the Calendar to edit past records (e.g. if you forgot to mark attendance yesterday). Use Passbook to export your monthly logs as a PDF or CSV.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
