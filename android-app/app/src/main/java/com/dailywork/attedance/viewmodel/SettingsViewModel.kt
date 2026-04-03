@@ -149,6 +149,10 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
 
                 val roleChanged = _state.value.role != _state.value.originalRole
 
+                if (roleChanged) {
+                    repository.saveUserRole(_state.value.role)
+                }
+
                 _state.value = _state.value.copy(
                     originalName = _state.value.name,
                     originalWage = _state.value.dailyWage,
@@ -160,10 +164,6 @@ class SettingsViewModel(private val repository: UserPreferencesRepository) : Vie
                     savedMessage = "Profile updated successfully!",
                     isSaving = false
                 )
-
-                if (roleChanged) {
-                    repository.clearSession()
-                }
 
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
