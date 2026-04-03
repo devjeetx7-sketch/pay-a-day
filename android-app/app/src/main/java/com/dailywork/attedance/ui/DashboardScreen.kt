@@ -182,7 +182,17 @@ fun DashboardScreen(
                 }
             }
             composable("passbook") {
-                PassbookScreenContent(viewModel = passbookViewModel, navController = bottomNavController)
+                PassbookScreenContent(
+                    viewModel = passbookViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateToCalendar = {
+                        bottomNavController.navigateUp()
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(1)
+                        }
+                    },
+                    onNavigateToPremium = { navController.navigate("premium") }
+                )
             }
             composable("workers") {
                 WorkersScreenContent(
@@ -195,7 +205,14 @@ fun DashboardScreen(
                 WorkerDetailScreenContent(
                     workerId = backStackEntry.arguments?.getString("workerId") ?: "",
                     viewModel = workerDetailViewModel,
-                    navController = bottomNavController
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateToCalendar = {
+                        bottomNavController.navigateUp()
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(1)
+                        }
+                    },
+                    onNavigateToPremium = { navController.navigate("premium") }
                 )
             }
             composable("worker_history") {

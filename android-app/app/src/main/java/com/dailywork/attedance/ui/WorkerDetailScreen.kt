@@ -44,7 +44,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 fun WorkerDetailScreenContent(
     workerId: String,
     viewModel: WorkerDetailViewModel,
-    navController: NavController
+    onNavigateBack: () -> Unit,
+    onNavigateToCalendar: () -> Unit,
+    onNavigateToPremium: () -> Unit
 ) {
     LaunchedEffect(workerId) {
         viewModel.initialize(workerId)
@@ -173,7 +175,7 @@ fun WorkerDetailScreenContent(
             ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                IconButton(onClick = { navController.navigateUp() }, modifier = Modifier.background(MaterialTheme.colorScheme.surface, CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)) {
+                IconButton(onClick = onNavigateBack, modifier = Modifier.background(MaterialTheme.colorScheme.surface, CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -212,13 +214,13 @@ fun WorkerDetailScreenContent(
 
         item {
             Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha=0.05f)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha=0.2f), RoundedCornerShape(16.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                TextButton(onClick = { navController.navigate("calendar") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
+                TextButton(onClick = onNavigateToCalendar, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Mark Today", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                TextButton(onClick = { navController.navigate("calendar") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
+                TextButton(onClick = onNavigateToCalendar, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -248,7 +250,7 @@ fun WorkerDetailScreenContent(
                         if (state.isPremium) {
                             exportPDF()
                         } else {
-                            navController.navigate("premium")
+                            onNavigateToPremium()
                         }
                     },
                     modifier = Modifier.weight(1f).height(48.dp),
@@ -266,7 +268,7 @@ fun WorkerDetailScreenContent(
                         if (state.isPremium) {
                             shareViaWhatsApp()
                         } else {
-                            navController.navigate("premium")
+                            onNavigateToPremium()
                         }
                     },
                     modifier = Modifier.weight(1f).height(48.dp),

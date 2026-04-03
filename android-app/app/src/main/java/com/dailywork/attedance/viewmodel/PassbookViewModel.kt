@@ -23,6 +23,7 @@ data class PassbookLog(
 )
 
 data class PassbookState(
+    val role: String = "",
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val selectedMonthDate: Date = Date(),
@@ -62,7 +63,14 @@ class PassbookViewModel(
     private var cachedDocs: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
 
     init {
-        setupListeners()
+        viewModelScope.launch {
+            repository.userRoleFlow.collect { role ->
+                if (role != null) {
+                    _state.value = _state.value.copy(role = role)
+                    setupListeners()
+                }
+            }
+        }
     }
 
     fun refresh() {
