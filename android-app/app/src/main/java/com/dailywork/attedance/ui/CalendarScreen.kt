@@ -139,7 +139,7 @@ fun ContractorCalendarView(viewModel: CalendarViewModel, state: com.dailywork.at
                 items(state.workers) { worker ->
                     WorkerAttendanceCard(
                         worker = worker,
-                        attendance = state.contractorAttendance.find { it.userId == "worker_${worker.id}" && it.status != "advance" },
+                        attendance = state.contractorAttendance.find { it.id == "${worker.id}_${state.selectedDate}" && it.status != "advance" },
                         onMarkAttendance = { status, type ->
                             viewModel.markContractorAttendance(worker.id, status, type)
                         }
@@ -308,7 +308,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
             val adv = advances[day]
             if (record != null || adv != null) {
                 mergedMap[day] = record?.copy(advanceAmount = adv) ?: AttendanceRecord(
-                    id = "", userId = "", date = String.format("%04d-%02d-%02d", year, month + 1, day),
+                    id = "", date = String.format("%04d-%02d-%02d", year, month + 1, day),
                     status = "advance", type = null, reason = null, overtimeHours = null, note = null, advanceAmount = adv
                 )
             }

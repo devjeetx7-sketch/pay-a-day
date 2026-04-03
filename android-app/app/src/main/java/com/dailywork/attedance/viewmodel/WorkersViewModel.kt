@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import com.dailywork.attedance.data.FirestoreRepository
 
 data class WorkerItem(
     val id: String,
@@ -18,8 +19,7 @@ data class WorkerItem(
     val aadhar: String,
     val age: String,
     val workType: String,
-    val wage: Double,
-    val contractorId: String
+    val wage: Double
 )
 
 data class WorkersState(
@@ -32,7 +32,10 @@ data class WorkersState(
     val isPremium: Boolean = false
 )
 
-class WorkersViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
+class WorkersViewModel(
+    private val repository: UserPreferencesRepository,
+    private val firestoreRepository: FirestoreRepository
+) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
@@ -74,14 +77,14 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
     }
 
     private fun setupListener() {
-        val user = auth.currentUser ?: return
+        auth.currentUser ?: return
 
         workersListener?.remove()
         userListener?.remove()
 
-        workersListener = db.collection("workers")
-            .whereEqualTo("contractorId", user.uid)
-            .addSnapshotListener { snapshot, error ->
+        workersListener = firestoreRepository.workersCollection()
+            ?.limit(50) // Basic pagination limit
+            ?.addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
                     _state.value = _state.value.copy(isLoading = false,
                     isRefreshing = false, errorMessage = error?.message)
@@ -96,8 +99,7 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
                         aadhar = doc.getString("aadhar") ?: "",
                         age = doc.getString("age") ?: "",
                         workType = doc.getString("workType") ?: "Labour",
-                        wage = doc.getDouble("wage") ?: 500.0,
-                        contractorId = doc.getString("contractorId") ?: ""
+                        wage = doc.getDouble("wage") ?: 500.0
                     )
                 }
 
@@ -111,7 +113,7 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
 
     fun saveWorker(worker: WorkerItem) {
         viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
+            auth.currentUser ?: return@launch
             _state.value = _state.value.copy(isSaving = true, errorMessage = null)
 
             try {
@@ -121,15 +123,14 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
                     "aadhar" to worker.aadhar,
                     "age" to worker.age,
                     "workType" to worker.workType,
-                    "wage" to worker.wage,
-                    "contractorId" to user.uid
+                    "wage" to worker.wage
                 )
 
                 if (worker.id.isEmpty()) {
                     data["created_at"] = com.google.firebase.firestore.FieldValue.serverTimestamp()
-                    db.collection("workers").add(data).await()
+                    firestoreRepository.saveWorker(null, data)
                 } else {
-                    db.collection("workers").document(worker.id).set(data, SetOptions.merge()).await()
+                    firestoreRepository.saveWorker(worker.id, data)
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(errorMessage = "Failed to save worker: ${e.message}")
@@ -142,7 +143,7 @@ class WorkersViewModel(private val repository: UserPreferencesRepository) : View
     fun deleteWorker(workerId: String) {
         viewModelScope.launch {
             try {
-                db.collection("workers").document(workerId).delete().await()
+                firestoreRepository.deleteWorker(workerId)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(errorMessage = "Failed to delete worker")
             }

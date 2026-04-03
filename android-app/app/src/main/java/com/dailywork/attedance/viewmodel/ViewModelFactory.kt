@@ -3,40 +3,44 @@ package com.dailywork.attedance.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.dailywork.attedance.data.UserPreferencesRepository
+import com.dailywork.attedance.data.FirestoreRepository
 
-class ViewModelFactory(private val repository: UserPreferencesRepository) : ViewModelProvider.Factory {
+class ViewModelFactory(
+    private val repository: UserPreferencesRepository,
+    private val firestoreRepository: FirestoreRepository = FirestoreRepository()
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AuthViewModel(repository) as T
+            return AuthViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(DashboardViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return DashboardViewModel(repository) as T
+            return DashboardViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(CalendarViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CalendarViewModel(repository) as T
+            return CalendarViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(StatsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return StatsViewModel(repository) as T
+            return StatsViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(PassbookViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return PassbookViewModel(repository) as T
+            return PassbookViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(repository) as T
+            return SettingsViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(WorkersViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return WorkersViewModel(repository) as T
+            return WorkersViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(WorkerDetailViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return WorkerDetailViewModel() as T
+            return WorkerDetailViewModel(firestoreRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

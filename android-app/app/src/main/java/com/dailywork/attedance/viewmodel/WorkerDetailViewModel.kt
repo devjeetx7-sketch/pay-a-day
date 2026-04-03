@@ -12,7 +12,11 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class WorkerDetailViewModel : ViewModel() {
+import com.dailywork.attedance.data.FirestoreRepository
+
+class WorkerDetailViewModel(
+    private val firestoreRepository: FirestoreRepository
+) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
@@ -62,15 +66,15 @@ class WorkerDetailViewModel : ViewModel() {
     }
 
     private fun setupListeners() {
-        val user = auth.currentUser ?: return
+        auth.currentUser ?: return
         val wId = workerId ?: return
 
         workerListener?.remove()
         attendanceListener?.remove()
         userListener?.remove()
 
-        workerListener = db.collection("workers").document(wId)
-            .addSnapshotListener { snapshot, error ->
+        workerListener = firestoreRepository.workersCollection()?.document(wId)
+            ?.addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && snapshot.exists()) {
                     val joinedDateLong = snapshot.getTimestamp("created_at")?.toDate()?.time ?: Date().time
                     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -89,12 +93,11 @@ class WorkerDetailViewModel : ViewModel() {
         val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         val yearMonth = sdfMonth.format(cal.time)
 
-        attendanceListener = db.collection("attendance")
-            .whereEqualTo("contractorId", user.uid)
-            .whereEqualTo("user_id", "worker_$wId")
-            .whereGreaterThanOrEqualTo("date", "$yearMonth-01")
-            .whereLessThanOrEqualTo("date", "$yearMonth-31")
-            .addSnapshotListener { snapshot, error ->
+        attendanceListener = firestoreRepository.workerAttendanceCollection(wId)
+            ?.whereGreaterThanOrEqualTo("date", "$yearMonth-01")
+            ?.whereLessThanOrEqualTo("date", "$yearMonth-31")
+            ?.limit(100)
+            ?.addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
                     _state.value = _state.value.copy(isLoading = false, isRefreshing = false)
                     return@addSnapshotListener

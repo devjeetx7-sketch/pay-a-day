@@ -9,7 +9,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class AuthViewModel(val repository: UserPreferencesRepository) : ViewModel() {
+import com.dailywork.attedance.data.FirestoreRepository
+
+class AuthViewModel(
+    val repository: UserPreferencesRepository,
+    private val firestoreRepository: FirestoreRepository
+) : ViewModel() {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)

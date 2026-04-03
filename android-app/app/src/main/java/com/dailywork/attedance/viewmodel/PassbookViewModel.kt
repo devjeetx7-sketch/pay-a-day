@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import com.dailywork.attedance.data.FirestoreRepository
 
 data class PassbookLog(
     val date: String,
@@ -45,7 +46,10 @@ data class PassbookState(
     val isPremium: Boolean = false
 )
 
-class PassbookViewModel(private val repository: UserPreferencesRepository) : ViewModel() {
+class PassbookViewModel(
+    private val repository: UserPreferencesRepository,
+    private val firestoreRepository: FirestoreRepository
+) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
@@ -108,11 +112,11 @@ class PassbookViewModel(private val repository: UserPreferencesRepository) : Vie
         val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         val yearMonth = sdfMonth.format(cal.time)
 
-        attendanceListener = db.collection("attendance")
-            .whereEqualTo("user_id", user.uid)
-            .whereGreaterThanOrEqualTo("date", "$yearMonth-01")
-            .whereLessThanOrEqualTo("date", "$yearMonth-31")
-            .addSnapshotListener { snapshot, error ->
+        attendanceListener = firestoreRepository.personalAttendanceCollection()
+            ?.whereGreaterThanOrEqualTo("date", "$yearMonth-01")
+            ?.whereLessThanOrEqualTo("date", "$yearMonth-31")
+            ?.limit(100)
+            ?.addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
                     _state.value = _state.value.copy(isLoading = false, isRefreshing = false)
                     return@addSnapshotListener
