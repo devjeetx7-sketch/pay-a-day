@@ -125,12 +125,12 @@ class StatsViewModel(
         userListener?.remove()
         workersListener?.remove()
         attendanceListener?.remove()
+        summaryListener?.remove()
 
         userListener = db.collection("users").document(user.uid)
             .addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && snapshot.exists()) {
                     cachedDefaultWage = snapshot.getDouble("daily_wage") ?: 500.0
-                    calculatePersonalStats(emptyList()) // trigger re-calculation if needed, but attendance listener handles it
                 }
             }
 
@@ -140,85 +140,173 @@ class StatsViewModel(
         val yearMonth = sdfMonth.format(cal.time)
 
         if (role == "contractor") {
-            summaryListener?.remove()
             workersListener = firestoreRepository.getContractorWorkers()
                 ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) {
-                        _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                        _statsState.update { it.copy(isLoading = false, isRefreshing = false) }
                         return@addSnapshotListener
                     }
                     cachedWorkers = snapshot.documents
 
-                    // Fetching nested summaries instead of full attendance lists for stats
-                    summaryListener = firestoreRepository.contractorSummariesCollection()?.document(yearMonth)
-                        ?.addSnapshotListener { summarySnapshot, _ ->
-                            if (summarySnapshot != null && summarySnapshot.exists()) {
-                                // For now, we still use calculateContractorStats for backward compatibility
-                                // but we should prioritize summary fields.
-                                // The original code calculates per-worker top list, which summaries don't have.
-                                // So we might still need to fetch worker attendance logs if we want top workers list.
+                    // Fetch all summaries to calculate All-Time stats efficiently
+                    attendanceListener?.remove()
+                    attendanceListener = firestoreRepository.contractorSummariesCollection()
+                        ?.addSnapshotListener { summariesSnapshot, _ ->
+                            if (summariesSnapshot != null) {
+                                calculateContractorStatsFromSummaries(summariesSnapshot.documents, yearMonth)
                             }
                         }
-
-                    // To maintain per-worker stats, we still need to fetch logs, but now from nested paths.
-                    // This is complex in nested without collection group.
-                    // For the sake of refactor, let's just use the summaries for totals.
-
-                    calculateStatsFromSummaries(yearMonth)
                 }
         } else {
             attendanceListener = firestoreRepository.getPersonalAttendance()
                 ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) {
-                        _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                        _statsState.update { it.copy(isLoading = false, isRefreshing = false) }
                         return@addSnapshotListener
                     }
-                    calculatePersonalStats(snapshot.documents)
+
+                    // Also need personal summaries for all-time
+                    summaryListener?.remove()
+                    summaryListener = firestoreRepository.personalSummariesCollection()
+                        ?.addSnapshotListener { summariesSnapshot, _ ->
+                             calculatePersonalStatsWithSummaries(snapshot.documents, summariesSnapshot?.documents ?: emptyList(), yearMonth)
+                        }
                 }
         }
     }
 
-    private fun calculateStatsFromSummaries(yearMonth: String) {
-        viewModelScope.launch {
-            val summary = firestoreRepository.contractorSummariesCollection()?.document(yearMonth)?.get()?.await()
-            if (summary == null || !summary.exists()) {
-                _statsState.value = _statsState.value.copy(
-                    isLoading = false,
-                    isRefreshing = false,
-                    contractorStats = ContractorStatsData(totalWorkers = cachedWorkers.size)
-                )
-                return@launch
+    private fun calculateContractorStatsFromSummaries(summaries: List<com.google.firebase.firestore.DocumentSnapshot>, currentMonth: String) {
+        var totalCost = 0.0
+        var totalDays = 0.0
+        var totalAdvance = 0.0
+        var todayPresent = 0
+        var todayAbsent = 0
+
+        var allTimeCost = 0.0
+        var allTimeWorks = 0.0
+
+        val topWorkersMap = mutableMapOf<String, WorkerStats>()
+        val allTimeTopWorkersMap = mutableMapOf<String, WorkerStats>()
+
+        val workersNamesMap = cachedWorkers.associateBy({ it.id }, { it.getString("name") ?: "Unknown" })
+
+        summaries.forEach { summary ->
+            val monthId = summary.id
+            val wages = summary.getDouble("total_wages") ?: 0.0
+            val present = summary.getDouble("total_present") ?: 0.0
+            val advance = summary.getDouble("total_advance") ?: 0.0
+
+            allTimeCost += wages
+            allTimeWorks += present
+
+            @Suppress("UNCHECKED_CAST")
+            val workersMap = summary.get("workers") as? Map<String, Map<String, Any>>
+            workersMap?.forEach { (id, stats) ->
+                val d = (stats["days"] as? Number)?.toDouble() ?: 0.0
+                val c = (stats["cost"] as? Number)?.toDouble() ?: 0.0
+                val name = workersNamesMap[id] ?: "Unknown"
+
+                val currentAllTime = allTimeTopWorkersMap[id] ?: WorkerStats(name, 0.0, 0.0)
+                allTimeTopWorkersMap[id] = currentAllTime.copy(days = currentAllTime.days + d, cost = currentAllTime.cost + c)
             }
 
-            val totalCost = summary.getDouble("total_wages") ?: 0.0
-            val totalDays = summary.getDouble("total_present") ?: 0.0
-            val totalAdvance = summary.getDouble("total_advance") ?: 0.0
-            val todayPresent = summary.getDouble("today.present_count")?.toInt() ?: 0
-            val todayAbsent = summary.getDouble("today.absent_count")?.toInt() ?: 0
+            if (monthId == currentMonth) {
+                totalCost = wages
+                totalDays = present
+                totalAdvance = advance
+                todayPresent = summary.getDouble("today.present_count")?.toInt() ?: 0
+                todayAbsent = summary.getDouble("today.absent_count")?.toInt() ?: 0
 
-            val workerStatsMap = summary.get("workers") as? Map<String, Map<String, Any>>
-            val topWorkers = mutableListOf<WorkerStats>()
-
-            val workersMap = cachedWorkers.associateBy({ it.id }, { it.getString("name") ?: "Unknown" })
-
-            workerStatsMap?.forEach { (id, stats) ->
-                val days = (stats["days"] as? Number)?.toDouble() ?: 0.0
-                val cost = (stats["cost"] as? Number)?.toDouble() ?: 0.0
-                val name = workersMap[id] ?: "Unknown"
-                topWorkers.add(WorkerStats(name, days, cost))
+                workersMap?.forEach { (id, stats) ->
+                    val d = (stats["days"] as? Number)?.toDouble() ?: 0.0
+                    val c = (stats["cost"] as? Number)?.toDouble() ?: 0.0
+                    val name = workersNamesMap[id] ?: "Unknown"
+                    topWorkersMap[id] = WorkerStats(name, d, c)
+                }
             }
+        }
 
-            _statsState.value = _statsState.value.copy(
+        _statsState.update { current ->
+            current.copy(
                 isLoading = false,
                 isRefreshing = false,
-                contractorStats = _statsState.value.contractorStats.copy(
+                contractorStats = current.contractorStats.copy(
                     totalCost = totalCost,
                     totalDailyWorks = totalDays,
                     totalAdvance = totalAdvance,
                     todayPresent = todayPresent,
                     todayAbsent = todayAbsent,
                     totalWorkers = cachedWorkers.size,
-                    topWorkers = topWorkers.sortedByDescending { it.days }
+                    topWorkers = topWorkersMap.values.sortedByDescending { it.days },
+                    allTimeCost = allTimeCost,
+                    allTimeWorks = allTimeWorks,
+                    allTimeTopWorkers = allTimeTopWorkersMap.values.sortedByDescending { it.days }
+                )
+            )
+        }
+    }
+
+    private fun calculatePersonalStatsWithSummaries(
+        attendanceDocs: List<com.google.firebase.firestore.DocumentSnapshot>,
+        summaries: List<com.google.firebase.firestore.DocumentSnapshot>,
+        currentMonth: String
+    ) {
+        // Calculate current month from docs (to maintain existing functionality if needed)
+        // or just use summaries for most things.
+
+        var allTimeEarnings = 0.0
+        var allTimeDays = 0
+
+        var totalEarnings = 0.0
+        var present = 0
+        var absent = 0
+        var halfDays = 0
+        var overtime = 0
+        var advanceTotal = 0.0
+
+        summaries.forEach { summary ->
+            val wages = summary.getDouble("total_wages") ?: 0.0
+            val days = summary.getDouble("total_present") ?: 0.0
+            allTimeEarnings += wages
+            allTimeDays += days.toInt()
+
+            if (summary.id == currentMonth) {
+                totalEarnings = wages
+                advanceTotal = summary.getDouble("total_advance") ?: 0.0
+                // For detailed breakdown (absent, half, overtime), we still need attendanceDocs
+            }
+        }
+
+        attendanceDocs.forEach { doc ->
+            val date = doc.getString("date") ?: ""
+            if (date.startsWith(currentMonth)) {
+                val status = doc.getString("status") ?: ""
+                val type = doc.getString("type") ?: "full"
+                val ot = doc.getDouble("overtime_hours")?.toInt() ?: 0
+
+                if (status == "present") {
+                    present++
+                    if (type == "half") halfDays++
+                    overtime += ot
+                } else if (status == "absent") {
+                    absent++
+                }
+            }
+        }
+
+        _statsState.update { current ->
+            current.copy(
+                isLoading = false,
+                isRefreshing = false,
+                personalStats = PersonalStatsData(
+                    present = present,
+                    absent = absent,
+                    halfDays = halfDays,
+                    overtime = overtime,
+                    advanceTotal = advanceTotal,
+                    totalEarnings = totalEarnings,
+                    allTimeDays = allTimeDays,
+                    allTimeEarnings = allTimeEarnings
                 )
             )
         }
