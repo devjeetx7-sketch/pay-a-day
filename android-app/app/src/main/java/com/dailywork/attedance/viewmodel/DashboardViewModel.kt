@@ -76,6 +76,7 @@ class DashboardViewModel(
     }
 
     fun refresh() {
+        if (_dashboardState.value.isRefreshing) return
         _dashboardState.value = _dashboardState.value.copy(isRefreshing = true)
         setupListeners(_dashboardState.value.role)
     }
@@ -121,7 +122,11 @@ class DashboardViewModel(
             val currentMonthStr = sdfMonth.format(java.util.Date())
             attendanceListener?.remove()
             attendanceListener = firestoreRepository.contractorSummariesCollection()?.document(currentMonthStr)
-                ?.addSnapshotListener { snapshot, _ ->
+                ?.addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        _dashboardState.update { it.copy(isRefreshing = false) }
+                        return@addSnapshotListener
+                    }
                     if (snapshot != null && snapshot.exists()) {
                          val totalPaid = snapshot.getDouble("total_advance") ?: 0.0
                          val totalWages = snapshot.getDouble("total_wages") ?: 0.0
@@ -134,8 +139,11 @@ class DashboardViewModel(
                              totalPaidMonth = totalPaid.toInt().toString(),
                              todayPresent = todayPresent.toInt().toString(),
                              todayAbsent = todayAbsent.toInt().toString(),
-                             pendingAmount = pending.toInt().toString()
+                             pendingAmount = pending.toInt().toString(),
+                             isRefreshing = false
                          ) }
+                    } else {
+                        _dashboardState.update { it.copy(isRefreshing = false) }
                     }
                 }
         } else {

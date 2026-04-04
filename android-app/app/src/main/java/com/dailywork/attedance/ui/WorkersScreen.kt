@@ -60,6 +60,11 @@ fun WorkersScreenContent(
         it.name.contains(searchQuery, ignoreCase = true) || it.phone.contains(searchQuery) || it.workType.contains(searchQuery, ignoreCase = true)
     }
 
+    // Auto-refresh
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
         LaunchedEffect(true) {
@@ -84,50 +89,58 @@ fun WorkersScreenContent(
                 CircularProgressIndicator()
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text("Manage Workers", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(modifier = Modifier.height(16.dp))
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    Text("Manage Workers", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search by name, phone or role...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search by name, phone or role...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (state.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-            } else if (filteredWorkers.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (state.workers.isEmpty()) "No workers found" else "No matching workers", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (state.workers.isEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = {
-                                if (!state.isPremium && state.workers.size >= 10) {
-                                    onNavigateToPremium()
-                                } else {
-                                    editingWorker = null
-                                    showFormDialog = true
+
+                if (state.isLoading) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                } else if (filteredWorkers.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (state.workers.isEmpty()) "No workers found" else "No matching workers", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (state.workers.isEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(onClick = {
+                                        if (!state.isPremium && state.workers.size >= 10) {
+                                            onNavigateToPremium()
+                                        } else {
+                                            editingWorker = null
+                                            showFormDialog = true
+                                        }
+                                    }, shape = RoundedCornerShape(12.dp)) {
+                                        Text("Add Worker")
+                                    }
                                 }
-                            }, shape = RoundedCornerShape(12.dp)) {
-                                Text("Add Worker")
                             }
                         }
                     }
-                }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                } else {
                     items(filteredWorkers) { worker ->
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable { onNavigateToWorkerDetail(worker.id) },
@@ -197,7 +210,6 @@ fun WorkersScreenContent(
                     item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
-        }
 
         PullToRefreshContainer(
             state = pullRefreshState,

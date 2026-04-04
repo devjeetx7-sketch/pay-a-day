@@ -124,32 +124,37 @@ fun StatsScreenContent(
             )
         }
     ) { padding ->
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .nestedScroll(pullRefreshState.nestedScrollConnection)
-    ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .fillMaxSize()
+                .padding(padding)
+                .nestedScroll(pullRefreshState.nestedScrollConnection)
         ) {
-            CustomToggleTab(
-                tabs = tabs,
-                selectedTabIndex = selectedTabIndex,
-                onTabSelected = { selectedTabIndex = it }
-            )
-        }
-
-        Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             if (state.isLoading && state.role.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
-                if (state.role == "contractor") {
-                    ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
-                } else {
-                    PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                val statsContent = @Composable {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        CustomToggleTab(
+                            tabs = tabs,
+                            selectedTabIndex = selectedTabIndex,
+                            onTabSelected = { selectedTabIndex = it }
+                        )
+                    }
+                    if (state.role == "contractor") {
+                        ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                    } else {
+                        PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                    }
+                }
+
+                // Both views already use LazyColumn internally
+                Column(modifier = Modifier.fillMaxSize()) {
+                    statsContent()
                 }
             }
             PullToRefreshContainer(
@@ -158,7 +163,6 @@ fun StatsScreenContent(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         }
-    }
     }
 }
 

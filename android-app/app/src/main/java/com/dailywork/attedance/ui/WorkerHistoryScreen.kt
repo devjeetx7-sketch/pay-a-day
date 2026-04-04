@@ -39,6 +39,11 @@ fun WorkerHistoryScreen(
     val state by viewModel.state.collectAsState()
     var expandedFilterMenu by remember { mutableStateOf(false) }
 
+    // Auto-refresh
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
         LaunchedEffect(true) {
@@ -75,82 +80,87 @@ fun WorkerHistoryScreen(
                 .nestedScroll(pullRefreshState.nestedScrollConnection)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Search & Filter Header
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = state.searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChange(it) },
-                        placeholder = { Text("Search by worker name...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    // Search & Filter Header
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Filter:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                        }
+                        OutlinedTextField(
+                            value = state.searchQuery,
+                            onValueChange = { viewModel.onSearchQueryChange(it) },
+                            placeholder = { Text("Search by worker name...") },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true
+                        )
 
-                        Box {
-                            OutlinedButton(
-                                onClick = { expandedFilterMenu = true },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Text(state.selectedFilter, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Filter:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             }
-                            DropdownMenu(
-                                expanded = expandedFilterMenu,
-                                onDismissRequest = { expandedFilterMenu = false },
-                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                            ) {
-                                listOf("All", "Attendance", "Payment").forEach { filterOption ->
-                                    DropdownMenuItem(
-                                        text = { Text(filterOption, fontWeight = FontWeight.Bold) },
-                                        onClick = {
-                                            viewModel.onFilterChange(filterOption)
-                                            expandedFilterMenu = false
-                                        }
-                                    )
+
+                            Box {
+                                OutlinedButton(
+                                    onClick = { expandedFilterMenu = true },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text(state.selectedFilter, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                }
+                                DropdownMenu(
+                                    expanded = expandedFilterMenu,
+                                    onDismissRequest = { expandedFilterMenu = false },
+                                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                                ) {
+                                    listOf("All", "Attendance", "Payment").forEach { filterOption ->
+                                        DropdownMenuItem(
+                                            text = { Text(filterOption, fontWeight = FontWeight.Bold) },
+                                            onClick = {
+                                                viewModel.onFilterChange(filterOption)
+                                                expandedFilterMenu = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
+
+                    Divider(color = MaterialTheme.colorScheme.outline)
                 }
 
-                Divider(color = MaterialTheme.colorScheme.outline)
-
                 if (state.isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
                 } else if (state.filteredRecords.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No records found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            Text("No records found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(state.filteredRecords, key = { it.id }) { record ->
+                    items(state.filteredRecords, key = { it.id }) { record ->
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                             HistoryItemCard(record)
                         }
                     }

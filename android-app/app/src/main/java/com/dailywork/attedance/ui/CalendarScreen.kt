@@ -87,64 +87,69 @@ fun CalendarScreen(
 
 @Composable
 fun ContractorCalendarView(viewModel: CalendarViewModel, state: com.dailywork.attedance.viewmodel.CalendarState) {
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Mark Attendance", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        Text("Daily attendance for all workers", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(modifier = Modifier.height(16.dp))
+        item {
+            Text("Mark Attendance", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text("Daily attendance for all workers", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-        // Date Picker/Selector Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(onClick = { viewModel.changeContractorDate(-1) }) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day")
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = state.selectedDate,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            IconButton(onClick = { viewModel.changeContractorDate(1) }) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "Next Day")
+        item {
+            // Date Picker/Selector Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = { viewModel.changeContractorDate(-1) }) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = state.selectedDate,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                IconButton(onClick = { viewModel.changeContractorDate(1) }) {
+                    Icon(Icons.Default.ChevronRight, contentDescription = "Next Day")
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
         if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+            item {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
         } else if (state.workers.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No workers found. Add workers first.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            item {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text("No workers found. Add workers first.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(state.workers) { worker ->
-                    WorkerAttendanceCard(
-                        worker = worker,
-                        attendance = state.contractorAttendance.find { it.id == "${worker.id}_${state.selectedDate}" && it.status != "advance" },
-                        onMarkAttendance = { status, type ->
-                            viewModel.markContractorAttendance(worker.id, status, type)
-                        }
-                    )
-                }
+            items(state.workers) { worker ->
+                WorkerAttendanceCard(
+                    worker = worker,
+                    attendance = state.contractorAttendance.find { it.id == "${worker.id}_${state.selectedDate}" && it.status != "advance" },
+                    onMarkAttendance = { status, type ->
+                        viewModel.markContractorAttendance(worker.id, status, type)
+                    }
+                )
             }
         }
     }
@@ -319,170 +324,180 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
     val presentCount = dayMap.values.count { it.status == "present" }
     val absentCount = dayMap.values.count { it.status == "absent" }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Calendar", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Month Selector
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { viewModel.changePersonalMonth(-1) }) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
-            }
-            Text(
-                text = monthYearStr,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
-            }
+        item {
+            Text("Calendar", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Spacer(modifier = Modifier.height(16.dp))
         }
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // Month stats
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                    .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
+        item {
+            // Month Selector
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("$presentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Present", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                IconButton(onClick = { viewModel.changePersonalMonth(-1) }) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
                 }
-            }
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
-                    .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("$absentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Absent", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            "Tap any day to edit attendance or add note/advance.",
-            fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Day Labels
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            dayLabels.forEach { d ->
                 Text(
-                    text = d,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center
+                    text = monthYearStr,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
                 )
+                IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
+                    Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                }
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
-        Spacer(modifier = Modifier.height(8.dp))
 
-        // Calendar Grid
-        val totalCells = firstDayOfWeek + daysInMonth
-        val rows = Math.ceil(totalCells / 7.0).toInt()
+        item {
+            // Month stats
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("$presentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Present", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("$absentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Absent", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Tap any day to edit attendance or add note/advance.",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
-        Column(modifier = Modifier.fillMaxWidth()) {
-            for (row in 0 until rows) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    for (col in 0..6) {
-                        val cellIndex = row * 7 + col
-                        val day = cellIndex - firstDayOfWeek + 1
+        item {
+            // Day Labels
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                dayLabels.forEach { d ->
+                    Text(
+                        text = d,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .aspectRatio(1f)
-                                .padding(2.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (day in 1..daysInMonth) {
-                                val data = dayMap[day]
-                                val isPresent = data?.status == "present"
-                                val isAbsent = data?.status == "absent"
-                                val isHalf = data?.type == "half"
-                                val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
-                                val isToday = isCurrentMonth && day == todayDay
+        item {
+            // Calendar Grid
+            val totalCells = firstDayOfWeek + daysInMonth
+            val rows = Math.ceil(totalCells / 7.0).toInt()
 
-                                val bgColor = when {
-                                    isPresent && isHalf -> Color(0xFFF97316)
-                                    isPresent -> MaterialTheme.colorScheme.primary
-                                    isAbsent -> MaterialTheme.colorScheme.error
-                                    else -> Color.Transparent
-                                }
+            Column(modifier = Modifier.fillMaxWidth()) {
+                for (row in 0 until rows) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        for (col in 0..6) {
+                            val cellIndex = row * 7 + col
+                            val day = cellIndex - firstDayOfWeek + 1
 
-                                val textColor = when {
-                                    isPresent || isAbsent -> Color.White
-                                    isToday -> MaterialTheme.colorScheme.onSurface
-                                    else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .padding(2.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (day in 1..daysInMonth) {
+                                    val data = dayMap[day]
+                                    val isPresent = data?.status == "present"
+                                    val isAbsent = data?.status == "absent"
+                                    val isHalf = data?.type == "half"
+                                    val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
+                                    val isToday = isCurrentMonth && day == todayDay
 
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape)
-                                        .background(bgColor)
-                                        .clickable {
-                                            selectedDay = day
-                                            showDialog = true
-                                        }
-                                        .border(
-                                            width = if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
-                                            color = if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                            shape = CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = day.toString(),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = textColor
-                                    )
-                                    if (isHalf) {
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.TopEnd)
-                                                .padding(4.dp)
-                                                .size(6.dp)
-                                                .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.onPrimary)
-                                        )
+                                    val bgColor = when {
+                                        isPresent && isHalf -> Color(0xFFF97316)
+                                        isPresent -> MaterialTheme.colorScheme.primary
+                                        isAbsent -> MaterialTheme.colorScheme.error
+                                        else -> Color.Transparent
                                     }
-                                    if (hasAdvance) {
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.BottomCenter)
-                                                .padding(bottom = 6.dp)
-                                                .size(8.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(0xFFF97316)) // Orange
+
+                                    val textColor = when {
+                                        isPresent || isAbsent -> Color.White
+                                        isToday -> MaterialTheme.colorScheme.onSurface
+                                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(CircleShape)
+                                            .background(bgColor)
+                                            .clickable {
+                                                selectedDay = day
+                                                showDialog = true
+                                            }
+                                            .border(
+                                                width = if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
+                                                color = if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = day.toString(),
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = textColor
                                         )
+                                        if (isHalf) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .padding(4.dp)
+                                                    .size(6.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.onPrimary)
+                                            )
+                                        }
+                                        if (hasAdvance) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomCenter)
+                                                    .padding(bottom = 6.dp)
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFFF97316)) // Orange
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -492,36 +507,38 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Legend
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Full Day", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Half Day", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Absent", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Advance", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Legend
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Full Day", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Half Day", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Absent", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Advance", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }

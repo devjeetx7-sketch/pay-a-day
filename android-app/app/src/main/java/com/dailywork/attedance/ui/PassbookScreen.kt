@@ -57,6 +57,11 @@ fun PassbookScreenContent(
     val yearNumericStr = sdfYearNumeric.format(state.selectedMonthDate)
     val context = LocalContext.current
 
+    // Auto-refresh
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
         LaunchedEffect(true) {

@@ -98,6 +98,7 @@ class StatsViewModel(
     }
 
     fun refresh() {
+        if (_statsState.value.isRefreshing) return
         _statsState.value = _statsState.value.copy(isRefreshing = true)
         setupListeners(_statsState.value.role)
     }
@@ -157,6 +158,8 @@ class StatsViewModel(
                         ?.addSnapshotListener { summariesSnapshot, _ ->
                             if (summariesSnapshot != null) {
                                 calculateContractorStatsFromSummaries(summariesSnapshot.documents, yearMonth)
+                            } else {
+                                _statsState.update { it.copy(isRefreshing = false) }
                             }
                         }
                 }

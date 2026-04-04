@@ -73,6 +73,13 @@ fun DashboardScreen(
     val pagerState = rememberPagerState(pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
 
+    // Auto-refresh on resume/open
+    LaunchedEffect(Unit) {
+        dashboardViewModel.refresh()
+        calendarViewModel.refresh()
+        statsViewModel.refresh()
+    }
+
     Scaffold(
         bottomBar = {
             if (currentRoute == "main_pager") {
