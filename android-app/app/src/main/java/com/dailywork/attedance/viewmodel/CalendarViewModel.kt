@@ -229,10 +229,10 @@ class CalendarViewModel(
             val worker = _calendarState.value.workers.find { it.id == workerId }
             val wage = worker?.wage ?: 0.0
 
-            val newData: Map<String, Any> = mapOf(
+            val newData: Map<String, Any?> = mapOf(
                 "date" to date,
                 "status" to status,
-                "type" to (if (status == "present") type else null) as Any,
+                "type" to if (status == "present") type else null,
                 "wage" to wage,
                 "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
             )
@@ -289,13 +289,13 @@ class CalendarViewModel(
             val docId = date
 
             if (status == "present" || status == "absent") {
-                val data: Map<String, Any> = mapOf(
+                val data: Map<String, Any?> = mapOf(
                     "date" to date,
                     "status" to status,
-                    "type" to (if (status == "present") type else null) as Any,
-                    "reason" to (if (status == "absent") reason else null) as Any,
-                    "overtime_hours" to (if (status == "present") overtimeHours else 0),
-                    "note" to (if (note.isNotEmpty()) note else null) as Any,
+                    "type" to if (status == "present") type else null,
+                    "reason" to if (status == "absent") reason else null,
+                    "overtime_hours" to if (status == "present") overtimeHours else 0,
+                    "note" to if (note.isNotEmpty()) note else null,
                     "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
                 )
 
@@ -305,7 +305,7 @@ class CalendarViewModel(
             }
 
             if (advanceAmount > 0) {
-                val advanceData: Map<String, Any> = mapOf(
+                val advanceData: Map<String, Any?> = mapOf(
                     "date" to date,
                     "status" to "advance",
                     "advance_amount" to advanceAmount,
