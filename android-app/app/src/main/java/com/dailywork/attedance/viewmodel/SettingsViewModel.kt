@@ -10,6 +10,7 @@ import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import com.dailywork.attedance.data.FirestoreRepository
@@ -130,11 +131,16 @@ class SettingsViewModel(
     fun saveChanges() {
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
-            _state.value = _state.value.copy(isSaving = true)
+
+            val currentState = _state.value
+            val roleChanged = currentState.role != currentState.originalRole
+            val newRole = currentState.role
+
+            _state.update { it.copy(isSaving = true) }
 
             try {
-                var finalImageUrl = _state.value.profileImageUrl
-                val imageUri = _state.value.profileImageUri
+                var finalImageUrl = currentState.profileImageUrl
+                val imageUri = currentState.profileImageUri
 
                 if (imageUri != null) {
                     val storageRef = FirebaseStorage.getInstance().reference.child("profile_images/${user.uid}.jpg")
@@ -143,39 +149,37 @@ class SettingsViewModel(
                 }
 
                 val updates = mutableMapOf<String, Any>(
-                    "name" to _state.value.name,
-                    "daily_wage" to _state.value.dailyWage,
-                    "role" to _state.value.role,
-                    "phone" to _state.value.phone,
+                    "name" to currentState.name,
+                    "daily_wage" to currentState.dailyWage,
+                    "role" to currentState.role,
+                    "phone" to currentState.phone,
                     "profileImageUrl" to finalImageUrl
                 )
 
                 db.collection("users").document(user.uid).set(updates, SetOptions.merge()).await()
 
-                val roleChanged = _state.value.role != _state.value.originalRole
-
                 if (roleChanged) {
-                    repository.saveUserRole(_state.value.role)
+                    repository.saveUserRole(newRole)
                 }
 
-                _state.value = _state.value.copy(
-                    originalName = _state.value.name,
-                    originalWage = _state.value.dailyWage,
-                    originalRole = _state.value.role,
-                    originalPhone = _state.value.phone,
+                _state.update { it.copy(
+                    originalName = it.name,
+                    originalWage = it.dailyWage,
+                    originalRole = it.role,
+                    originalPhone = it.phone,
                     profileImageUrl = finalImageUrl,
                     originalProfileImageUrl = finalImageUrl,
                     profileImageUri = null,
                     savedMessage = "Profile updated successfully!",
                     isSaving = false,
                     triggerRestart = roleChanged
-                )
+                ) }
 
             } catch (e: Exception) {
-                _state.value = _state.value.copy(
+                _state.update { it.copy(
                     savedMessage = "Failed to update profile.",
                     isSaving = false
-                )
+                ) }
             }
         }
     }
