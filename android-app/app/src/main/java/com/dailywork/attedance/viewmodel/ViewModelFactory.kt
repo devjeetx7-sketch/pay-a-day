@@ -42,6 +42,10 @@ class ViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return WorkerDetailViewModel(firestoreRepository) as T
         }
+        if (modelClass.isAssignableFrom(WorkerHistoryViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return WorkerHistoryViewModel(firestoreRepository) as T
+        }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

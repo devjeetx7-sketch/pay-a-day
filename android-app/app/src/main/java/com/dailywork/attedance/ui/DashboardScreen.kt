@@ -41,6 +41,7 @@ import com.dailywork.attedance.viewmodel.PassbookViewModel
 import com.dailywork.attedance.viewmodel.SettingsViewModel
 import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
+import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -54,6 +55,7 @@ fun DashboardScreen(
     settingsViewModel: SettingsViewModel,
     workersViewModel: WorkersViewModel,
     workerDetailViewModel: WorkerDetailViewModel,
+    workerHistoryViewModel: WorkerHistoryViewModel,
     onLogout: () -> Unit
 ) {
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
@@ -216,7 +218,10 @@ fun DashboardScreen(
                 )
             }
             composable("worker_history") {
-                WorkerHistoryScreen(navController = bottomNavController)
+                WorkerHistoryScreen(
+                    viewModel = workerHistoryViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
             }
         }
 
