@@ -79,6 +79,7 @@ class StatsViewModel(
 
     private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private val workerAttendanceListeners = mutableMapOf<String, com.google.firebase.firestore.ListenerRegistration>()
     private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var summaryListener: com.google.firebase.firestore.ListenerRegistration? = null
 
@@ -97,6 +98,7 @@ class StatsViewModel(
     }
 
     fun refresh() {
+        if (_statsState.value.isRefreshing) return
         _statsState.value = _statsState.value.copy(isRefreshing = true)
         setupListeners(_statsState.value.role)
     }
@@ -148,6 +150,7 @@ class StatsViewModel(
                         return@addSnapshotListener
                     }
                     cachedWorkers = snapshot.documents
+                    setupTodayAttendanceListeners()
 
                     // Fetch all summaries to calculate All-Time stats efficiently
                     attendanceListener?.remove()
@@ -155,6 +158,8 @@ class StatsViewModel(
                         ?.addSnapshotListener { summariesSnapshot, _ ->
                             if (summariesSnapshot != null) {
                                 calculateContractorStatsFromSummaries(summariesSnapshot.documents, yearMonth)
+                            } else {
+                                _statsState.update { it.copy(isRefreshing = false) }
                             }
                         }
                 }
@@ -176,6 +181,42 @@ class StatsViewModel(
         }
     }
 
+    private val workerTodayStatus = mutableMapOf<String, String?>()
+
+    private fun setupTodayAttendanceListeners() {
+        workerAttendanceListeners.values.forEach { it.remove() }
+        workerAttendanceListeners.clear()
+        workerTodayStatus.clear()
+
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val todayStr = sdf.format(Date())
+
+        cachedWorkers.forEach { workerDoc ->
+            val workerId = workerDoc.id
+            val listener = firestoreRepository.getContractorAttendance(workerId)
+                ?.document(todayStr)
+                ?.addSnapshotListener { snapshot, _ ->
+                    val status = snapshot?.getString("status")
+                    workerTodayStatus[workerId] = status
+
+                    val presentCount = workerTodayStatus.values.count { it == "present" }
+                    val absentCount = workerTodayStatus.values.count { it == "absent" }
+
+                    _statsState.update { current ->
+                        current.copy(
+                            contractorStats = current.contractorStats.copy(
+                                todayPresent = presentCount,
+                                todayAbsent = absentCount
+                            )
+                        )
+                    }
+                }
+            if (listener != null) {
+                workerAttendanceListeners[workerId] = listener
+            }
+        }
+    }
+
     private fun calculateContractorStatsFromSummaries(summaries: List<com.google.firebase.firestore.DocumentSnapshot>, currentMonth: String) {
         var totalCost = 0.0
         var totalDays = 0.0
@@ -190,6 +231,7 @@ class StatsViewModel(
         val allTimeTopWorkersMap = mutableMapOf<String, WorkerStats>()
 
         val workersNamesMap = cachedWorkers.associateBy({ it.id }, { it.getString("name") ?: "Unknown" })
+        val workersWageMap = cachedWorkers.associateBy({ it.id }, { it.getDouble("wage") ?: 500.0 })
 
         summaries.forEach { summary ->
             val monthId = summary.id
@@ -204,7 +246,12 @@ class StatsViewModel(
             val workersMap = summary.get("workers") as? Map<String, Map<String, Any>>
             workersMap?.forEach { (id, stats) ->
                 val d = (stats["days"] as? Number)?.toDouble() ?: 0.0
-                val c = (stats["cost"] as? Number)?.toDouble() ?: 0.0
+                val wage = workersWageMap[id] ?: 500.0
+                val c = if ((stats["cost"] as? Number)?.toDouble() ?: 0.0 > 0.0) {
+                    (stats["cost"] as? Number)?.toDouble() ?: 0.0
+                } else {
+                    d * wage
+                }
                 val name = workersNamesMap[id] ?: "Unknown"
 
                 val currentAllTime = allTimeTopWorkersMap[id] ?: WorkerStats(name, 0.0, 0.0)
@@ -220,7 +267,12 @@ class StatsViewModel(
 
                 workersMap?.forEach { (id, stats) ->
                     val d = (stats["days"] as? Number)?.toDouble() ?: 0.0
-                    val c = (stats["cost"] as? Number)?.toDouble() ?: 0.0
+                    val wage = workersWageMap[id] ?: 500.0
+                    val c = if ((stats["cost"] as? Number)?.toDouble() ?: 0.0 > 0.0) {
+                        (stats["cost"] as? Number)?.toDouble() ?: 0.0
+                    } else {
+                        d * wage
+                    }
                     val name = workersNamesMap[id] ?: "Unknown"
                     topWorkersMap[id] = WorkerStats(name, d, c)
                 }
@@ -479,5 +531,6 @@ class StatsViewModel(
         workersListener?.remove()
         attendanceListener?.remove()
         summaryListener?.remove()
+        workerAttendanceListeners.values.forEach { it.remove() }
     }
 }

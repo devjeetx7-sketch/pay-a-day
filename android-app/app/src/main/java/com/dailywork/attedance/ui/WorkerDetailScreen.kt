@@ -50,6 +50,7 @@ fun WorkerDetailScreenContent(
 ) {
     LaunchedEffect(workerId) {
         viewModel.initialize(workerId)
+        viewModel.refresh()
     }
 
     val state by viewModel.state.collectAsState()

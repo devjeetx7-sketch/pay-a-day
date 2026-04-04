@@ -49,6 +49,7 @@ class WorkerDetailViewModel(
     }
 
     fun refresh() {
+        if (_state.value.isRefreshing) return
         _state.value = _state.value.copy(isRefreshing = true)
         setupListeners()
         setupUserListener()

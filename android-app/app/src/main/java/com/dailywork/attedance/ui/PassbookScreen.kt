@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dailywork.attedance.ui.components.CustomToggleTab
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.dailywork.attedance.utils.PassbookPdfGenerator
@@ -55,6 +56,11 @@ fun PassbookScreenContent(
     val monthNumericStr = sdfMonthNumeric.format(state.selectedMonthDate)
     val yearNumericStr = sdfYearNumeric.format(state.selectedMonthDate)
     val context = LocalContext.current
+
+    // Auto-refresh
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
 
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
@@ -224,26 +230,6 @@ fun PassbookScreenContent(
                             Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Joined ${state.joinedDate}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-
-                        // Call Button
-                        Button(
-                            onClick = {
-                                try {
-                                    if (state.phone.isNotEmpty()) {
-                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${state.phone}"))
-                                        context.startActivity(intent)
-                                    }
-                                } catch (e: Exception) {}
-                            },
-                            modifier = Modifier.height(32.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
-                        ) {
-                            Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Call", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

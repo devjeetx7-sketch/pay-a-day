@@ -97,7 +97,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                         navController.navigate("login") {
                             popUpTo("splash") { inclusive = true }
                         }
-                    } else if (roleState == null) {
+                    } else if (roleState == null || roleState!!.isEmpty()) {
                         navController.navigate("role_selection") {
                             popUpTo("splash") { inclusive = true }
                         }
@@ -124,8 +124,15 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                 authViewModel = authViewModel,
                 selectedLanguage = languageState ?: "en",
                 onLoginSuccess = {
-                    navController.navigate("role_selection") {
-                        popUpTo("login") { inclusive = true }
+                    // Check if role is already fetched and saved in DataStore
+                    if (roleState != null && roleState!!.isNotEmpty()) {
+                        navController.navigate("dashboard") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("role_selection") {
+                            popUpTo("login") { inclusive = true }
+                        }
                     }
                 }
             )
@@ -154,7 +161,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                 onLogout = {
                     authViewModel.logout()
                     navController.navigate("login") {
-                        popUpTo(0) { inclusive = true }
+                        popUpTo("dashboard") { inclusive = true }
                     }
                 }
             )

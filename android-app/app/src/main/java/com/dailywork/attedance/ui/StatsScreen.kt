@@ -14,7 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,7 +46,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.material3.PrimaryTabRow
+import com.dailywork.attedance.ui.components.CustomToggleTab
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -83,7 +83,8 @@ fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreenContent(
-    viewModel: StatsViewModel
+    viewModel: StatsViewModel,
+    onNavigateToWorkerHistory: () -> Unit = {}
 ) {
     val state by viewModel.statsState.collectAsState()
 
@@ -104,35 +105,56 @@ fun StatsScreenContent(
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Monthly", "All-Time")
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(pullRefreshState.nestedScrollConnection)
-    ) {
-        PrimaryTabRow(
-            selectedTabIndex = selectedTabIndex,
-            containerColor = MaterialTheme.colorScheme.background,
-            contentColor = MaterialTheme.colorScheme.primary
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = { Text(title, fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal) },
-                    selectedContentColor = MaterialTheme.colorScheme.primary,
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Statistics", fontWeight = FontWeight.Bold) },
+                actions = {
+                    if (state.role == "contractor") {
+                        IconButton(onClick = onNavigateToWorkerHistory) {
+                            Icon(Icons.Default.History, contentDescription = "History")
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
-            }
+            )
         }
-
-        Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .nestedScroll(pullRefreshState.nestedScrollConnection)
+        ) {
             if (state.isLoading && state.role.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
-                if (state.role == "contractor") {
-                    ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
-                } else {
-                    PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                val statsContent = @Composable {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        CustomToggleTab(
+                            tabs = tabs,
+                            selectedTabIndex = selectedTabIndex,
+                            onTabSelected = { selectedTabIndex = it }
+                        )
+                    }
+                    if (state.role == "contractor") {
+                        ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                    } else {
+                        PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                    }
+                }
+
+                // Both views already use LazyColumn internally
+                Column(modifier = Modifier.fillMaxSize()) {
+                    statsContent()
                 }
             }
             PullToRefreshContainer(

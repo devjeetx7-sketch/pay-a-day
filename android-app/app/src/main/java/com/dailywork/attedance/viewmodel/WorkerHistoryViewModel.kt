@@ -50,6 +50,7 @@ class WorkerHistoryViewModel(
     }
 
     fun refresh() {
+        if (_state.value.isRefreshing) return
         _state.update { it.copy(isRefreshing = true) }
         setupWorkersListener()
     }

@@ -83,6 +83,7 @@ class CalendarViewModel(
     }
 
     fun refresh() {
+        if (_calendarState.value.isRefreshing) return
         _calendarState.value = _calendarState.value.copy(isRefreshing = true)
         setupListeners(_calendarState.value.role)
     }
@@ -105,6 +106,7 @@ class CalendarViewModel(
                         _calendarState.value = _calendarState.value.copy(isLoading = false, isRefreshing = false)
                         return@addSnapshotListener
                     }
+                    _calendarState.value = _calendarState.value.copy(isRefreshing = false)
                     val workersList = snapshot.documents.mapNotNull { doc ->
                         Worker(
                             id = doc.id,
@@ -187,6 +189,8 @@ class CalendarViewModel(
                     _calendarState.value = _calendarState.value.copy(isLoading = false, isRefreshing = false)
                     return@addSnapshotListener
                 }
+
+                _calendarState.value = _calendarState.value.copy(isRefreshing = false)
 
                 val monthlyAttendance = snapshot.documents.map { doc ->
                     AttendanceRecord(
