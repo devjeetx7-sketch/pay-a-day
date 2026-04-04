@@ -109,7 +109,7 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         val updates = mutableMapOf<String, Any>()
 
         // Helper to get values
-        fun getStats(data: Map<String, Any>?): Triple<Double, Double, Double> {
+        fun getStats(data: Map<String, Any?>?): Triple<Double, Double, Double> {
             if (data == null) return Triple(0.0, 0.0, 0.0)
             val status = data["status"] as? String
             val type = data["type"] as? String
