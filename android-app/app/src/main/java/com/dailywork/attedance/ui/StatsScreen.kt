@@ -28,6 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.dailywork.attedance.viewmodel.StatsViewModel
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.graphics.vector.ImageVector
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -151,7 +155,7 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
     val dailyRecords = if (isAllTime) emptyList() else state.contractorStats.dailyRecords
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
@@ -173,19 +177,28 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
         }
 
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column {
-                        Text("TOTAL WORKERS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedCounter(targetValue = state.contractorStats.totalWorkers)
+            // Main Overview Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Analytics, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("System Overview", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
                     }
-                }
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column {
-                        Text("TOTAL MAN DAYS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedCounter(targetValue = currentTotalDays.toInt())
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Total Workforce", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            AnimatedCounter(targetValue = state.contractorStats.totalWorkers)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Total Man Days", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            AnimatedCounter(targetValue = currentTotalDays.toInt())
+                        }
                     }
                 }
             }
@@ -193,41 +206,43 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
 
         if (!isAllTime) {
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                        Column {
-                            Text("TODAY PRESENT", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            AnimatedCounter(targetValue = state.contractorStats.todayPresent)
-                        }
-                    }
-                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                        Column {
-                            Text("TODAY ABSENT", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            AnimatedCounter(targetValue = state.contractorStats.todayAbsent)
-                        }
-                    }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StatBox(
+                        label = "TODAY PRESENT",
+                        value = state.contractorStats.todayPresent,
+                        color = Color(0xFF10B981),
+                        icon = Icons.Default.CheckCircle,
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatBox(
+                        label = "TODAY ABSENT",
+                        value = state.contractorStats.todayAbsent,
+                        color = Color(0xFFEF4444),
+                        icon = Icons.Default.Cancel,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
 
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column {
-                        Text("TOTAL COST", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedCounter(targetValue = currentTotalCost.toInt(), prefix = "₹")
-                    }
-                }
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column {
-                        Text("TOTAL ADVANCE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedCounter(targetValue = state.contractorStats.totalAdvance.toInt(), prefix = "₹")
-                    }
-                }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatBox(
+                    label = "TOTAL COST",
+                    value = currentTotalCost.toInt(),
+                    prefix = "₹",
+                    color = Color(0xFF3B82F6),
+                    icon = Icons.Default.Payments,
+                    modifier = Modifier.weight(1f)
+                )
+                StatBox(
+                    label = "TOTAL ADVANCE",
+                    value = state.contractorStats.totalAdvance.toInt(),
+                    prefix = "₹",
+                    color = Color(0xFFF97316),
+                    icon = Icons.Default.AccountBalanceWallet,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
@@ -279,6 +294,31 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun StatBox(
+    label: String,
+    value: Int,
+    prefix: String = "",
+    color: Color,
+    icon: ImageVector,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(4.dp))
+            AnimatedCounter(targetValue = value, prefix = prefix)
         }
     }
 }
@@ -465,22 +505,24 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
             }
         }
 
-        item {
-            Text("All Time Stats", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column {
-                        Text("TOTAL EARNINGS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
+        if (!isAllTime) {
+            item {
+                Text("All Time Stats", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                        Column {
+                            Text("TOTAL EARNINGS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
+                        }
                     }
-                }
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column {
-                        Text("TOTAL DAYS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedCounter(targetValue = state.personalStats.allTimeDays)
+                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                        Column {
+                            Text("TOTAL DAYS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            AnimatedCounter(targetValue = state.personalStats.allTimeDays)
+                        }
                     }
                 }
             }

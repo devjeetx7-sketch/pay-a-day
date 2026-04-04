@@ -122,14 +122,17 @@ class DashboardViewModel(
                 ?.addSnapshotListener { snapshot, _ ->
                     if (snapshot != null && snapshot.exists()) {
                          val totalPaid = snapshot.getDouble("total_advance") ?: 0.0
+                         val totalWages = snapshot.getDouble("total_wages") ?: 0.0
                          val todayPresent = snapshot.getDouble("today.present_count") ?: 0.0
                          val todayAbsent = snapshot.getDouble("today.absent_count") ?: 0.0
+                         val pending = totalWages - totalPaid
 
                          // We can update monthly stats here
                          _dashboardState.update { it.copy(
                              totalPaidMonth = totalPaid.toInt().toString(),
                              todayPresent = todayPresent.toInt().toString(),
-                             todayAbsent = todayAbsent.toInt().toString()
+                             todayAbsent = todayAbsent.toInt().toString(),
+                             pendingAmount = pending.toInt().toString()
                          ) }
                     }
                 }
@@ -152,45 +155,10 @@ class DashboardViewModel(
 
         if (role == "contractor") {
             val totalWorkers = cachedWorkers.size
-            var totalAdvanceMonth = 0.0
-            var pendingTotal = 0.0
-            var todayPresentCount = 0
-
-            val workersMap = mutableMapOf<String, Double>()
-            for (doc in cachedWorkers) {
-                workersMap["worker_${doc.id}"] = doc.getDouble("wage") ?: 0.0
-            }
-
-            for (att in cachedAttendance) {
-                val date = att.getString("date") ?: ""
-                val status = att.getString("status") ?: ""
-                val type = att.getString("type") ?: "full"
-                val workerId = att.getString("user_id") ?: ""
-                val advance = att.getDouble("advance_amount") ?: 0.0
-                val wage = workersMap[workerId] ?: 0.0
-
-                if (date == todayStr && status == "present") {
-                    todayPresentCount++
-                }
-
-                if (status == "present") {
-                    pendingTotal += if (type == "half") wage / 2 else wage
-                } else if (status == "advance") {
-                    pendingTotal -= advance
-                }
-
-                if (date.startsWith(currentMonthStr) && status == "advance") {
-                    totalAdvanceMonth += advance
-                }
-            }
-
-            _dashboardState.value = _dashboardState.value.copy(
+            _dashboardState.update { it.copy(
                 isLoading = false,
-                totalWorkers = totalWorkers.toString(),
-                todayPresent = todayPresentCount.toString(),
-                totalPaidMonth = totalAdvanceMonth.toInt().toString(),
-                pendingAmount = pendingTotal.toInt().toString()
-            )
+                totalWorkers = totalWorkers.toString()
+            ) }
         } else {
             var todayEarned = 0.0
             var monthEarned = 0.0
@@ -221,14 +189,14 @@ class DashboardViewModel(
                 }
             }
 
-            _dashboardState.value = _dashboardState.value.copy(
+            _dashboardState.update { it.copy(
                 isLoading = false,
                 todayEarned = todayEarned.toInt().toString(),
                 monthEarned = monthEarned.toInt().toString(),
                 todayStatus = currentTodayStatus,
                 overtimeHours = currentOvertime,
                 todayNote = currentNote
-            )
+            ) }
         }
     }
 

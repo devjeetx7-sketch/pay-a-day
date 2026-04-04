@@ -70,10 +70,40 @@ fun DashboardScreen(
     var advanceAmount by remember { mutableStateOf("") }
     var selectedWorkerId by remember { mutableStateOf<String?>(null) }
 
-    val pagerState = rememberPagerState(pageCount = { 5 })
+    val pagerState = rememberPagerState(pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
+        topBar = {
+            if (currentRoute == "main_pager" && pagerState.currentPage == 0) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "DailyWork Pro",
+                            fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            coroutineScope.launch {
+                                bottomNavController.navigate("worker_history")
+                            }
+                        }) {
+                            Icon(
+                                Icons.Default.History,
+                                contentDescription = "History",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground
+                    )
+                )
+            }
+        },
         bottomBar = {
             if (currentRoute == "main_pager") {
                 BottomNavigationBar(
@@ -81,8 +111,7 @@ fun DashboardScreen(
                         0 -> "dashboard"
                         1 -> "calendar"
                         2 -> "stats"
-                        3 -> "worker_history_tab"
-                        4 -> "settings"
+                        3 -> "settings"
                         else -> "dashboard"
                     },
                     onNavigate = { route ->
@@ -90,8 +119,7 @@ fun DashboardScreen(
                             "dashboard" -> 0
                             "calendar" -> 1
                             "stats" -> 2
-                            "worker_history_tab" -> 3
-                            "settings" -> 4
+                            "settings" -> 3
                             else -> 0
                         }
                         coroutineScope.launch {
@@ -178,20 +206,12 @@ fun DashboardScreen(
                             StatsScreenContent(viewModel = statsViewModel)
                         }
                         3 -> {
-                            WorkerHistoryScreen(
-                                viewModel = workerHistoryViewModel,
-                                onNavigateBack = {
-                                    coroutineScope.launch { pagerState.animateScrollToPage(0) }
-                                }
-                            )
-                        }
-                        4 -> {
                             SettingsScreenContent(
                                 viewModel = settingsViewModel,
                                 onLogout = onLogout,
                                 onNavigateToPremium = { navController.navigate("premium") },
                                 onNavigateToWorkerHistory = {
-                                    coroutineScope.launch { pagerState.animateScrollToPage(3) }
+                                    bottomNavController.navigate("worker_history")
                                 }
                             )
                         }
@@ -321,10 +341,34 @@ fun DashboardScreen(
 
 @Composable
 fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
-    val todayDate = remember {
-        SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault()).format(Date())
+    val todayFullDate = remember {
+        SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(Date())
     }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val greeting = remember {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 5..11 -> "Good Morning 🌅"
+            in 12..16 -> "Good Afternoon ☀️"
+            in 17..20 -> "Good Evening 🌆"
+            else -> "Good Night 🌙"
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = greeting,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Black,
+            color = Color.Black
+        )
+        Text(
+            text = todayFullDate,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -393,98 +437,71 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
         }
     }
 
-    // Today's Date Chip
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.padding(bottom = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.CalendarToday,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = todayDate as String,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
     }
 }
 
 @Composable
 fun ContractorStatsGrid(state: DashboardState) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Mini Preview
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Top row: 2 cards side by side
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.TrendingUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text("Weekly Performance", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    Text("+12% active workers vs last week", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Text("View", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 8.dp))
+            StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f))
         }
 
-        // Stats Cards
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f)) // green-500
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            StatCard("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f)) // red-500
-            StatCard("Total Paid (Month)", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f)) // blue-500
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            StatCard("Pending Amount", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f), isPending = true) // orange-500
-            Spacer(modifier = Modifier.weight(1f))
+        // Bottom row: 3 cards side by side (smaller width)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f))
+            StatCardSmall("Total Paid", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f))
+            StatCardSmall("Pending", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isPending: Boolean = false) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
-            .padding(20.dp)
+fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.height(120.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Box(
-            modifier = Modifier.size(40.dp).clip(CircleShape).background(color.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.height(100.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = if (isPending) color else MaterialTheme.colorScheme.onBackground)
-        Text(title, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -704,7 +721,6 @@ fun BottomNavigationBar(currentRoute: String, onNavigate: (String) -> Unit = {})
         NavItem("dashboard", Icons.Default.Home, "Home"),
         NavItem("calendar", Icons.Default.CalendarMonth, "Calendar"),
         NavItem("stats", Icons.Default.BarChart, "Status"),
-        NavItem("worker_history_tab", Icons.Default.History, "History"),
         NavItem("settings", Icons.Default.Settings, "Setting")
     )
 
