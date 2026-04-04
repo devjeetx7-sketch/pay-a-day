@@ -545,7 +545,6 @@ fun EarningsLineChart(dailyRecords: List<com.dailywork.attedance.viewmodel.Daily
     )
 
     val primaryColor = MaterialTheme.colorScheme.primary
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
     Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
         Canvas(
