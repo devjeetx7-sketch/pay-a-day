@@ -78,23 +78,28 @@ fun PassbookScreenContent(
 
     fun generatePdfData(): PdfData {
         var currentRunningBalance = 0.0
+        var totalOTHours = 0
+        var totalOTEarnings = 0.0
 
         val sortedLogs = state.logs.sortedBy { it.date }.map { log ->
-            val dailyEarned = if (log.status == "present") {
-                if (log.type == "half") state.dailyWage / 2 else state.dailyWage
-            } else 0.0
+            val dailyEarned = log.baseEarnings
             val advanceAmt = log.advanceAmount ?: 0.0
+            val otAmt = log.overtimeAmount
 
-            currentRunningBalance += dailyEarned - advanceAmt
+            totalOTHours += log.overtimeHours
+            totalOTEarnings += otAmt
+
+            currentRunningBalance += (dailyEarned + otAmt) - advanceAmt
 
             PdfLog(
                 date = log.date.split("-").reversed().joinToString("/"),
                 status = if (log.status == "present") if (log.type == "half") "Half Day" else "Present" else if (log.status == "absent") "Absent" else "-",
                 workType = state.workType,
                 dailyWage = "Rs. ${state.dailyWage.toInt()}",
-                overtime = "-",
+                overtime = if (log.overtimeHours > 0) "${log.overtimeHours} hrs / Rs.${log.overtimeAmount.toInt()}" else "-",
                 advanceAmount = if (log.status == "advance" || advanceAmt > 0) "Rs. ${advanceAmt.toInt()}" else "-",
-                runningBalance = "Rs. ${currentRunningBalance.toInt()}"
+                runningBalance = "Rs. ${currentRunningBalance.toInt()}",
+                note = log.note ?: ""
             )
         }
 
@@ -102,14 +107,18 @@ fun PassbookScreenContent(
             title = "DailyWork Pro",
             subtitle = "Official Worker Passbook",
             name = state.name,
-            userId = "personal", // No specific worker ID in personal passbook view
+            userId = "personal",
             role = state.workType,
             monthYearStr = monthYearStr,
             monthNumericStr = monthNumericStr,
             yearNumericStr = yearNumericStr,
-            contractorName = "Admin", // PassbookViewModel doesn't fetch contractor name for personal mode
+            contractorName = "Admin",
             dailyWage = state.dailyWage,
             totalManDays = state.totalDailyWorks,
+            totalPresent = state.presentDays,
+            totalHalfDays = state.halfDays,
+            totalOvertimeHours = totalOTHours,
+            totalOvertimeEarnings = totalOTEarnings,
             grossEarned = state.grossEarned,
             advanceDeducted = state.totalAdvance,
             netPayable = state.finalBalance,
