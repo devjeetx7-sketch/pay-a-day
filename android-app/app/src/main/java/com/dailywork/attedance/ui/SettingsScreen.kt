@@ -54,11 +54,13 @@ fun SettingsScreenContent(
 
     LaunchedEffect(state.triggerRestart) {
         if (state.triggerRestart) {
+            // Give a short delay for the Toast/Snackbar to be seen if desired,
+            // but the user wants immediate restart
             val intent = Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
             context.startActivity(intent)
-            // No need for Runtime.exit(0), FLAG_ACTIVITY_CLEAR_TASK handles it
+            (context as? android.app.Activity)?.finish()
         }
     }
 
