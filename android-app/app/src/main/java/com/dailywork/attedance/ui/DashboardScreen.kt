@@ -74,36 +74,6 @@ fun DashboardScreen(
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
-        topBar = {
-            if (currentRoute == "main_pager" && pagerState.currentPage == 0) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            "DailyWork Pro",
-                            fontWeight = FontWeight.Black,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    },
-                    actions = {
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                bottomNavController.navigate("worker_history")
-                            }
-                        }) {
-                            Icon(
-                                Icons.Default.History,
-                                contentDescription = "History",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-            }
-        },
         bottomBar = {
             if (currentRoute == "main_pager") {
                 BottomNavigationBar(
@@ -203,7 +173,14 @@ fun DashboardScreen(
                             CalendarScreen(viewModel = calendarViewModel)
                         }
                         2 -> {
-                            StatsScreenContent(viewModel = statsViewModel)
+                            StatsScreenContent(
+                                viewModel = statsViewModel,
+                                onNavigateToWorkerHistory = {
+                                    coroutineScope.launch {
+                                        bottomNavController.navigate("worker_history")
+                                    }
+                                }
+                            )
                         }
                         3 -> {
                             SettingsScreenContent(
@@ -344,37 +321,13 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
     val todayFullDate = remember {
         SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(Date())
     }
-    val greeting = remember {
-        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        when (hour) {
-            in 5..11 -> "Good Morning 🌅"
-            in 12..16 -> "Good Afternoon ☀️"
-            in 17..20 -> "Good Evening 🌆"
-            else -> "Good Night 🌙"
-        }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = greeting,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.Black
-        )
-        Text(
-            text = todayFullDate,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
-        )
-        Spacer(modifier = Modifier.height(16.dp))
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -394,18 +347,17 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Hi, ${state.name.split(" ")[0]}",
-                        fontSize = 24.sp,
+                        text = "Hi, ${state.name.split(" ")[0]} 👋",
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = Color.Black
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "👋", fontSize = 24.sp)
                 }
                 Text(
-                    text = if (state.role == "contractor") "Manage your workforce" else "Manage your daily work",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = todayFullDate,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.Gray
                 )
             }
         }
@@ -435,8 +387,6 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
                 Icon(Icons.Default.WorkspacePremium, contentDescription = "Premium Active", tint = MaterialTheme.colorScheme.primary)
             }
         }
-    }
-
     }
 }
 
