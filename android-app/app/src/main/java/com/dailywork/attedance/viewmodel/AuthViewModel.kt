@@ -40,6 +40,8 @@ class AuthViewModel(
                 if (email.isNotEmpty() && pass.isNotEmpty()) {
                     val result = auth.signInWithEmailAndPassword(email, pass).await()
                     val uid = result.user?.uid ?: ""
+
+                    fetchAndSaveUserRole(uid)
                     repository.saveAuthToken(uid)
                     _loginState.value = LoginState.Success(uid)
                 } else {
@@ -107,6 +109,7 @@ class AuthViewModel(
                         .set(userData, com.google.firebase.firestore.SetOptions.merge())
                         .await()
 
+                     fetchAndSaveUserRole(uid)
                      repository.saveAuthToken(uid)
                      _loginState.value = LoginState.Success(uid)
                  } else {
@@ -161,6 +164,23 @@ class AuthViewModel(
                     // Handle error if needed
                 }
             }
+        }
+    }
+
+    private suspend fun fetchAndSaveUserRole(uid: String) {
+        try {
+            val document = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .get()
+                .await()
+
+            val role = document.getString("role")
+            if (role != null) {
+                repository.saveUserRole(role)
+            }
+        } catch (e: Exception) {
+            // Log error or handle gracefully
         }
     }
 
