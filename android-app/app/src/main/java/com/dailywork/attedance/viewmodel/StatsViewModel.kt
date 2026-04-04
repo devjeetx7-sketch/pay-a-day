@@ -14,6 +14,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
+import com.dailywork.attedance.utils.OvertimeWageParser
 import kotlinx.coroutines.tasks.await
 
 data class DailyRecord(
@@ -464,8 +465,12 @@ class StatsViewModel(
             val type = doc.getString("type") ?: "full"
             val adv = doc.getDouble("advance_amount") ?: 0.0
             val ot = doc.getDouble("overtime_hours")?.toInt() ?: 0
+            val rawNote = doc.getString("note")
+            val otWage = OvertimeWageParser.extractWage(rawNote)
 
-            val costVal = if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
+            val baseCostVal = if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
+            val otCostVal = if (status == "present") com.dailywork.attedance.utils.OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, ot, otWage) else 0.0
+            val costVal = baseCostVal + otCostVal
 
             // All time
             if (status == "present") {

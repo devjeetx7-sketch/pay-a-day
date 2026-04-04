@@ -16,6 +16,7 @@ import java.util.Date
 import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
 import com.dailywork.attedance.utils.OvertimeCalculator
+import com.dailywork.attedance.utils.OvertimeWageParser
 
 data class DashboardState(
     val role: String = "",
@@ -215,17 +216,19 @@ class DashboardViewModel(
                 val status = doc.getString("status") ?: ""
                 val type = doc.getString("type") ?: "full"
                 val otHours = doc.getDouble("overtime_hours")?.toInt() ?: 0
+                val rawNote = doc.getString("note")
+                val otWage = OvertimeWageParser.extractWage(rawNote)
 
                 val dailyBase = if (status == "present") {
                     if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
                 } else 0.0
-                val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours) else 0.0
+                val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours, otWage) else 0.0
 
                 if (date == todayStr) {
                     if (status != "advance") {
                         currentTodayStatus = status
                         currentOvertime = otHours
-                        currentNote = doc.getString("note")
+                        currentNote = OvertimeWageParser.cleanNote(rawNote)
                         todayEarned = dailyBase + dailyOT
                     }
                 }
@@ -246,7 +249,7 @@ class DashboardViewModel(
         }
     }
 
-    fun markAttendance(type: String, overtimeHours: Int, note: String) {
+    fun markAttendance(type: String, overtimeHours: Int, overtimeWage: Double?, note: String) {
         viewModelScope.launch {
             auth.currentUser ?: return@launch
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -259,12 +262,13 @@ class DashboardViewModel(
                 todayNote = note
             )
 
+            val finalNote = OvertimeWageParser.appendWage(note, overtimeWage)
             val attendanceData = hashMapOf(
                 "date" to todayStr,
                 "status" to "present",
                 "type" to type,
                 "overtime_hours" to overtimeHours,
-                "note" to note,
+                "note" to finalNote,
                 "daily_wage" to cachedDefaultWage,
                 "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
             )

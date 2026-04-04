@@ -239,7 +239,10 @@ fun DashboardScreen(
             composable("worker_history") {
                 WorkerHistoryScreen(
                     viewModel = workerHistoryViewModel,
-                    onNavigateBack = { bottomNavController.navigateUp() }
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onWorkerClick = { workerId ->
+                        bottomNavController.navigate("worker_detail/$workerId")
+                    }
                 )
             }
         }
@@ -550,6 +553,7 @@ fun PersonalQuickActions(onAddAdvance: () -> Unit) {
 @Composable
 fun PersonalDailyLog(state: DashboardState, dashboardViewModel: DashboardViewModel) {
     var overtimeHours by remember { mutableStateOf(state.overtimeHours) }
+    var overtimeWage by remember { mutableStateOf("") }
     var note by remember { mutableStateOf(state.todayNote ?: "") }
     var showAbsentDialog by remember { mutableStateOf(false) }
 
@@ -571,6 +575,19 @@ fun PersonalDailyLog(state: DashboardState, dashboardViewModel: DashboardViewMod
                     Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)).clickable { overtimeHours++ }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
                 }
             }
+            if (overtimeHours > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = overtimeWage,
+                    onValueChange = { overtimeWage = it },
+                    placeholder = { Text("Custom Overtime Wage (Optional)") },
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = { Text("₹", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold) },
+                    singleLine = true
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
 
             // Note Input
@@ -591,14 +608,14 @@ fun PersonalDailyLog(state: DashboardState, dashboardViewModel: DashboardViewMod
 
             // Action Buttons
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { dashboardViewModel.markAttendance("full", overtimeHours, note) }, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                Button(onClick = { dashboardViewModel.markAttendance("full", overtimeHours, overtimeWage.toDoubleOrNull(), note) }, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp)) }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Full Day", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
-                OutlinedButton(onClick = { dashboardViewModel.markAttendance("half", overtimeHours, note) }, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground, containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
+                OutlinedButton(onClick = { dashboardViewModel.markAttendance("half", overtimeHours, overtimeWage.toDoubleOrNull(), note) }, modifier = Modifier.weight(1f).height(100.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground, containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp)) }
                         Spacer(modifier = Modifier.height(8.dp))
