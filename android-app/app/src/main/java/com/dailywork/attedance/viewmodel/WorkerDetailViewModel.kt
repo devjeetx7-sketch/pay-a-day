@@ -13,6 +13,7 @@ import java.util.Date
 import java.util.Locale
 
 import com.dailywork.attedance.data.FirestoreRepository
+import com.dailywork.attedance.utils.OvertimeCalculator
 
 class WorkerDetailViewModel(
     private val firestoreRepository: FirestoreRepository
@@ -121,8 +122,11 @@ class WorkerDetailViewModel(
         var absent = 0
         var half = 0
         var totalAdv = 0.0
+        var totalOTAmount = 0.0
+        var totalBaseEarnings = 0.0
 
         val logMap = mutableMapOf<String, PassbookLog>()
+        val wage = _state.value.dailyWage
 
         docs.forEach { doc ->
             val date = doc.getString("date") ?: return@forEach
@@ -130,10 +134,22 @@ class WorkerDetailViewModel(
             val type = doc.getString("type") ?: "full"
             val adv = doc.getDouble("advance_amount") ?: 0.0
             val note = doc.getString("note")
+            val otHours = doc.getDouble("overtime_hours")?.toInt() ?: 0
+
+            var dailyBase = 0.0
+            var dailyOT = 0.0
 
             if (status == "present") {
                 present++
-                if (type == "half") half++
+                dailyBase = if (type == "half") {
+                    half++
+                    wage / 2
+                } else {
+                    wage
+                }
+                dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours)
+                totalBaseEarnings += dailyBase
+                totalOTAmount += dailyOT
             } else if (status == "absent") {
                 absent++
             }
@@ -145,13 +161,15 @@ class WorkerDetailViewModel(
                 status = if (status != "advance") status else existingLog?.status ?: "advance",
                 type = if (status != "advance") type else existingLog?.type,
                 note = note ?: existingLog?.note,
-                advanceAmount = (existingLog?.advanceAmount ?: 0.0) + adv
+                advanceAmount = (existingLog?.advanceAmount ?: 0.0) + adv,
+                overtimeHours = otHours,
+                overtimeAmount = dailyOT,
+                baseEarnings = dailyBase
             )
         }
 
         val effectiveDays = present - (half * 0.5)
-        val wage = _state.value.dailyWage
-        val grossEarned = effectiveDays * wage
+        val grossEarned = totalBaseEarnings + totalOTAmount
         val finalBalance = grossEarned - totalAdv
 
         val attRate = if (passedDays > 0) ((present.toDouble() / passedDays) * 100).toInt().coerceIn(0, 100) else 0
