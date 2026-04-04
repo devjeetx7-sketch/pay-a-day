@@ -143,16 +143,121 @@ fun ContractorCalendarView(viewModel: CalendarViewModel, state: com.dailywork.at
             }
         } else {
             items(state.workers) { worker ->
+                var showDialog by remember { mutableStateOf(false) }
+
                 WorkerAttendanceCard(
                     worker = worker,
                     attendance = state.contractorAttendance.find { it.id == "${worker.id}_${state.selectedDate}" && it.status != "advance" },
                     onMarkAttendance = { status, type ->
-                        viewModel.markContractorAttendance(worker.id, status, type)
+                        if (status == "present") {
+                            showDialog = true
+                        } else {
+                            viewModel.markContractorAttendance(worker.id, status, type)
+                        }
                     }
                 )
+
+                if (showDialog) {
+                    ContractorAttendanceDialog(
+                        workerName = worker.name,
+                        existingRecord = state.contractorAttendance.find { it.id == "${worker.id}_${state.selectedDate}" && it.status != "advance" },
+                        onDismiss = { showDialog = false },
+                        onSave = { type, overtime, overtimeWage ->
+                            viewModel.markContractorAttendance(worker.id, "present", type, overtime, overtimeWage)
+                            showDialog = false
+                        }
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+fun ContractorAttendanceDialog(
+    workerName: String,
+    existingRecord: AttendanceRecord?,
+    onDismiss: () -> Unit,
+    onSave: (String, Int, Double?) -> Unit
+) {
+    var editType by remember { mutableStateOf(existingRecord?.type ?: "full") }
+    var editOT by remember { mutableStateOf(existingRecord?.overtimeHours ?: 0) }
+    var editOTWage by remember { mutableStateOf(existingRecord?.overtimeWage?.toInt()?.toString() ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Present: $workerName", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { editType = "full" },
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (editType == "full") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        border = if (editType == "full") androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                    ) {
+                        Text("Full Day", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = { editType = "half" },
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (editType == "half") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        border = if (editType == "half") androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                    ) {
+                        Text("Half Day", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Overtime (Hours)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).clickable { if (editOT > 0) editOT-- },
+                            contentAlignment = Alignment.Center
+                        ) { Text("-", fontWeight = FontWeight.Bold) }
+                        Text(editOT.toString(), fontWeight = FontWeight.Bold, modifier = Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Box(
+                            modifier = Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).clickable { editOT++ },
+                            contentAlignment = Alignment.Center
+                        ) { Text("+", fontWeight = FontWeight.Bold) }
+                    }
+                }
+                if (editOT > 0) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Custom Overtime Wage (₹)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = editOTWage,
+                        onValueChange = { editOTWage = it },
+                        placeholder = { Text("Optional Custom Wage") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        singleLine = true
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSave(editType, editOT, editOTWage.toDoubleOrNull()) }) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 @Composable
@@ -314,7 +419,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
             if (record != null || adv != null) {
                 mergedMap[day] = record?.copy(advanceAmount = adv) ?: AttendanceRecord(
                     id = "", date = String.format("%04d-%02d-%02d", year, month + 1, day),
-                    status = "advance", type = null, reason = null, overtimeHours = null, note = null, advanceAmount = adv
+                    status = "advance", type = null, reason = null, overtimeHours = null, overtimeWage = null, note = null, advanceAmount = adv
                 )
             }
         }
@@ -553,8 +658,8 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
             displayDate = "$selectedDay ${SimpleDateFormat("MMMM", Locale.getDefault()).format(currentMonthDate)} $year",
             existingRecord = existingRecord,
             onDismiss = { showDialog = false },
-            onSave = { status, type, reason, overtime, note, advance ->
-                viewModel.markPersonalAttendance(dateStr, status, type, reason, overtime, note, advance)
+            onSave = { status, type, reason, overtime, overtimeWage, note, advance ->
+                viewModel.markPersonalAttendance(dateStr, status, type, reason, overtime, overtimeWage, note, advance)
                 showDialog = false
             },
             onDelete = {
@@ -570,13 +675,14 @@ fun PersonalAttendanceDialog(
     displayDate: String,
     existingRecord: AttendanceRecord?,
     onDismiss: () -> Unit,
-    onSave: (String, String, String, Int, String, Double) -> Unit,
+    onSave: (String, String, String, Int, Double?, String, Double) -> Unit,
     onDelete: () -> Unit
 ) {
     var editStatus by remember { mutableStateOf(if (existingRecord?.status == "advance" || existingRecord == null) "present" else existingRecord.status) }
     var editType by remember { mutableStateOf(existingRecord?.type ?: "full") }
     var editReason by remember { mutableStateOf(existingRecord?.reason ?: "sick") }
     var editOT by remember { mutableStateOf(existingRecord?.overtimeHours ?: 0) }
+    var editOTWage by remember { mutableStateOf(existingRecord?.overtimeWage?.toInt()?.toString() ?: "") }
     var editNote by remember { mutableStateOf(existingRecord?.note ?: "") }
     var editAdvance by remember { mutableStateOf((existingRecord?.advanceAmount ?: 0.0).toInt().toString()) }
 
@@ -665,6 +771,21 @@ fun PersonalAttendanceDialog(
                             ) { Text("+", fontWeight = FontWeight.Bold) }
                         }
                     }
+                    if (editOT > 0) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Custom Overtime Wage (₹)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = editOTWage,
+                            onValueChange = { editOTWage = it },
+                            placeholder = { Text("Optional Custom Wage") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            singleLine = true
+                        )
+                    }
                 } else if (editStatus == "absent") {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
@@ -716,7 +837,8 @@ fun PersonalAttendanceDialog(
             Button(
                 onClick = {
                     val advanceVal = editAdvance.toDoubleOrNull() ?: 0.0
-                    onSave(editStatus, editType, editReason, editOT, editNote, advanceVal)
+                    val otWageVal = editOTWage.toDoubleOrNull()
+                    onSave(editStatus, editType, editReason, editOT, otWageVal, editNote, advanceVal)
                 }
             ) {
                 Text("Save")

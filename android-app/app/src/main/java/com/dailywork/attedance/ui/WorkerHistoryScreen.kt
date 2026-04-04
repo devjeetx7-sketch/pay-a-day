@@ -34,7 +34,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 @Composable
 fun WorkerHistoryScreen(
     viewModel: WorkerHistoryViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onWorkerClick: (String) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     var expandedFilterMenu by remember { mutableStateOf(false) }
@@ -161,7 +162,7 @@ fun WorkerHistoryScreen(
                 } else {
                     items(state.filteredRecords, key = { it.id }) { record ->
                         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            HistoryItemCard(record)
+                            HistoryItemCard(record, onWorkerClick)
                         }
                     }
                 }
@@ -177,13 +178,13 @@ fun WorkerHistoryScreen(
 }
 
 @Composable
-fun HistoryItemCard(record: HistoryRecord) {
+fun HistoryItemCard(record: HistoryRecord, onWorkerClick: (String) -> Unit) {
     val isPayment = record.type == "Payment"
     val iconColor = if (isPayment) Color(0xFFF97316) else MaterialTheme.colorScheme.primary
     val icon = if (isPayment) Icons.Default.Payment else Icons.Default.Work
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onWorkerClick(record.workerId) },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)

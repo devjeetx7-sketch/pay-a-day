@@ -14,6 +14,7 @@ import java.util.Locale
 
 import com.dailywork.attedance.data.FirestoreRepository
 import com.dailywork.attedance.utils.OvertimeCalculator
+import com.dailywork.attedance.utils.OvertimeWageParser
 
 class WorkerDetailViewModel(
     private val firestoreRepository: FirestoreRepository
@@ -133,8 +134,10 @@ class WorkerDetailViewModel(
             val status = doc.getString("status") ?: ""
             val type = doc.getString("type") ?: "full"
             val adv = doc.getDouble("advance_amount") ?: 0.0
-            val note = doc.getString("note")
+            val rawNote = doc.getString("note")
             val otHours = doc.getDouble("overtime_hours")?.toInt() ?: 0
+            val otWage = OvertimeWageParser.extractWage(rawNote)
+            val note = OvertimeWageParser.cleanNote(rawNote)
 
             var dailyBase = 0.0
             var dailyOT = 0.0
@@ -147,7 +150,7 @@ class WorkerDetailViewModel(
                 } else {
                     wage
                 }
-                dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours)
+                dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours, otWage)
                 totalBaseEarnings += dailyBase
                 totalOTAmount += dailyOT
             } else if (status == "absent") {

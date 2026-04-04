@@ -16,6 +16,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
+import com.dailywork.attedance.utils.OvertimeWageParser
 
 data class Worker(
     val id: String,
@@ -31,6 +32,7 @@ data class AttendanceRecord(
     val type: String?,
     val reason: String?,
     val overtimeHours: Int?,
+    val overtimeWage: Double?,
     val note: String?,
     val advanceAmount: Double?
 )
@@ -138,6 +140,7 @@ class CalendarViewModel(
                 ?.addSnapshotListener { snapshot, error ->
                     if (error == null && snapshot != null) {
                          if (snapshot.exists()) {
+                            val rawNote = snapshot.getString("note")
                              val record = AttendanceRecord(
                                 id = "${worker.id}_${snapshot.id}",
                                 date = snapshot.getString("date") ?: "",
@@ -145,7 +148,8 @@ class CalendarViewModel(
                                 type = snapshot.getString("type"),
                                 reason = snapshot.getString("reason"),
                                 overtimeHours = snapshot.getDouble("overtime_hours")?.toInt(),
-                                note = snapshot.getString("note"),
+                                overtimeWage = OvertimeWageParser.extractWage(rawNote),
+                                note = OvertimeWageParser.cleanNote(rawNote),
                                 advanceAmount = snapshot.getDouble("advance_amount")
                             )
                             _calendarState.update { current ->
@@ -193,6 +197,7 @@ class CalendarViewModel(
                 _calendarState.value = _calendarState.value.copy(isRefreshing = false)
 
                 val monthlyAttendance = snapshot.documents.map { doc ->
+                    val rawNote = doc.getString("note")
                     AttendanceRecord(
                         id = doc.id,
                         date = doc.getString("date") ?: "",
@@ -200,7 +205,8 @@ class CalendarViewModel(
                         type = doc.getString("type"),
                         reason = doc.getString("reason"),
                         overtimeHours = doc.getDouble("overtime_hours")?.toInt(),
-                        note = doc.getString("note"),
+                        overtimeWage = OvertimeWageParser.extractWage(rawNote),
+                        note = OvertimeWageParser.cleanNote(rawNote),
                         advanceAmount = doc.getDouble("advance_amount")
                     )
                 }
@@ -225,7 +231,7 @@ class CalendarViewModel(
         updateContractorAttendanceListener()
     }
 
-    fun markContractorAttendance(workerId: String, status: String, type: String) {
+    fun markContractorAttendance(workerId: String, status: String, type: String, overtimeHours: Int = 0, overtimeWage: Double? = null) {
         viewModelScope.launch {
             val date = _calendarState.value.selectedDate
             val docId = date // Using date as ID for daily attendance
@@ -233,11 +239,14 @@ class CalendarViewModel(
             val worker = _calendarState.value.workers.find { it.id == workerId }
             val wage = worker?.wage ?: 0.0
 
+            val finalNote = OvertimeWageParser.appendWage(null, if (status == "present") overtimeWage else null)
             val newData: Map<String, Any?> = mapOf(
                 "date" to date,
                 "status" to status,
                 "type" to if (status == "present") type else null,
                 "wage" to wage,
+                "overtime_hours" to if (status == "present") overtimeHours else 0,
+                "note" to finalNote,
                 "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
             )
 
@@ -248,7 +257,8 @@ class CalendarViewModel(
                 status = status,
                 type = if (status == "present") type else null,
                 reason = null,
-                overtimeHours = null,
+                overtimeHours = if (status == "present") overtimeHours else 0,
+                overtimeWage = if (status == "present") overtimeWage else null,
                 note = null,
                 advanceAmount = null
             )
@@ -285,6 +295,7 @@ class CalendarViewModel(
         type: String,
         reason: String,
         overtimeHours: Int,
+        overtimeWage: Double?,
         note: String,
         advanceAmount: Double
     ) {
@@ -293,13 +304,14 @@ class CalendarViewModel(
             val docId = date
 
             if (status == "present" || status == "absent") {
+                val finalNote = OvertimeWageParser.appendWage(if (note.isNotEmpty()) note else null, if (status == "present") overtimeWage else null)
                 val data: Map<String, Any?> = mapOf(
                     "date" to date,
                     "status" to status,
                     "type" to if (status == "present") type else null,
                     "reason" to if (status == "absent") reason else null,
                     "overtime_hours" to if (status == "present") overtimeHours else 0,
-                    "note" to if (note.isNotEmpty()) note else null,
+                    "note" to finalNote,
                     "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
                 )
 

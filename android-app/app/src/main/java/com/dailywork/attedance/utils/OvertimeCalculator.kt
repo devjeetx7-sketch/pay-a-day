@@ -5,8 +5,9 @@ object OvertimeCalculator {
      * Calculates overtime amount based on daily wage and overtime hours.
      * Logic: (Daily Wage / 8 hours) * Overtime Hours
      */
-    fun calculateOvertimeAmount(dailyWage: Double, overtimeHours: Int): Double {
+    fun calculateOvertimeAmount(dailyWage: Double, overtimeHours: Int, customWage: Double? = null): Double {
         if (overtimeHours <= 0) return 0.0
+        if (customWage != null) return customWage
         val hourlyRate = dailyWage / 8.0
         return hourlyRate * overtimeHours
     }
