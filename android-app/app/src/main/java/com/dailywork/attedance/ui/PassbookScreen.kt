@@ -413,6 +413,9 @@ fun PassbookScreenContent(
                 ) {
                     Column {
                         Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        if (log.overtimeHours > 0) {
+                            Text("+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                        }
                         if (!log.note.isNullOrEmpty()) {
                             Text(log.note, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

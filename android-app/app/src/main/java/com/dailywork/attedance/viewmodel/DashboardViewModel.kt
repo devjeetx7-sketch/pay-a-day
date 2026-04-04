@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
+import com.dailywork.attedance.utils.OvertimeCalculator
 
 data class DashboardState(
     val role: String = "",
@@ -213,22 +214,24 @@ class DashboardViewModel(
                 val date = doc.getString("date") ?: ""
                 val status = doc.getString("status") ?: ""
                 val type = doc.getString("type") ?: "full"
+                val otHours = doc.getDouble("overtime_hours")?.toInt() ?: 0
 
-                val dailyValue = if (status == "present") {
+                val dailyBase = if (status == "present") {
                     if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
                 } else 0.0
+                val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours) else 0.0
 
                 if (date == todayStr) {
                     if (status != "advance") {
                         currentTodayStatus = status
-                        currentOvertime = doc.getDouble("overtime_hours")?.toInt() ?: 0
+                        currentOvertime = otHours
                         currentNote = doc.getString("note")
-                        todayEarned = dailyValue
+                        todayEarned = dailyBase + dailyOT
                     }
                 }
 
                 if (date.startsWith(currentMonthStr)) {
-                    monthEarned += dailyValue
+                    monthEarned += (dailyBase + dailyOT)
                 }
             }
 

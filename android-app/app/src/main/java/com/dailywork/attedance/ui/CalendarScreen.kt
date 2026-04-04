@@ -456,6 +456,8 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                                         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                     }
 
+                                    val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
+
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
@@ -466,8 +468,8 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                                                 showDialog = true
                                             }
                                             .border(
-                                                width = if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
-                                                color = if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                                width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
+                                                color = if (hasOT) Color(0xFF8B5CF6) else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
                                                 shape = CircleShape
                                             ),
                                         contentAlignment = Alignment.Center
