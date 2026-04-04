@@ -30,6 +30,10 @@ data class WorkerStats(
 data class ContractorStatsData(
     val totalCost: Double = 0.0,
     val totalDailyWorks: Double = 0.0,
+    val totalAdvance: Double = 0.0,
+    val todayPresent: Int = 0,
+    val todayAbsent: Int = 0,
+    val totalWorkers: Int = 0,
     val topWorkers: List<WorkerStats> = emptyList(),
     val dailyRecords: List<DailyRecord> = emptyList(),
     val allTimeCost: Double = 0.0,
@@ -178,12 +182,19 @@ class StatsViewModel(
         viewModelScope.launch {
             val summary = firestoreRepository.contractorSummariesCollection()?.document(yearMonth)?.get()?.await()
             if (summary == null || !summary.exists()) {
-                _statsState.value = _statsState.value.copy(isLoading = false, isRefreshing = false)
+                _statsState.value = _statsState.value.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    contractorStats = ContractorStatsData(totalWorkers = cachedWorkers.size)
+                )
                 return@launch
             }
 
             val totalCost = summary.getDouble("total_wages") ?: 0.0
             val totalDays = summary.getDouble("total_present") ?: 0.0
+            val totalAdvance = summary.getDouble("total_advance") ?: 0.0
+            val todayPresent = summary.getDouble("today.present_count")?.toInt() ?: 0
+            val todayAbsent = summary.getDouble("today.absent_count")?.toInt() ?: 0
 
             val workerStatsMap = summary.get("workers") as? Map<String, Map<String, Any>>
             val topWorkers = mutableListOf<WorkerStats>()
@@ -203,6 +214,10 @@ class StatsViewModel(
                 contractorStats = _statsState.value.contractorStats.copy(
                     totalCost = totalCost,
                     totalDailyWorks = totalDays,
+                    totalAdvance = totalAdvance,
+                    todayPresent = todayPresent,
+                    todayAbsent = todayAbsent,
+                    totalWorkers = cachedWorkers.size,
                     topWorkers = topWorkers.sortedByDescending { it.days }
                 )
             )

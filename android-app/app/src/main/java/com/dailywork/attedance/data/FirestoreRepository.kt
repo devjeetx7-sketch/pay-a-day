@@ -145,7 +145,16 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         // Today's stats
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(java.util.Date())
         if (date == today) {
-            if (diffDay != 0.0) updates["today.present_count"] = FieldValue.increment(if (newDay > 0) 1.0 else -1.0)
+            val oldStatus = oldData?.get("status") as? String
+            val newStatus = newData?.get("status") as? String
+
+            if (oldStatus != newStatus) {
+                if (oldStatus == "present") updates["today.present_count"] = FieldValue.increment(-1.0)
+                if (oldStatus == "absent") updates["today.absent_count"] = FieldValue.increment(-1.0)
+
+                if (newStatus == "present") updates["today.present_count"] = FieldValue.increment(1.0)
+                if (newStatus == "absent") updates["today.absent_count"] = FieldValue.increment(1.0)
+            }
         }
 
         if (updates.isNotEmpty()) {

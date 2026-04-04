@@ -201,11 +201,31 @@ fun WorkerDetailScreenContent(
                             Text("₹${state.dailyWage.toInt()} / day", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF16A34A))
                         }
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Joined ${state.joinedDate}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+
+                        // Call Button
+                        Button(
+                            onClick = {
+                                try {
+                                    if (state.phone.isNotEmpty()) {
+                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${state.phone}"))
+                                        context.startActivity(intent)
+                                    }
+                                } catch (e: Exception) {}
+                            },
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                        ) {
+                            Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Call", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

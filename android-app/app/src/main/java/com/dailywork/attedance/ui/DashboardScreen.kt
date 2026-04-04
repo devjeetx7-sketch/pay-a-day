@@ -43,6 +43,9 @@ import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +70,7 @@ fun DashboardScreen(
     var advanceAmount by remember { mutableStateOf("") }
     var selectedWorkerId by remember { mutableStateOf<String?>(null) }
 
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 5 })
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
@@ -78,7 +81,8 @@ fun DashboardScreen(
                         0 -> "dashboard"
                         1 -> "calendar"
                         2 -> "stats"
-                        3 -> "settings"
+                        3 -> "worker_history_tab"
+                        4 -> "settings"
                         else -> "dashboard"
                     },
                     onNavigate = { route ->
@@ -86,7 +90,8 @@ fun DashboardScreen(
                             "dashboard" -> 0
                             "calendar" -> 1
                             "stats" -> 2
-                            "settings" -> 3
+                            "worker_history_tab" -> 3
+                            "settings" -> 4
                             else -> 0
                         }
                         coroutineScope.launch {
@@ -173,11 +178,21 @@ fun DashboardScreen(
                             StatsScreenContent(viewModel = statsViewModel)
                         }
                         3 -> {
+                            WorkerHistoryScreen(
+                                viewModel = workerHistoryViewModel,
+                                onNavigateBack = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                                }
+                            )
+                        }
+                        4 -> {
                             SettingsScreenContent(
                                 viewModel = settingsViewModel,
                                 onLogout = onLogout,
                                 onNavigateToPremium = { navController.navigate("premium") },
-                                onNavigateToWorkerHistory = { bottomNavController.navigate("worker_history") }
+                                onNavigateToWorkerHistory = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(3) }
+                                }
                             )
                         }
                     }
@@ -306,6 +321,10 @@ fun DashboardScreen(
 
 @Composable
 fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
+    val todayDate = remember {
+        SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault()).format(Date())
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -373,6 +392,33 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
             }
         }
     }
+
+    // Today's Date Chip
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.padding(bottom = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.CalendarToday,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = todayDate as String,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+    }
 }
 
 @Composable
@@ -408,11 +454,15 @@ fun ContractorStatsGrid(state: DashboardState) {
         // Stats Cards
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-            StatCard("Today's Attendance", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f)) // green-500
+            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f)) // green-500
         }
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            StatCard("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f)) // red-500
             StatCard("Total Paid (Month)", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f)) // blue-500
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             StatCard("Pending Amount", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f), isPending = true) // orange-500
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -654,6 +704,7 @@ fun BottomNavigationBar(currentRoute: String, onNavigate: (String) -> Unit = {})
         NavItem("dashboard", Icons.Default.Home, "Home"),
         NavItem("calendar", Icons.Default.CalendarMonth, "Calendar"),
         NavItem("stats", Icons.Default.BarChart, "Status"),
+        NavItem("worker_history_tab", Icons.Default.History, "History"),
         NavItem("settings", Icons.Default.Settings, "Setting")
     )
 
