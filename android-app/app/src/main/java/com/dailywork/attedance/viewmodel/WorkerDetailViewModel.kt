@@ -82,7 +82,8 @@ class WorkerDetailViewModel(
                         name = snapshot.getString("name") ?: "Worker",
                         workType = snapshot.getString("workType") ?: "Labour",
                         dailyWage = snapshot.getDouble("wage") ?: 500.0,
-                        joinedDate = sdf.format(Date(joinedDateLong))
+                        joinedDate = sdf.format(Date(joinedDateLong)),
+                        phone = snapshot.getString("phone") ?: ""
                     )
                     calculatePassbook(cachedDocs)
                 }

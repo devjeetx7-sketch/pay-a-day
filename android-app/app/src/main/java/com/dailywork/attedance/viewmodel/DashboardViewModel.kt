@@ -26,6 +26,7 @@ data class DashboardState(
     // Contractor Stats
     val totalWorkers: String = "0",
     val todayPresent: String = "0",
+    val todayAbsent: String = "0",
     val totalPaidMonth: String = "0",
     val pendingAmount: String = "0",
 
@@ -122,11 +123,13 @@ class DashboardViewModel(
                     if (snapshot != null && snapshot.exists()) {
                          val totalPaid = snapshot.getDouble("total_advance") ?: 0.0
                          val todayPresent = snapshot.getDouble("today.present_count") ?: 0.0
+                         val todayAbsent = snapshot.getDouble("today.absent_count") ?: 0.0
 
                          // We can update monthly stats here
                          _dashboardState.update { it.copy(
                              totalPaidMonth = totalPaid.toInt().toString(),
-                             todayPresent = todayPresent.toInt().toString()
+                             todayPresent = todayPresent.toInt().toString(),
+                             todayAbsent = todayAbsent.toInt().toString()
                          ) }
                     }
                 }

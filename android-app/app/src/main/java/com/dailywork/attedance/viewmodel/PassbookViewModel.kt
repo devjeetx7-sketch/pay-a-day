@@ -42,6 +42,7 @@ data class PassbookState(
     val grossEarned: Double = 0.0,
     val totalAdvance: Double = 0.0,
     val finalBalance: Double = 0.0,
+    val phone: String = "",
 
     val logs: List<PassbookLog> = emptyList(),
     val isPremium: Boolean = false
@@ -110,6 +111,7 @@ class PassbookViewModel(
                     workType = snapshot.getString("workType") ?: "Labour",
                     dailyWage = snapshot.getDouble("daily_wage") ?: 500.0,
                     joinedDate = sdf.format(Date(joinedDateLong)),
+                    phone = snapshot.getString("phone") ?: "",
                     isPremium = snapshot.getBoolean("isPremium") ?: false
                 )
                 calculatePassbook(cachedDocs) // trigger update with current logs if any
