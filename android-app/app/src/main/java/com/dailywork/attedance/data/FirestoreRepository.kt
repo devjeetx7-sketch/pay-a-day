@@ -66,7 +66,7 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
 
     // --- Attendance Operations ---
 
-    suspend fun markWorkerAttendance(workerId: String, attendanceId: String, data: Map<String, Any>) {
+    suspend fun markWorkerAttendance(workerId: String, attendanceId: String, data: Map<String, Any?>) {
         val collection = workerAttendanceCollection(workerId) ?: return
         val docRef = collection.document(attendanceId)
         val oldDoc = docRef.get().await()
@@ -78,7 +78,7 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         updateContractorSummary(date, oldData, data, workerId)
     }
 
-    suspend fun markPersonalAttendance(attendanceId: String, data: Map<String, Any>) {
+    suspend fun markPersonalAttendance(attendanceId: String, data: Map<String, Any?>) {
         val collection = personalAttendanceCollection() ?: return
         val docRef = collection.document(attendanceId)
         val oldDoc = docRef.get().await()
@@ -102,7 +102,7 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
 
     // --- Summary Optimization ---
 
-    private suspend fun updateContractorSummary(date: String, oldData: Map<String, Any>?, newData: Map<String, Any>?, workerId: String?) {
+    private suspend fun updateContractorSummary(date: String, oldData: Map<String, Any?>?, newData: Map<String, Any?>?, workerId: String?) {
         val monthId = date.substring(0, 7) // YYYY-MM
         val summaryDoc = contractorSummariesCollection()?.document(monthId) ?: return
 
@@ -153,13 +153,13 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         }
     }
 
-    private suspend fun updatePersonalSummary(date: String, oldData: Map<String, Any>?, newData: Map<String, Any>?) {
+    private suspend fun updatePersonalSummary(date: String, oldData: Map<String, Any?>?, newData: Map<String, Any?>?) {
         val monthId = date.substring(0, 7) // YYYY-MM
         val summaryDoc = personalSummariesCollection()?.document(monthId) ?: return
 
         val updates = mutableMapOf<String, Any>()
 
-        fun getStats(data: Map<String, Any>?): Triple<Double, Double, Double> {
+        fun getStats(data: Map<String, Any?>?): Triple<Double, Double, Double> {
             if (data == null) return Triple(0.0, 0.0, 0.0)
             val status = data["status"] as? String
             val type = data["type"] as? String
