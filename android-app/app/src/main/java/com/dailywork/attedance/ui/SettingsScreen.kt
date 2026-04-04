@@ -58,7 +58,7 @@ fun SettingsScreenContent(
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
             context.startActivity(intent)
-            Runtime.getRuntime().exit(0)
+            // No need for Runtime.exit(0), FLAG_ACTIVITY_CLEAR_TASK handles it
         }
     }
 
@@ -71,6 +71,8 @@ fun SettingsScreenContent(
 
     var expandedLanguageMenu by remember { mutableStateOf(false) }
     var showRoleBottomSheet by remember { mutableStateOf(false) }
+    var showRoleConfirmationDialog by remember { mutableStateOf(false) }
+    var pendingRole by remember { mutableStateOf("") }
     val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी", "bn" to "বাংলা", "te" to "తెలుగు", "mr" to "मराठी", "ta" to "தமிழ்", "gu" to "ગુજરાતી")
 
     val hasChanges = state.name != state.originalName ||
@@ -454,6 +456,30 @@ fun SettingsScreenContent(
             )
         }
 
+        if (showRoleConfirmationDialog) {
+            AlertDialog(
+                onDismissRequest = { showRoleConfirmationDialog = false },
+                title = { Text("Change Role", fontWeight = FontWeight.Bold) },
+                text = { Text("Changing role will refresh the app and switch your dashboard.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showRoleConfirmationDialog = false
+                            viewModel.onRoleChange(pendingRole)
+                            viewModel.saveChanges()
+                        }
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRoleConfirmationDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
         if (showHowToUseBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showHowToUseBottomSheet = false },
@@ -591,8 +617,8 @@ fun SettingsScreenContent(
                                 .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                                 .clickable {
                                     if (!isSelected) {
-                                        viewModel.onRoleChange(roleOption)
-                                        viewModel.saveChanges()
+                                        pendingRole = roleOption
+                                        showRoleConfirmationDialog = true
                                     }
                                     showRoleBottomSheet = false
                                 }
