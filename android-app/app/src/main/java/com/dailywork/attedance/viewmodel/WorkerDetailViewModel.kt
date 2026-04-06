@@ -147,7 +147,7 @@ class WorkerDetailViewModel(
                 } else {
                     wage
                 }
-                dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours)
+                dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours, note)
                 totalBaseEarnings += dailyBase
                 totalOTAmount += dailyOT
             } else if (status == "absent") {
@@ -156,11 +156,13 @@ class WorkerDetailViewModel(
             if (adv > 0) totalAdv += adv
 
             val existingLog = logMap[date]
+            val cleanedNote = OvertimeCalculator.cleanNote(note) ?: existingLog?.note?.takeIf { note == null }
+
             logMap[date] = PassbookLog(
                 date = date,
                 status = if (status != "advance") status else existingLog?.status ?: "advance",
                 type = if (status != "advance") type else existingLog?.type,
-                note = note ?: existingLog?.note,
+                note = cleanedNote,
                 advanceAmount = (existingLog?.advanceAmount ?: 0.0) + adv,
                 overtimeHours = otHours,
                 overtimeAmount = dailyOT,

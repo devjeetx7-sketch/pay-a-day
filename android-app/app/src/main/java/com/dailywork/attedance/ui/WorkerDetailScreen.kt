@@ -91,12 +91,17 @@ fun WorkerDetailScreenContent(
 
             currentRunningBalance += (dailyEarned + otAmt) - advanceAmt
 
+            val otPdfText = if (log.overtimeAmount > 0) {
+                if (log.overtimeHours > 0) "${log.overtimeHours} hrs / Rs.${log.overtimeAmount.toInt()}"
+                else "Rs.${log.overtimeAmount.toInt()}"
+            } else "-"
+
             PdfLog(
                 date = log.date.split("-").reversed().joinToString("/"),
                 status = if (log.status == "present") if (log.type == "half") "Half Day" else "Present" else if (log.status == "absent") "Absent" else "-",
                 workType = state.workType,
                 dailyWage = "Rs. ${state.dailyWage.toInt()}",
-                overtime = if (log.overtimeHours > 0) "${log.overtimeHours} hrs / Rs.${log.overtimeAmount.toInt()}" else "-",
+                overtime = otPdfText,
                 advanceAmount = if (log.status == "advance" || advanceAmt > 0) "Rs. ${advanceAmt.toInt()}" else "-",
                 runningBalance = "Rs. ${currentRunningBalance.toInt()}",
                 note = log.note ?: ""
@@ -419,8 +424,9 @@ fun WorkerDetailScreenContent(
                 ) {
                     Column {
                         Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        if (log.overtimeHours > 0) {
-                            Text("+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                        if (log.overtimeAmount > 0) {
+                            val otText = if (log.overtimeHours > 0) "+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)" else "+ ₹${log.overtimeAmount.toInt()} (OT)"
+                            Text(otText, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
                         }
                         if (!log.note.isNullOrEmpty()) {
                             Text(log.note, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

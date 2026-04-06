@@ -14,6 +14,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
+import com.dailywork.attedance.utils.OvertimeCalculator
 import kotlinx.coroutines.tasks.await
 
 data class DailyRecord(
@@ -464,13 +465,16 @@ class StatsViewModel(
             val type = doc.getString("type") ?: "full"
             val adv = doc.getDouble("advance_amount") ?: 0.0
             val ot = doc.getDouble("overtime_hours")?.toInt() ?: 0
+            val noteStr = doc.getString("note")
 
-            val costVal = if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
+            val baseCostVal = if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
+            val otAmount = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, ot, noteStr) else 0.0
+            val totalCostVal = baseCostVal + otAmount
 
             // All time
             if (status == "present") {
                 allTimeDays++
-                allTimeEarnings += costVal
+                allTimeEarnings += totalCostVal
             }
 
             // Current month
@@ -487,8 +491,8 @@ class StatsViewModel(
                         dayVal = 1.0
                     }
                     overtime += ot
-                    totalEarnings += costVal
-                    dayEarn = costVal
+                    totalEarnings += totalCostVal
+                    dayEarn = totalCostVal
                 } else if (status == "absent") {
                     absent++
                 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dailywork.attedance.data.FirestoreRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
+import com.dailywork.attedance.utils.OvertimeCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -114,6 +115,7 @@ class WorkerHistoryViewModel(
             val advance = doc.getDouble("advance_amount") ?: 0.0
             val type = doc.getString("type") ?: "full"
             val note = doc.getString("note") ?: ""
+            val cleanedNote = OvertimeCalculator.cleanNote(note) ?: ""
             val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
 
             if (status == "present" || status == "absent") {
@@ -124,7 +126,7 @@ class WorkerHistoryViewModel(
                         workerName = name,
                         date = formatDate(date),
                         type = "Attendance",
-                        description = if (status == "present") "Daily Work" else "Absent: $note",
+                        description = if (status == "present") "Daily Work" else "Absent: $cleanedNote".trimEnd(':', ' '),
                         status = when {
                             status == "absent" -> "Absent"
                             type == "half" -> "Half Day"

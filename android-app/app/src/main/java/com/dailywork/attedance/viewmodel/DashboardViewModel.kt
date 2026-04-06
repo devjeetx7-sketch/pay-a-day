@@ -215,17 +215,18 @@ class DashboardViewModel(
                 val status = doc.getString("status") ?: ""
                 val type = doc.getString("type") ?: "full"
                 val otHours = doc.getDouble("overtime_hours")?.toInt() ?: 0
+                val noteStr = doc.getString("note")
 
                 val dailyBase = if (status == "present") {
                     if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
                 } else 0.0
-                val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours) else 0.0
+                val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours, noteStr) else 0.0
 
                 if (date == todayStr) {
                     if (status != "advance") {
                         currentTodayStatus = status
                         currentOvertime = otHours
-                        currentNote = doc.getString("note")
+                        currentNote = OvertimeCalculator.cleanNote(noteStr)
                         todayEarned = dailyBase + dailyOT
                     }
                 }
