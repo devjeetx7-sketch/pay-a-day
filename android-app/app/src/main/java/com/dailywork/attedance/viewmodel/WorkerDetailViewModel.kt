@@ -158,15 +158,19 @@ class WorkerDetailViewModel(
             val existingLog = logMap[date]
             val cleanedNote = OvertimeCalculator.cleanNote(note) ?: existingLog?.note?.takeIf { note == null }
 
+            val mergedOtHours = maxOf(otHours, existingLog?.overtimeHours ?: 0)
+            val mergedOtAmount = dailyOT + (existingLog?.overtimeAmount ?: 0.0)
+            val mergedBaseEarnings = dailyBase + (existingLog?.baseEarnings ?: 0.0)
+
             logMap[date] = PassbookLog(
                 date = date,
                 status = if (status != "advance") status else existingLog?.status ?: "advance",
                 type = if (status != "advance") type else existingLog?.type,
                 note = cleanedNote,
                 advanceAmount = (existingLog?.advanceAmount ?: 0.0) + adv,
-                overtimeHours = otHours,
-                overtimeAmount = dailyOT,
-                baseEarnings = dailyBase
+                overtimeHours = mergedOtHours,
+                overtimeAmount = mergedOtAmount,
+                baseEarnings = mergedBaseEarnings
             )
         }
 

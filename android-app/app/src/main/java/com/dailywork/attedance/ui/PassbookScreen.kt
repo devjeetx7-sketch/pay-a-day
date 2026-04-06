@@ -423,32 +423,29 @@ fun PassbookScreenContent(
                 Row(
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(14.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(0.3f)) {
                         Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        if (log.overtimeAmount > 0) {
-                            val otText = if (log.overtimeHours > 0) "+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)" else "+ ₹${log.overtimeAmount.toInt()} (OT)"
-                            Text(otText, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
-                        }
-                        if (!log.note.isNullOrEmpty()) {
-                            Text(log.note, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
                     }
-                    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (log.status != "advance") {
-                            val bgColor = if (log.status == "present") Color(0xFF22C55E).copy(alpha=0.1f) else Color(0xFFEF4444).copy(alpha=0.1f)
+                    Column(modifier = Modifier.weight(0.7f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (log.status == "present" || log.status == "absent") {
                             val textColor = if (log.status == "present") Color(0xFF16A34A) else Color(0xFFDC2626)
                             val text = if (log.status == "present") { if (log.type == "half") "Half Day" else "Present" } else "Absent"
-
-                            Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(bgColor).padding(horizontal = 10.dp, vertical = 4.dp)) {
-                                Text(text, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = textColor)
-                            }
+                            Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = textColor)
                         }
+
+                        if (log.overtimeAmount > 0) {
+                            val otText = if (log.overtimeHours > 0) "+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)" else "+ ₹${log.overtimeAmount.toInt()} (OT)"
+                            Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                        }
+
                         if (log.advanceAmount != null && log.advanceAmount > 0) {
-                            Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0xFFF97316).copy(alpha=0.1f)).padding(horizontal = 10.dp, vertical = 4.dp)) {
-                                Text("₹${log.advanceAmount.toInt()} Advance", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
-                            }
+                            Text("₹${log.advanceAmount.toInt()} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
+                        }
+
+                        if (!log.note.isNullOrEmpty()) {
+                            Text("Note: ${log.note}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

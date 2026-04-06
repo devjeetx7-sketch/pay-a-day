@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import com.dailywork.attedance.utils.OvertimeCalculator
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -577,7 +578,12 @@ fun PersonalAttendanceDialog(
     var editType by remember { mutableStateOf(existingRecord?.type ?: "full") }
     var editReason by remember { mutableStateOf(existingRecord?.reason ?: "sick") }
     var editOT by remember { mutableStateOf(existingRecord?.overtimeHours ?: 0) }
-    var editNote by remember { mutableStateOf(existingRecord?.note ?: "") }
+    var editOTAmount by remember {
+        mutableStateOf(existingRecord?.note?.let { OvertimeCalculator.extractCustomAmount(it)?.toInt()?.toString() } ?: "")
+    }
+    var editNote by remember {
+        mutableStateOf(existingRecord?.note?.let { OvertimeCalculator.cleanNote(it) } ?: "")
+    }
     var editAdvance by remember { mutableStateOf((existingRecord?.advanceAmount ?: 0.0).toInt().toString()) }
 
     val absenceReasons = listOf("sick", "family", "travel", "other")
@@ -665,6 +671,16 @@ fun PersonalAttendanceDialog(
                             ) { Text("+", fontWeight = FontWeight.Bold) }
                         }
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = editOTAmount,
+                        onValueChange = { editOTAmount = it },
+                        placeholder = { Text("OT Amount (₹)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
+                    )
                 } else if (editStatus == "absent") {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
@@ -716,7 +732,13 @@ fun PersonalAttendanceDialog(
             Button(
                 onClick = {
                     val advanceVal = editAdvance.toDoubleOrNull() ?: 0.0
-                    onSave(editStatus, editType, editReason, editOT, editNote, advanceVal)
+                    val finalNote = if (editOTAmount.isNotBlank() && editStatus == "present") {
+                        val otStr = "[OT_WAGE_${editOTAmount.trim()}]"
+                        if (editNote.isNotBlank()) "$otStr $editNote" else otStr
+                    } else {
+                        editNote
+                    }
+                    onSave(editStatus, editType, editReason, editOT, finalNote, advanceVal)
                 }
             ) {
                 Text("Save")
