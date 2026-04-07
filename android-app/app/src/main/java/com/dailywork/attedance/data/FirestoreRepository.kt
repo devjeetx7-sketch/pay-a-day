@@ -100,6 +100,16 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
         }
     }
 
+    suspend fun deleteWorkerAttendance(workerId: String, attendanceId: String, date: String) {
+        val docRef = workerAttendanceCollection(workerId)?.document(attendanceId) ?: return
+        val oldDoc = docRef.get().await()
+        if (oldDoc.exists()) {
+            val oldData = oldDoc.data
+            docRef.delete().await()
+            updateContractorSummary(date, oldData, null, workerId)
+        }
+    }
+
     // --- Summary Optimization ---
 
     private suspend fun updateContractorSummary(date: String, oldData: Map<String, Any?>?, newData: Map<String, Any?>?, workerId: String?) {
