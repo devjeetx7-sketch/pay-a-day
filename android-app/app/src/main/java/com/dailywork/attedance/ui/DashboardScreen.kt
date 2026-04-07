@@ -226,17 +226,22 @@ fun DashboardScreen(
                 )
             }
             composable("worker_detail/{workerId}") { backStackEntry ->
+                val workerId = backStackEntry.arguments?.getString("workerId") ?: ""
                 WorkerDetailScreenContent(
-                    workerId = backStackEntry.arguments?.getString("workerId") ?: "",
+                    workerId = workerId,
                     viewModel = workerDetailViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateToCalendar = {
-                        bottomNavController.navigateUp()
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(1)
-                        }
+                        bottomNavController.navigate("worker_calendar/$workerId")
                     },
                     onNavigateToPremium = { navController.navigate("premium") }
+                )
+            }
+            composable("worker_calendar/{workerId}") { backStackEntry ->
+                WorkerCalendarScreen(
+                    workerId = backStackEntry.arguments?.getString("workerId") ?: "",
+                    viewModel = workerDetailViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
             composable("worker_history") {

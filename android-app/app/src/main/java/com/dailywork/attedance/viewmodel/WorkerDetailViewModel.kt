@@ -198,6 +198,65 @@ class WorkerDetailViewModel(
         )
     }
 
+    fun markAttendance(
+        date: String,
+        status: String,
+        type: String,
+        reason: String,
+        overtimeHours: Int,
+        note: String,
+        advanceAmount: Double
+    ) {
+        viewModelScope.launch {
+            val wId = workerId ?: return@launch
+            val docId = date
+            val wage = _state.value.dailyWage
+
+            if (status == "present" || status == "absent") {
+                val data: Map<String, Any?> = mapOf(
+                    "date" to date,
+                    "status" to status,
+                    "type" to if (status == "present") type else null,
+                    "reason" to if (status == "absent") reason else null,
+                    "overtime_hours" to if (status == "present") overtimeHours else 0,
+                    "note" to if (note.isNotEmpty()) note else null,
+                    "wage" to wage,
+                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+
+                try {
+                    firestoreRepository.markWorkerAttendance(wId, docId, data)
+                } catch (e: Exception) { }
+            }
+
+            if (advanceAmount > 0) {
+                val advanceData: Map<String, Any?> = mapOf(
+                    "date" to date,
+                    "status" to "advance",
+                    "advance_amount" to advanceAmount,
+                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+                try {
+                    firestoreRepository.markWorkerAttendance(wId, "${date}_advance", advanceData)
+                } catch (e: Exception) { }
+            } else {
+                try {
+                    firestoreRepository.deleteWorkerAttendance(wId, "${date}_advance", date)
+                } catch (e: Exception) { }
+            }
+        }
+    }
+
+    fun removeAttendance(date: String) {
+        viewModelScope.launch {
+            val wId = workerId ?: return@launch
+            try {
+                firestoreRepository.deleteWorkerAttendance(wId, date, date)
+                firestoreRepository.deleteWorkerAttendance(wId, "${date}_advance", date)
+            } catch (e: Exception) { }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         workerListener?.remove()
