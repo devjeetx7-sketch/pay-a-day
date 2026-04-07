@@ -9,10 +9,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import android.content.Intent
 import android.net.Uri
@@ -419,34 +426,70 @@ fun PassbookScreenContent(
             items(state.logs) { log ->
                 val dateParts = log.date.split("-").reversed()
                 val displayDate = if (dateParts.size == 3) "${dateParts[0]}/${dateParts[1]}/${dateParts[2]}" else log.date
+                var expanded by remember { mutableStateOf(false) }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                Column(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(14.dp)
                 ) {
-                    Column(modifier = Modifier.weight(0.3f)) {
-                        Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+
+                            if (log.overtimeAmount > 0) {
+                                val otText = if (log.overtimeHours > 0) "+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)" else "+ ₹${log.overtimeAmount.toInt()} (OT)"
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.Top) {
+                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                if (log.status == "present" || log.status == "absent") {
+                                    val textColor = if (log.status == "present") Color(0xFF16A34A) else Color(0xFFDC2626)
+                                    val text = if (log.status == "present") { if (log.type == "half") "Half Day" else "Present" } else "Absent"
+                                    Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = textColor)
+                                }
+
+                                if (log.advanceAmount != null && log.advanceAmount > 0) {
+                                    Text("₹${log.advanceAmount.toInt()} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
+                                }
+                            }
+
+                            if (!log.note.isNullOrEmpty()) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .clickable { expanded = !expanded },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "Expand note",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
-                    Column(modifier = Modifier.weight(0.7f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (log.status == "present" || log.status == "absent") {
-                            val textColor = if (log.status == "present") Color(0xFF16A34A) else Color(0xFFDC2626)
-                            val text = if (log.status == "present") { if (log.type == "half") "Half Day" else "Present" } else "Absent"
-                            Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = textColor)
-                        }
 
-                        if (log.overtimeAmount > 0) {
-                            val otText = if (log.overtimeHours > 0) "+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)" else "+ ₹${log.overtimeAmount.toInt()} (OT)"
-                            Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
-                        }
-
-                        if (log.advanceAmount != null && log.advanceAmount > 0) {
-                            Text("₹${log.advanceAmount.toInt()} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
-                        }
-
-                        if (!log.note.isNullOrEmpty()) {
-                            Text("Note: ${log.note}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                    if (!log.note.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Note: ${log.note}",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                            maxLines = if (expanded) Int.MAX_VALUE else 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
