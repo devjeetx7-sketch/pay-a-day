@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val repository = UserPreferencesRepository(applicationContext)
-        val factory = ViewModelFactory(repository)
+        val factory = ViewModelFactory(repository, applicationContext)
 
         // Trigger Migration
         lifecycleScope.launch {

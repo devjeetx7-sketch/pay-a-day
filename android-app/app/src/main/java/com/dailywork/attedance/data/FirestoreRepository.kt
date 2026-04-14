@@ -9,8 +9,15 @@ import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Locale
+import com.dailywork.attedance.data.local.SyncActionDao
+import com.dailywork.attedance.data.local.SyncActionEntity
+import java.util.UUID
+import com.google.gson.Gson
 
-class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.getInstance()) {
+class FirestoreRepository(
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val syncActionDao: SyncActionDao? = null
+) {
 
     private val auth = FirebaseAuth.getInstance()
     private val userId: String? get() = auth.currentUser?.uid
@@ -43,70 +50,167 @@ class FirestoreRepository(private val db: FirebaseFirestore = FirebaseFirestore.
 
     // --- Worker Operations ---
 
-    suspend fun saveWorker(workerId: String?, data: Map<String, Any>) {
+    suspend fun saveWorker(workerId: String?, data: Map<String, Any>, fromSyncWorker: Boolean = false) {
         val workers = workersCollection() ?: return
-        if (workerId.isNullOrEmpty()) {
-            workers.add(data).await()
-        } else {
-            workers.document(workerId).set(data, SetOptions.merge()).await()
+        val finalWorkerId = workerId ?: workers.document().id
+
+        if (!fromSyncWorker) {
+            val gson = Gson()
+            val payloadMap = mapOf("workerId" to finalWorkerId, "data" to data)
+            val action = SyncActionEntity(
+                id = UUID.randomUUID().toString(),
+                actionType = "saveWorker",
+                payload = gson.toJson(payloadMap),
+                isSynced = false,
+                createdAt = System.currentTimeMillis()
+            )
+            syncActionDao?.insert(action)
+        }
+
+        try {
+            workers.document(finalWorkerId).set(data, SetOptions.merge()).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    suspend fun deleteWorker(workerId: String) {
-        val workerDoc = workersCollection()?.document(workerId) ?: return
-
-        // Cascade delete attendance
-        val attendance = workerAttendanceCollection(workerId)?.get()?.await()
-        attendance?.documents?.forEach { doc ->
-            doc.reference.delete().await()
+    suspend fun deleteWorker(workerId: String, fromSyncWorker: Boolean = false) {
+        if (!fromSyncWorker) {
+            val gson = Gson()
+            val payloadMap = mapOf("workerId" to workerId)
+            val action = SyncActionEntity(
+                id = UUID.randomUUID().toString(),
+                actionType = "deleteWorker",
+                payload = gson.toJson(payloadMap),
+                isSynced = false,
+                createdAt = System.currentTimeMillis()
+            )
+            syncActionDao?.insert(action)
         }
 
-        workerDoc.delete().await()
+        try {
+            val workerDoc = workersCollection()?.document(workerId) ?: return
+            val attendance = workerAttendanceCollection(workerId)?.get()?.await()
+            attendance?.documents?.forEach { doc ->
+                doc.reference.delete().await()
+            }
+            workerDoc.delete().await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     // --- Attendance Operations ---
 
-    suspend fun markWorkerAttendance(workerId: String, attendanceId: String, data: Map<String, Any?>) {
-        val collection = workerAttendanceCollection(workerId) ?: return
-        val docRef = collection.document(attendanceId)
-        val oldDoc = docRef.get().await()
+    suspend fun markWorkerAttendance(workerId: String, attendanceId: String, data: Map<String, Any?>, fromSyncWorker: Boolean = false) {
+        if (!fromSyncWorker) {
+            val gson = Gson()
+            val payloadMap = mapOf("workerId" to workerId, "attendanceId" to attendanceId, "data" to data)
+            val action = SyncActionEntity(
+                id = UUID.randomUUID().toString(),
+                actionType = "markWorkerAttendance",
+                payload = gson.toJson(payloadMap),
+                isSynced = false,
+                createdAt = System.currentTimeMillis()
+            )
+            syncActionDao?.insert(action)
+        }
 
-        val date = data["date"] as String
-        val oldData = if (oldDoc.exists()) oldDoc.data else null
+        try {
+            val collection = workerAttendanceCollection(workerId) ?: return
+            val docRef = collection.document(attendanceId)
+            val oldDoc = docRef.get().await()
 
-        docRef.set(data, SetOptions.merge()).await()
-        updateContractorSummary(date, oldData, data, workerId)
-    }
+            val date = data["date"] as String
+            val oldData = if (oldDoc.exists()) oldDoc.data else null
 
-    suspend fun markPersonalAttendance(attendanceId: String, data: Map<String, Any?>) {
-        val collection = personalAttendanceCollection() ?: return
-        val docRef = collection.document(attendanceId)
-        val oldDoc = docRef.get().await()
-
-        val date = data["date"] as String
-        val oldData = if (oldDoc.exists()) oldDoc.data else null
-
-        docRef.set(data, SetOptions.merge()).await()
-        updatePersonalSummary(date, oldData, data)
-    }
-
-    suspend fun deletePersonalAttendance(attendanceId: String, date: String) {
-        val docRef = personalAttendanceCollection()?.document(attendanceId) ?: return
-        val oldDoc = docRef.get().await()
-        if (oldDoc.exists()) {
-            val oldData = oldDoc.data
-            docRef.delete().await()
-            updatePersonalSummary(date, oldData, null)
+            docRef.set(data, SetOptions.merge()).await()
+            updateContractorSummary(date, oldData, data, workerId)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    suspend fun deleteWorkerAttendance(workerId: String, attendanceId: String, date: String) {
-        val docRef = workerAttendanceCollection(workerId)?.document(attendanceId) ?: return
-        val oldDoc = docRef.get().await()
-        if (oldDoc.exists()) {
-            val oldData = oldDoc.data
-            docRef.delete().await()
-            updateContractorSummary(date, oldData, null, workerId)
+    suspend fun markPersonalAttendance(attendanceId: String, data: Map<String, Any?>, fromSyncWorker: Boolean = false) {
+        if (!fromSyncWorker) {
+            val gson = Gson()
+            val payloadMap = mapOf("attendanceId" to attendanceId, "data" to data)
+            val action = SyncActionEntity(
+                id = UUID.randomUUID().toString(),
+                actionType = "markPersonalAttendance",
+                payload = gson.toJson(payloadMap),
+                isSynced = false,
+                createdAt = System.currentTimeMillis()
+            )
+            syncActionDao?.insert(action)
+        }
+
+        try {
+            val collection = personalAttendanceCollection() ?: return
+            val docRef = collection.document(attendanceId)
+            val oldDoc = docRef.get().await()
+
+            val date = data["date"] as String
+            val oldData = if (oldDoc.exists()) oldDoc.data else null
+
+            docRef.set(data, SetOptions.merge()).await()
+            updatePersonalSummary(date, oldData, data)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun deletePersonalAttendance(attendanceId: String, date: String, fromSyncWorker: Boolean = false) {
+        if (!fromSyncWorker) {
+            val gson = Gson()
+            val payloadMap = mapOf("attendanceId" to attendanceId, "date" to date)
+            val action = SyncActionEntity(
+                id = UUID.randomUUID().toString(),
+                actionType = "deletePersonalAttendance",
+                payload = gson.toJson(payloadMap),
+                isSynced = false,
+                createdAt = System.currentTimeMillis()
+            )
+            syncActionDao?.insert(action)
+        }
+
+        try {
+            val docRef = personalAttendanceCollection()?.document(attendanceId) ?: return
+            val oldDoc = docRef.get().await()
+            if (oldDoc.exists()) {
+                val oldData = oldDoc.data
+                docRef.delete().await()
+                updatePersonalSummary(date, oldData, null)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun deleteWorkerAttendance(workerId: String, attendanceId: String, date: String, fromSyncWorker: Boolean = false) {
+        if (!fromSyncWorker) {
+            val gson = Gson()
+            val payloadMap = mapOf("workerId" to workerId, "attendanceId" to attendanceId, "date" to date)
+            val action = SyncActionEntity(
+                id = UUID.randomUUID().toString(),
+                actionType = "deleteWorkerAttendance",
+                payload = gson.toJson(payloadMap),
+                isSynced = false,
+                createdAt = System.currentTimeMillis()
+            )
+            syncActionDao?.insert(action)
+        }
+
+        try {
+            val docRef = workerAttendanceCollection(workerId)?.document(attendanceId) ?: return
+            val oldDoc = docRef.get().await()
+            if (oldDoc.exists()) {
+                val oldData = oldDoc.data
+                docRef.delete().await()
+                updateContractorSummary(date, oldData, null, workerId)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

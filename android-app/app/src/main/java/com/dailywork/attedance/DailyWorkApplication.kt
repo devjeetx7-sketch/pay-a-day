@@ -27,7 +27,6 @@ class DailyWorkApplication : Application() {
     }
 
     private fun setupCrashHandler() {
-        setupWorkManager()
         // Prevent infinite loops if the error handler itself crashes
         if (isErrorHandlerProcess()) {
             return

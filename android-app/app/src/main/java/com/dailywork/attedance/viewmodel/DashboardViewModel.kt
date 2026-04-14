@@ -41,7 +41,11 @@ data class DashboardState(
     val todayNote: String? = null,
 
     // Premium state
-    val isPremium: Boolean = false
+    val isPremium: Boolean = false,
+
+    // Offline Bottom Sheet State
+    val showOfflineBottomSheet: Boolean = false,
+    val hasShownOfflineSheet: Boolean = false
 )
 
 class DashboardViewModel(
@@ -378,4 +382,23 @@ class DashboardViewModel(
         attendanceListener?.remove()
         workerAttendanceListeners.values.forEach { it.remove() }
     }
+
+    fun onNetworkStateChanged(isConnected: Boolean) {
+        if (!isConnected && !_dashboardState.value.hasShownOfflineSheet) {
+            _dashboardState.update { it.copy(showOfflineBottomSheet = true, hasShownOfflineSheet = true) }
+        } else if (isConnected) {
+            _dashboardState.update { it.copy(showOfflineBottomSheet = false) }
+        }
+    }
+
+    fun dismissOfflineBottomSheet() {
+        _dashboardState.update { it.copy(showOfflineBottomSheet = false) }
+    }
+
+    fun retryConnection(isConnected: Boolean) {
+        if (isConnected) {
+            _dashboardState.update { it.copy(showOfflineBottomSheet = false) }
+        }
+    }
+
 }

@@ -1,14 +1,19 @@
 package com.dailywork.attedance.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.dailywork.attedance.data.UserPreferencesRepository
 import com.dailywork.attedance.data.FirestoreRepository
+import com.dailywork.attedance.data.local.AppDatabase
 
 class ViewModelFactory(
     private val repository: UserPreferencesRepository,
-    private val firestoreRepository: FirestoreRepository = FirestoreRepository()
+    private val context: Context
 ) : ViewModelProvider.Factory {
+    private val syncActionDao = AppDatabase.getInstance(context).syncActionDao()
+    private val firestoreRepository = FirestoreRepository(syncActionDao = syncActionDao)
+
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
