@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import com.dailywork.attedance.utils.NetworkMonitor
 import com.dailywork.attedance.viewmodel.DashboardViewModel
 import com.dailywork.attedance.viewmodel.DashboardState
 import androidx.compose.foundation.clickable
@@ -64,7 +66,12 @@ fun DashboardScreen(
     workerHistoryViewModel: WorkerHistoryViewModel,
     onLogout: () -> Unit
 ) {
-    val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+        val context = LocalContext.current
+    val networkMonitor = remember { NetworkMonitor(context) }
+    val isConnected by networkMonitor.isConnected.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+val dashboardState by dashboardViewModel.dashboardState.collectAsState()
     val calendarState by calendarViewModel.calendarState.collectAsState()
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
@@ -84,6 +91,7 @@ fun DashboardScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             if (currentRoute == "main_pager") {
                 BottomNavigationBar(
@@ -112,7 +120,19 @@ fun DashboardScreen(
     ) { padding ->
         NavHost(navController = bottomNavController, startDestination = "main_pager", modifier = Modifier.fillMaxSize().padding(padding)) {
             composable("main_pager") {
-                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (!isConnected) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.errorContainer)
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Working Offline", color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
                     when (page) {
                         0 -> {
                             if (dashboardState.isLoading) {
@@ -203,6 +223,7 @@ fun DashboardScreen(
                             )
                         }
                     }
+                }
                 }
             }
             composable("passbook") {

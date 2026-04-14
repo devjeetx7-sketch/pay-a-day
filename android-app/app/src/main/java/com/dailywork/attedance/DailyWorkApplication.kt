@@ -9,15 +9,25 @@ import java.io.StringWriter
 import kotlin.system.exitProcess
 import android.app.ActivityManager
 import android.content.Context
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import com.dailywork.attedance.worker.SyncWorker
+import java.util.concurrent.TimeUnit
+import androidx.work.ExistingPeriodicWorkPolicy
+
 
 class DailyWorkApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
         setupCrashHandler()
+        setupWorkManager()
     }
 
     private fun setupCrashHandler() {
+        setupWorkManager()
         // Prevent infinite loops if the error handler itself crashes
         if (isErrorHandlerProcess()) {
             return
@@ -55,4 +65,21 @@ class DailyWorkApplication : Application() {
         }
         return false
     }
+
+    private fun setupWorkManager() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "SyncWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncRequest
+        )
+    }
+
 }
