@@ -5,8 +5,17 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.dailywork.attedance.data.local.AppDatabase
 import com.dailywork.attedance.data.FirestoreRepository
-import org.json.JSONObject
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
+import com.google.gson.reflect.TypeToken
 import java.util.UUID
+
+data class PendingActionPayload(
+    val workerId: String?,
+    val attendanceId: String?,
+    val date: String?,
+    val data: Map<String, Any?>?
+)
 
 class SyncWorker(
     appContext: Context,
@@ -28,64 +37,85 @@ class SyncWorker(
 
         for (action in unsyncedActions) {
             try {
-                val json = JSONObject(action.payload)
+                val gson = Gson()
+                val payload: PendingActionPayload = gson.fromJson(action.payload, PendingActionPayload::class.java)
+
                 when (action.actionType) {
                     "saveWorker" -> {
-                        val workerId = if (json.has("workerId") && !json.isNull("workerId")) json.getString("workerId") else null
-                        val dataObj = json.getJSONObject("data")
-                        val map = mutableMapOf<String, Any>()
-                        val keys = dataObj.keys()
-                        while(keys.hasNext()){
-                            val key = keys.next()
-                            map[key] = dataObj.get(key)
+                        val workerId = payload.workerId
+                        val dataMap = payload.data as? Map<String, Any>
+                        if (dataMap != null) {
+                            val correctedMap = dataMap.toMutableMap()
+                            if (correctedMap["wage"] is Double) correctedMap["wage"] = (correctedMap["wage"] as Double)
+                            firestoreRepository.saveWorker(workerId, correctedMap, true)
+                        } else {
+                            throw IllegalArgumentException("Missing data for saveWorker")
                         }
-                        firestoreRepository.saveWorker(workerId, map)
                     }
                     "deleteWorker" -> {
-                        val workerId = json.getString("workerId")
-                        firestoreRepository.deleteWorker(workerId)
+                        val workerId = payload.workerId
+                        if (workerId != null) {
+                            firestoreRepository.deleteWorker(workerId, true)
+                        } else {
+                            throw IllegalArgumentException("Missing workerId for deleteWorker")
+                        }
                     }
                     "markWorkerAttendance" -> {
-                        val workerId = json.getString("workerId")
-                        val attendanceId = json.getString("attendanceId")
-                        val dataObj = json.getJSONObject("data")
-                        val map = mutableMapOf<String, Any?>()
-                        val keys = dataObj.keys()
-                        while(keys.hasNext()){
-                            val key = keys.next()
-                            map[key] = dataObj.get(key)
+                        val workerId = payload.workerId
+                        val attendanceId = payload.attendanceId
+                        val dataMap = payload.data
+                        if (workerId != null && attendanceId != null && dataMap != null) {
+                            val correctedMap = dataMap.toMutableMap()
+                            if (correctedMap["overtime_hours"] is Double) correctedMap["overtime_hours"] = (correctedMap["overtime_hours"] as Double).toInt()
+                            if (correctedMap["advance_amount"] is Double) correctedMap["advance_amount"] = (correctedMap["advance_amount"] as Double)
+                            firestoreRepository.markWorkerAttendance(workerId, attendanceId, correctedMap, true)
+                        } else {
+                            throw IllegalArgumentException("Missing fields for markWorkerAttendance")
                         }
-                        firestoreRepository.markWorkerAttendance(workerId, attendanceId, map)
                     }
                     "markPersonalAttendance" -> {
-                        val attendanceId = json.getString("attendanceId")
-                        val dataObj = json.getJSONObject("data")
-                        val map = mutableMapOf<String, Any?>()
-                        val keys = dataObj.keys()
-                        while(keys.hasNext()){
-                            val key = keys.next()
-                            map[key] = dataObj.get(key)
+                        val attendanceId = payload.attendanceId
+                        val dataMap = payload.data
+                        if (attendanceId != null && dataMap != null) {
+                            val correctedMap = dataMap.toMutableMap()
+                            if (correctedMap["overtime_hours"] is Double) correctedMap["overtime_hours"] = (correctedMap["overtime_hours"] as Double).toInt()
+                            if (correctedMap["advance_amount"] is Double) correctedMap["advance_amount"] = (correctedMap["advance_amount"] as Double)
+                            firestoreRepository.markPersonalAttendance(attendanceId, correctedMap, true)
+                        } else {
+                            throw IllegalArgumentException("Missing fields for markPersonalAttendance")
                         }
-                        firestoreRepository.markPersonalAttendance(attendanceId, map)
                     }
                     "deletePersonalAttendance" -> {
-                        val attendanceId = json.getString("attendanceId")
-                        val date = json.getString("date")
-                        firestoreRepository.deletePersonalAttendance(attendanceId, date)
+                        val attendanceId = payload.attendanceId
+                        val date = payload.date
+                        if (attendanceId != null && date != null) {
+                            firestoreRepository.deletePersonalAttendance(attendanceId, date, true)
+                        } else {
+                            throw IllegalArgumentException("Missing fields for deletePersonalAttendance")
+                        }
                     }
                     "deleteWorkerAttendance" -> {
-                        val workerId = json.getString("workerId")
-                        val attendanceId = json.getString("attendanceId")
-                        val date = json.getString("date")
-                        firestoreRepository.deleteWorkerAttendance(workerId, attendanceId, date)
+                        val workerId = payload.workerId
+                        val attendanceId = payload.attendanceId
+                        val date = payload.date
+                        if (workerId != null && attendanceId != null && date != null) {
+                            firestoreRepository.deleteWorkerAttendance(workerId, attendanceId, date, true)
+                        } else {
+                            throw IllegalArgumentException("Missing fields for deleteWorkerAttendance")
+                        }
                     }
                 }
-
                 // Mark as synced if no exception
                 val updatedAction = action.copy(isSynced = true)
                 syncDao.update(updatedAction)
                 // Or we can just delete it once done
                 syncDao.deleteById(action.id)
+            } catch (e: IllegalArgumentException) {
+                e.printStackTrace()
+                syncDao.deleteById(action.id) // Permanent failure, remove poison pill
+            } catch (e: JsonSyntaxException) {
+                e.printStackTrace()
+                syncDao.deleteById(action.id) // Malformed JSON, remove poison pill
             } catch (e: Exception) {
                 e.printStackTrace()
                 allSuccess = false

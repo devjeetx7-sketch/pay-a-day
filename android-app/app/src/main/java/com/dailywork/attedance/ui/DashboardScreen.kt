@@ -20,6 +20,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import com.dailywork.attedance.utils.NetworkMonitor
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.ModalBottomSheet
+
 import com.dailywork.attedance.viewmodel.DashboardViewModel
 import com.dailywork.attedance.viewmodel.DashboardState
 import androidx.compose.foundation.clickable
@@ -68,8 +74,12 @@ fun DashboardScreen(
 ) {
         val context = LocalContext.current
     val networkMonitor = remember { NetworkMonitor(context) }
-    val isConnected by networkMonitor.isConnected.collectAsState()
+    val isConnected by networkMonitor.isConnected.collectAsState(initial = networkMonitor.checkCurrentState())
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(isConnected) {
+        dashboardViewModel.onNetworkStateChanged(isConnected)
+    }
 
 val dashboardState by dashboardViewModel.dashboardState.collectAsState()
     val calendarState by calendarViewModel.calendarState.collectAsState()
@@ -120,19 +130,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
     ) { padding ->
         NavHost(navController = bottomNavController, startDestination = "main_pager", modifier = Modifier.fillMaxSize().padding(padding)) {
             composable("main_pager") {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    if (!isConnected) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.errorContainer)
-                                .padding(8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Working Offline", color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                    HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                     when (page) {
                         0 -> {
                             if (dashboardState.isLoading) {
@@ -223,7 +221,6 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                             )
                         }
                     }
-                }
                 }
             }
             composable("passbook") {
@@ -350,6 +347,105 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
             )
         }
     }
+
+    if (dashboardState.showOfflineBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { dashboardViewModel.dismissOfflineBottomSheet() },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            val infiniteTransition = rememberInfiniteTransition()
+            val scale by infiniteTransition.animateFloat(
+                initialValue = 0.8f,
+                targetValue = 1.1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+                )
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.CloudOff,
+                        contentDescription = "Offline",
+                        modifier = Modifier
+                            .size(48.dp)
+                            .scale(scale),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    "No Internet Connection",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    "You're currently offline. You can still use the app in offline mode. Your data will sync automatically when connection is restored.",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = {
+                        val currentNetworkState = networkMonitor.checkCurrentState()
+                        dashboardViewModel.retryConnection(currentNetworkState)
+                        if (!currentNetworkState) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Still no connection")
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Try Again", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                TextButton(
+                    onClick = { dashboardViewModel.dismissOfflineBottomSheet() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "Continue Offline",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+
 }
 
 @Composable
