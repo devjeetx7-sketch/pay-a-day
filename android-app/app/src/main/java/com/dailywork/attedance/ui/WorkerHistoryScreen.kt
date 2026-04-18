@@ -61,7 +61,7 @@ fun WorkerHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Worker History", fontWeight = FontWeight.Bold) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.worker_history), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -95,7 +95,7 @@ fun WorkerHistoryScreen(
                         OutlinedTextField(
                             value = state.searchQuery,
                             onValueChange = { viewModel.onSearchQueryChange(it) },
-                            placeholder = { Text("Search by worker name...") },
+                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.search_by_worker_name)) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
@@ -110,7 +110,7 @@ fun WorkerHistoryScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Filter:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.filter), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             }
 
                             Box {
@@ -155,7 +155,7 @@ fun WorkerHistoryScreen(
                 } else if (state.filteredRecords.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                            Text("No records found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.no_records_found), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 } else {

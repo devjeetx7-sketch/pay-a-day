@@ -108,7 +108,7 @@ fun StatsScreenContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Statistics", fontWeight = FontWeight.Bold) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.statistics), fontWeight = FontWeight.Bold) },
                 actions = {
                     if (state.role == "contractor") {
                         IconButton(onClick = onNavigateToWorkerHistory) {
@@ -181,8 +181,8 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("Global Statistics", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Text("Worker performance & costs", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.global_statistics), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.worker_performance_costs), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
 
             if (!isAllTime) {
@@ -209,16 +209,16 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Analytics, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("System Overview", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.system_overview), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("Total Workforce", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_workforce), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             AnimatedCounter(targetValue = state.contractorStats.totalWorkers)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Total Man Days", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_man_days), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             AnimatedCounter(targetValue = currentTotalDays.toInt())
                         }
                     }
@@ -272,7 +272,7 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
             item {
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text("Daily Costs", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_costs), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         Spacer(modifier = Modifier.height(16.dp))
                         EarningsLineChart(dailyRecords = dailyRecords)
                     }
@@ -285,7 +285,7 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
 
             Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                 Column {
-                    Text("Cost Breakdown", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cost_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (currentTopWorkers.isEmpty()) {
@@ -359,7 +359,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("Stats", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.stats), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(16.dp))
 
             if (!isAllTime) {
@@ -379,14 +379,14 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text("EARNINGS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
                         AnimatedCounter(targetValue = currentEarnings.toInt(), prefix = "₹")
                     }
                 }
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text("TOTAL DAYS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
                         AnimatedCounter(targetValue = currentDays.toInt())
                     }
@@ -398,14 +398,14 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text("TOTAL OVERTIME", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_overtime), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
                         AnimatedCounter(targetValue = state.personalStats.overtime, suffix = " hrs")
                     }
                 }
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text("ADVANCE DEDUCTIONS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.advance_deductions), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
                         AnimatedCounter(targetValue = state.personalStats.advanceTotal.toInt(), prefix = "₹")
                     }
@@ -417,7 +417,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
             item {
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text("Daily Earnings", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_earnings), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         Spacer(modifier = Modifier.height(16.dp))
                         EarningsLineChart(dailyRecords = dailyRecords)
                     }
@@ -429,7 +429,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
             item {
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text("Attendance Breakdown", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.attendance_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         Spacer(modifier = Modifier.height(24.dp))
 
                         // Present includes half days in the count, so subtract them for purely full-day slices
@@ -493,7 +493,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         val attendanceRate = if (total > 0) ((purePresent + state.personalStats.halfDays * 0.5) / total * 100).toInt() else 0
                                         Text("${attendanceRate}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                                        Text("Attendance", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.attendance), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
 
@@ -519,7 +519,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                             }
                         } else {
                             Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text("No data.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.no_data), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -529,19 +529,19 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
 
         if (!isAllTime) {
             item {
-                Text("All Time Stats", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.all_time_stats), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                         Column {
-                            Text("TOTAL EARNINGS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(4.dp))
                             AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
                         }
                     }
                     Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                         Column {
-                            Text("TOTAL DAYS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(4.dp))
                             AnimatedCounter(targetValue = state.personalStats.allTimeDays)
                         }

@@ -112,14 +112,12 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Text(
-                "DailyWork",
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            Text(
-                "Manage your daily labor & earnings",
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.manage_your_daily_labor_earnings),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

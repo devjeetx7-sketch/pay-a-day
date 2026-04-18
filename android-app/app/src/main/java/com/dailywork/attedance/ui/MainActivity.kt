@@ -32,6 +32,9 @@ import com.dailywork.attedance.viewmodel.ViewModelFactory
 import com.dailywork.attedance.data.DataMigrationManager
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import com.dailywork.attedance.utils.LocaleHelper
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +42,14 @@ class MainActivity : ComponentActivity() {
 
         val repository = UserPreferencesRepository(applicationContext)
         val factory = ViewModelFactory(repository, applicationContext)
+
+        // Apply locale before UI renders to avoid flashing and ensure correctness
+        runBlocking {
+            val savedLanguage = repository.languageFlow.first()
+            if (savedLanguage != null) {
+                LocaleHelper.setLocale(this@MainActivity, savedLanguage)
+            }
+        }
 
         // Trigger Migration
         lifecycleScope.launch {
