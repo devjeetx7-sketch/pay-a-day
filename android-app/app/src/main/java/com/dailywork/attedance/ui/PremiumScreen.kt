@@ -65,7 +65,7 @@ fun PremiumScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("DailyWork Premium", fontWeight = FontWeight.Bold) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork_premium), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -133,7 +133,7 @@ fun PremiumScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Select your billing cycle", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.select_your_billing_cycle), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
@@ -247,7 +247,7 @@ fun PremiumScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("UNLOCK EVERYTHING", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.unlock_everything), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             }
                         }
 
@@ -256,8 +256,7 @@ fun PremiumScreen(
                                 .fillMaxWidth()
                                 .padding(24.dp)
                         ) {
-                            Text(
-                                "Combo Premium",
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.combo_premium),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFD97706) // amber-600
@@ -266,11 +265,10 @@ fun PremiumScreen(
                             Row(verticalAlignment = Alignment.Bottom) {
                                 Text("₹$comboPrice", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Color(0xFFD97706))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("/ Lifetime", fontSize = 14.sp, color = Color(0xFFD97706).copy(alpha = 0.7f), fontWeight = FontWeight.Medium)
+                                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.lifetime), fontSize = 14.sp, color = Color(0xFFD97706).copy(alpha = 0.7f), fontWeight = FontWeight.Medium)
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "Unlocks both Contractor & Personal Modes permanently.",
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.unlocks_both_contractor_personal_modes_p_msg),
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -291,7 +289,7 @@ fun PremiumScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Get Combo Plan", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.get_combo_plan), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                                 }
                             }
                         }
@@ -315,8 +313,7 @@ fun PremiumScreen(
                             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                             .border(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
-                        Text(
-                            "FEATURES",
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.features),
                             modifier = Modifier
                                 .weight(1.5f)
                                 .padding(16.dp),
@@ -327,8 +324,7 @@ fun PremiumScreen(
                         Divider(modifier = Modifier
                             .width(1.dp)
                             .height(48.dp), color = MaterialTheme.colorScheme.outline)
-                        Text(
-                            "FREE",
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.free),
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(16.dp),
@@ -349,8 +345,7 @@ fun PremiumScreen(
                         ) {
                             Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "PREMIUM",
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.premium),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFD97706)
@@ -415,8 +410,7 @@ fun PremiumScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        "Cancel anytime. No hidden fees.",
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel_anytime_no_hidden_fees),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -95,8 +95,8 @@ fun ContractorCalendarView(viewModel: CalendarViewModel, state: com.dailywork.at
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Mark Attendance", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Text("Daily attendance for all workers", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.mark_attendance), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_attendance_for_all_workers), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -139,7 +139,7 @@ fun ContractorCalendarView(viewModel: CalendarViewModel, state: com.dailywork.at
         } else if (state.workers.isEmpty()) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    Text("No workers found. Add workers first.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.no_workers_found_add_workers_first), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -213,7 +213,7 @@ fun WorkerAttendanceCard(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text("Present", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.present_1), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -233,7 +233,7 @@ fun WorkerAttendanceCard(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text("Half Day", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.half_day), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -253,7 +253,7 @@ fun WorkerAttendanceCard(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text("Absent", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.absent_1), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -331,7 +331,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
             .padding(16.dp)
     ) {
         item {
-            Text("Calendar", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.calendar), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -371,7 +371,7 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("$presentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Present", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.present_1), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Box(
@@ -385,13 +385,12 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("$absentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Absent", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.absent_1), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Tap any day to edit attendance or add note/advance.",
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.tap_any_day_to_edit_attendance_or_add_no_msg),
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
@@ -522,25 +521,25 @@ fun PersonalCalendarView(viewModel: CalendarViewModel, state: com.dailywork.atte
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Full Day", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.full_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Half Day", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.half_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Absent", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.absent_1), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Advance", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.advance), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -593,7 +592,7 @@ fun PersonalAttendanceDialog(
         title = {
             Column {
                 Text(displayDate, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("Tap to edit attendance or add note/advance.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.tap_to_edit_attendance_or_add_noteadvanc_msg), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         text = {
@@ -609,7 +608,7 @@ fun PersonalAttendanceDialog(
                             contentColor = if (editStatus == "present") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                         )
                     ) {
-                        Text("Present", fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.present_1), fontWeight = FontWeight.Bold)
                     }
                     Button(
                         onClick = { editStatus = "absent" },
@@ -620,7 +619,7 @@ fun PersonalAttendanceDialog(
                             contentColor = if (editStatus == "absent") MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface
                         )
                     ) {
-                        Text("Absent", fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.absent_1), fontWeight = FontWeight.Bold)
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -637,7 +636,7 @@ fun PersonalAttendanceDialog(
                             ),
                             border = if (editType == "full") androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
                         ) {
-                            Text("Full Day", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.full_day), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                         Button(
                             onClick = { editType = "half" },
@@ -649,7 +648,7 @@ fun PersonalAttendanceDialog(
                             ),
                             border = if (editType == "half") androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
                         ) {
-                            Text("Half Day", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.half_day), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -658,7 +657,7 @@ fun PersonalAttendanceDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Overtime (Hours)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.overtime_hours), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).clickable { if (editOT > 0) editOT-- },
@@ -675,7 +674,7 @@ fun PersonalAttendanceDialog(
                     OutlinedTextField(
                         value = editOTAmount,
                         onValueChange = { editOTAmount = it },
-                        placeholder = { Text("OT Amount (₹)") },
+                        placeholder = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.ot_amount)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -706,7 +705,7 @@ fun PersonalAttendanceDialog(
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
-                Text("Advance Payment (₹)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.advance_payment), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(
                     value = editAdvance,
@@ -722,7 +721,7 @@ fun PersonalAttendanceDialog(
                 OutlinedTextField(
                     value = editNote,
                     onValueChange = { editNote = it },
-                    placeholder = { Text("Add Note...") },
+                    placeholder = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.add_note)) },
                     modifier = Modifier.fillMaxWidth().height(100.dp),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -741,17 +740,17 @@ fun PersonalAttendanceDialog(
                     onSave(editStatus, editType, editReason, editOT, finalNote, advanceVal)
                 }
             ) {
-                Text("Save")
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.save))
             }
         },
         dismissButton = {
             if (existingRecord != null) {
                 TextButton(onClick = onDelete, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-                    Text("Remove")
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.remove))
                 }
             } else {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel))
                 }
             }
         }

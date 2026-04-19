@@ -71,11 +71,10 @@ fun SettingsScreenContent(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    var expandedLanguageMenu by remember { mutableStateOf(false) }
     var showRoleBottomSheet by remember { mutableStateOf(false) }
     var showRoleConfirmationDialog by remember { mutableStateOf(false) }
     var pendingRole by remember { mutableStateOf("") }
-    val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी", "bn" to "বাংলা", "te" to "తెలుగు", "mr" to "मराठी", "ta" to "தமிழ்", "gu" to "ગુજરાતી")
+    val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी")
 
     val hasChanges = state.name != state.originalName ||
             state.dailyWage != state.originalWage ||
@@ -98,7 +97,7 @@ fun SettingsScreenContent(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 }
 
                 // Profile Settings
@@ -108,7 +107,7 @@ fun SettingsScreenContent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Profile Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
                         AnimatedVisibility(visible = hasChanges) {
                             IconButton(onClick = { viewModel.saveChanges() }, enabled = !state.isSaving) {
                                 if (state.isSaving) {
@@ -147,7 +146,7 @@ fun SettingsScreenContent(
                             value = state.name,
                             onValueChange = { viewModel.onNameChange(it) },
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Full Name") },
+                            label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.full_name)) },
                             leadingIcon = { Icon(Icons.Default.Person, null) },
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
@@ -164,7 +163,7 @@ fun SettingsScreenContent(
                             modifier = Modifier.fillMaxWidth(),
                             readOnly = true,
                             enabled = false,
-                            label = { Text("Email") },
+                            label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.email)) },
                             leadingIcon = { Icon(Icons.Default.Email, null) },
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
@@ -179,7 +178,7 @@ fun SettingsScreenContent(
                             value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
                             onValueChange = { viewModel.onWageChange(it) },
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Daily Wage") },
+                            label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_wage)) },
                             leadingIcon = { Icon(Icons.Default.CurrencyRupee, null) },
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
@@ -198,7 +197,7 @@ fun SettingsScreenContent(
                                 viewModel.onPhoneChange(digits)
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Phone Number") },
+                            label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.phone_number)) },
                             leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
@@ -214,7 +213,7 @@ fun SettingsScreenContent(
 
             // General App Settings
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("App Preferences", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
 
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -225,7 +224,7 @@ fun SettingsScreenContent(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Theme", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.theme), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                             Switch(checked = state.isDarkMode, onCheckedChange = { viewModel.toggleTheme(it) })
@@ -238,41 +237,29 @@ fun SettingsScreenContent(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Reminders", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Daily attendance reminder", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_attendance_reminder), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             Switch(checked = state.isRemindersEnabled, onCheckedChange = { viewModel.toggleReminders(it) })
                         }
                         Divider(color = MaterialTheme.colorScheme.outline)
                         Box(modifier = Modifier.fillMaxWidth()) {
-                            Row(modifier = Modifier.fillMaxWidth().clickable { expandedLanguageMenu = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.fillMaxWidth().clickable {
+                                val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
+                                context.startActivity(intent)
+                            }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color.Blue.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                         Icon(Icons.Default.Language, contentDescription = null, tint = Color.Blue)
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        Text("Language", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.language_2), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                         Text(supportedLanguages[state.language] ?: "English", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            DropdownMenu(
-                                expanded = expandedLanguageMenu,
-                                onDismissRequest = { expandedLanguageMenu = false },
-                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                            ) {
-                                supportedLanguages.forEach { (code, langName) ->
-                                    DropdownMenuItem(
-                                        text = { Text(langName, fontWeight = FontWeight.Bold) },
-                                        onClick = {
-                                            expandedLanguageMenu = false
-                                            viewModel.saveLanguage(code)
-                                        }
-                                    )
-                                }
                             }
                         }
                         Divider(color = MaterialTheme.colorScheme.outline)
@@ -283,7 +270,7 @@ fun SettingsScreenContent(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Role Management", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.role_management), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                     Text("Current: ${state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
@@ -302,11 +289,11 @@ fun SettingsScreenContent(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     if (state.isPremium) {
-                                        Text("DailyWork Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
-                                        Text("Thank you for your purchase ❤️", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.thank_you_for_your_purchase), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     } else {
-                                        Text("Upgrade to Premium", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text("Unlock all features", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.upgrade_to_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.unlock_all_features), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -320,7 +307,7 @@ fun SettingsScreenContent(
 
             // Data & Export
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Data & Export", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_export), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
 
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -332,8 +319,8 @@ fun SettingsScreenContent(
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        Text("Worker History", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text("Attendance & Payment logs", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.worker_history), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.attendance_payment_logs), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -346,8 +333,8 @@ fun SettingsScreenContent(
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        Text("Export as PDF", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text("Only Contractor Premium", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.export_as_pdf), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.only_contractor_premium), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -361,8 +348,8 @@ fun SettingsScreenContent(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Share via WhatsApp", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Send digital passbook", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.share_via_whatsapp), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.send_digital_passbook), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -372,7 +359,7 @@ fun SettingsScreenContent(
 
             // Data & Support
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Data & Support", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
 
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -383,8 +370,8 @@ fun SettingsScreenContent(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("How to Use DailyWork", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Quick guide & tutorials", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.how_to_use_dailywork), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.quick_guide_tutorials), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -396,8 +383,8 @@ fun SettingsScreenContent(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Data & Privacy Policy", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Stored securely in cloud", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_privacy_policy), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.stored_securely_in_cloud), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -409,8 +396,8 @@ fun SettingsScreenContent(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Developer Contact", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Reach out for feedback", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.developer_contact), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.reach_out_for_feedback), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -437,8 +424,8 @@ fun SettingsScreenContent(
         if (showLogoutDialog) {
             AlertDialog(
                 onDismissRequest = { showLogoutDialog = false },
-                title = { Text("Log Out", fontWeight = FontWeight.Bold) },
-                text = { Text("Are you sure you want to log out of your account?") },
+                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.log_out), fontWeight = FontWeight.Bold) },
+                text = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.are_you_sure_you_want_to_log_out_of_your_msg)) },
                 confirmButton = {
                     Button(
                         onClick = {
@@ -447,12 +434,12 @@ fun SettingsScreenContent(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Text("Log Out", fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.log_out), fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showLogoutDialog = false }) {
-                        Text("Cancel")
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel))
                     }
                 }
             )
@@ -461,8 +448,8 @@ fun SettingsScreenContent(
         if (showRoleConfirmationDialog) {
             AlertDialog(
                 onDismissRequest = { showRoleConfirmationDialog = false },
-                title = { Text("Change Role", fontWeight = FontWeight.Bold) },
-                text = { Text("Changing role will refresh the app and switch your dashboard.") },
+                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.change_role), fontWeight = FontWeight.Bold) },
+                text = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.changing_role_will_refresh_the_app_and_s_msg)) },
                 confirmButton = {
                     Button(
                         onClick = {
@@ -471,12 +458,12 @@ fun SettingsScreenContent(
                             viewModel.saveChanges()
                         }
                     ) {
-                        Text("Confirm")
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.confirm))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showRoleConfirmationDialog = false }) {
-                        Text("Cancel")
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel))
                     }
                 }
             )
@@ -494,26 +481,26 @@ fun SettingsScreenContent(
                         .padding(bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("How to Use DailyWork", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("A quick guide to tracking your work effectively", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.how_to_use_dailywork), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.a_quick_guide_to_tracking_your_work_effe_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                     Divider(color = MaterialTheme.colorScheme.outline)
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("1. Marking Attendance", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("On the Dashboard, click Full Day or Half Day to mark today's attendance. Add overtime using the + / - buttons before saving. If you didn't work, click Mark Absent.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_1_marking_attendance), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.on_the_dashboard_click_full_day_or_half__msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("2. Net Payable & Earnings", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("Your Earnings are automatically calculated by multiplying your working days with your Daily Wage. Net Payable shows your final take-home amount: (Total Earnings - Advance).", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_2_net_payable_earnings), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.your_earnings_are_automatically_calculat_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("3. Advance Payments", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("If you receive money ahead of time, click Add Advance on the Dashboard or add it directly on a specific date inside the Calendar. This is automatically deducted.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_3_advance_payments), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.if_you_receive_money_ahead_of_time_click_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("4. Calendar & History", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("Use the Calendar to edit past records (e.g. if you forgot to mark attendance yesterday). Use Passbook to export your monthly logs as a PDF or CSV.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_4_calendar_history), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.use_the_calendar_to_edit_past_records_eg_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -531,26 +518,26 @@ fun SettingsScreenContent(
                         .padding(bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Data & Privacy Policy", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("Stored securely in the cloud", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_privacy_policy), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.stored_securely_in_the_cloud), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                     Divider(color = MaterialTheme.colorScheme.outline)
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Data Collection", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("We collect your name, phone number, and attendance records to provide the core functionality of the app.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_collection), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.we_collect_your_name_phone_number_and_at_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Storage Method", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("Your data is securely stored on Firebase, protected by industry-standard security measures.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.storage_method), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.your_data_is_securely_stored_on_firebase_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Security Practices", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("Access to your data is restricted to your authenticated account.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.security_practices), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.access_to_your_data_is_restricted_to_you_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("User Control", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("You can delete your data by deleting your account, or export your records from the app.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.user_control), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.you_can_delete_your_data_by_deleting_you_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -568,25 +555,25 @@ fun SettingsScreenContent(
                         .padding(bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Developer Contact", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("Reach out to us for any feedback or support", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.developer_contact), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.reach_out_to_us_for_any_feedback_or_supp_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                     Divider(color = MaterialTheme.colorScheme.outline)
 
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                         Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text("support@dailywork.com", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.supportdailyworkcom), fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                         Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text("+91 98765 43210", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_91_98765_43210), fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                         Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text("www.dailywork.com", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.wwwdailyworkcom), fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -604,8 +591,8 @@ fun SettingsScreenContent(
                         .padding(bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Role Management", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("Switch between Contractor and Personal mode", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.role_management), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.switch_between_contractor_and_personal_m_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                     Divider(color = MaterialTheme.colorScheme.outline)
 

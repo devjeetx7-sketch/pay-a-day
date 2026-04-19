@@ -32,15 +32,9 @@ fun LanguageSelectionScreen(
 
     val languages = listOf(
         LanguageOption("hi", "Hindi", "अ", Color(0xFFFFE4E1)),
-        LanguageOption("en", "English", "A", Color(0xFFE0F7FA)),
-        LanguageOption("bn", "Bengali", "অ", Color(0xFFFFF9C4)),
-        LanguageOption("mr", "Marathi", "अ", Color(0xFFE8F5E9)),
-        LanguageOption("ta", "Tamil", "அ", Color(0xFFF3E5F5)),
-        LanguageOption("te", "Telugu", "అ", Color(0xFFFFF3E0)),
-        LanguageOption("kn", "Kannada", "ಅ", Color(0xFFE1F5FE)),
-        LanguageOption("ml", "Malayalam", "അ", Color(0xFFFBE9E7)),
-        LanguageOption("gu", "Gujarati", "અ", Color(0xFFF0F4C3))
+        LanguageOption("en", "English", "A", Color(0xFFE0F7FA))
     )
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
         modifier = Modifier
@@ -51,7 +45,7 @@ fun LanguageSelectionScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Select Language",
+            text = androidx.compose.ui.res.stringResource(id = com.dailywork.attedance.R.string.select_language),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -60,7 +54,7 @@ fun LanguageSelectionScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Choose your preferred language to continue.",
+            text = androidx.compose.ui.res.stringResource(id = com.dailywork.attedance.R.string.choose_your_preferred_language_to_continue),
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -114,6 +108,7 @@ fun LanguageSelectionScreen(
                 selectedLanguageCode?.let {
                     scope.launch {
                         repository.saveLanguage(it)
+                        com.dailywork.attedance.utils.LocaleHelper.setLocale(context, it)
                         onLanguageSelected()
                     }
                 }
@@ -124,7 +119,7 @@ fun LanguageSelectionScreen(
             shape = RoundedCornerShape(12.dp),
             enabled = selectedLanguageCode != null
         ) {
-            Text("Continue", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(androidx.compose.ui.res.stringResource(id = com.dailywork.attedance.R.string.continue_btn), fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

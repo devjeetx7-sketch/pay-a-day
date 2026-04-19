@@ -126,7 +126,7 @@ fun CrashScreen(errorTrace: String, onRestart: () -> Unit, onClose: () -> Unit) 
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Copy Error")
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.copy_error))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -139,13 +139,13 @@ fun CrashScreen(errorTrace: String, onRestart: () -> Unit, onClose: () -> Unit) 
                 onClick = onClose,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Close App")
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.close_app))
             }
             Button(
                 onClick = onRestart,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Restart")
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.restart))
             }
         }
     }

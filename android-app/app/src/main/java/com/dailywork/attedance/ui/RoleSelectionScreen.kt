@@ -60,8 +60,8 @@ fun RoleSelectionScreen(authViewModel: AuthViewModel, onComplete: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
-            Text("Select Role", fontSize = 28.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
-            Text("How will you use this app?", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 32.dp))
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.select_role), fontSize = 28.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
+            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.how_will_you_use_this_app), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 32.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 roles.forEach { role ->
@@ -90,7 +90,7 @@ fun RoleSelectionScreen(authViewModel: AuthViewModel, onComplete: () -> Unit) {
             if (saving) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
             } else {
-                Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.continue_action), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

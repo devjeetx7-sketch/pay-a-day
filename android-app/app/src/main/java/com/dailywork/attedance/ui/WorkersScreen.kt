@@ -94,13 +94,13 @@ fun WorkersScreenContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item {
-                    Text("Manage Workers", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.manage_workers), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search by name, phone or role...") },
+                        placeholder = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.search_by_name_phone_or_role)) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                         shape = RoundedCornerShape(12.dp),
@@ -134,7 +134,7 @@ fun WorkersScreenContent(
                                             showFormDialog = true
                                         }
                                     }, shape = RoundedCornerShape(12.dp)) {
-                                        Text("Add Worker")
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.add_worker))
                                     }
                                 }
                             }
@@ -169,12 +169,12 @@ fun WorkersScreenContent(
 
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column {
-                                        Text("Daily Wage", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_wage), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                                         Text("₹${worker.wage.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
                                     }
                                     if (worker.phone.isNotEmpty()) {
                                         Column(horizontalAlignment = Alignment.End) {
-                                            Text("Phone", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.phone), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                                             Text(worker.phone, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                         }
                                     }
@@ -189,7 +189,7 @@ fun WorkersScreenContent(
                                     ) {
                                         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Edit", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.edit), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
                                     OutlinedButton(
                                         onClick = { showDeleteDialog = worker.id },
@@ -200,7 +200,7 @@ fun WorkersScreenContent(
                                     ) {
                                         Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Delete", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.delete), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -249,16 +249,16 @@ fun WorkersScreenContent(
         if (showDeleteDialog != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = null },
-                title = { Text("Delete Worker", fontWeight = FontWeight.Bold) },
-                text = { Text("Are you sure you want to permanently delete this worker? This action cannot be undone.") },
+                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.delete_worker), fontWeight = FontWeight.Bold) },
+                text = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.are_you_sure_you_want_to_permanently_del_msg)) },
                 confirmButton = {
                     Button(
                         onClick = { viewModel.deleteWorker(showDeleteDialog!!); showDeleteDialog = null },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) { Text("Delete") }
+                    ) { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.delete)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = null }) { Text("Cancel") }
+                    TextButton(onClick = { showDeleteDialog = null }) { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel)) }
                 }
             )
         }
@@ -395,7 +395,7 @@ fun WorkerFormDialog(
                 ) {
                     Icon(Icons.Default.DocumentScanner, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Scan Aadhaar QR Code", fontWeight = FontWeight.Bold)
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.scan_aadhaar_qr_code), fontWeight = FontWeight.Bold)
                 }
 
                 Divider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(vertical = 4.dp))
@@ -403,7 +403,7 @@ fun WorkerFormDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Full Name *") },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.full_name_1)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
@@ -416,14 +416,14 @@ fun WorkerFormDialog(
                         val digits = newValue.filter { it.isDigit() }.take(10)
                         phone = digits
                     },
-                    label = { Text("Phone Number") },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.phone_number)) },
                     leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     isError = isPhoneError,
-                    supportingText = if (isPhoneError) { { Text("Enter valid 10-digit mobile number") } } else null
+                    supportingText = if (isPhoneError) { { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.enter_valid_10digit_mobile_number)) } } else null
                 )
 
                 // Smart Aadhaar Field
@@ -433,21 +433,21 @@ fun WorkerFormDialog(
                         val digits = newValue.filter { it.isDigit() }.take(12)
                         aadhar = digits
                     },
-                    label = { Text("Aadhaar Number (Optional)") },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.aadhaar_number_optional)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     visualTransformation = AadhaarTransformation(),
                     isError = isAadhaarError,
-                    supportingText = if (isAadhaarError) { { Text("Aadhaar must be exactly 12 digits") } } else null
+                    supportingText = if (isAadhaarError) { { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.aadhaar_must_be_exactly_12_digits)) } } else null
                 )
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = wage,
                         onValueChange = { wage = it.filter { ch -> ch.isDigit() } },
-                        label = { Text("Daily Wage *") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_wage_1)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
@@ -462,13 +462,13 @@ fun WorkerFormDialog(
                             val digits = newValue.filter { it.isDigit() }.take(2)
                             age = digits
                         },
-                        label = { Text("Age") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.age)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         isError = isAgeError,
-                        supportingText = if (isAgeError) { { Text("Must be 14+") } } else null
+                        supportingText = if (isAgeError) { { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.must_be_14)) } } else null
                     )
                 }
 
@@ -505,7 +505,7 @@ fun WorkerFormDialog(
                     OutlinedTextField(
                         value = customTypeStr,
                         onValueChange = { customTypeStr = it },
-                        label = { Text("Custom Work Type *") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.custom_work_type)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
@@ -533,11 +533,11 @@ fun WorkerFormDialog(
                 enabled = !isSaving && isFormValid
             ) {
                 if (isSaving) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                else Text("Save")
+                else Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isSaving) { Text("Cancel") }
+            TextButton(onClick = onDismiss, enabled = !isSaving) { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel)) }
         }
     )
 }
