@@ -1,4 +1,6 @@
-package com.dailywork.attedance.ui
+import os
+
+new_code = """package com.dailywork.attedance.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -357,3 +359,7 @@ fun PremiumPlanCardFixed(
         }
     }
 }
+"""
+
+with open('android-app/app/src/main/java/com/dailywork/attedance/ui/PremiumScreen.kt', 'w') as f:
+    f.write(new_code)
