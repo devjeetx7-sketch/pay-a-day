@@ -476,10 +476,16 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Hi, ${state.name.split(" ")[0]} 👋",
+                        text = "Hi, ",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "${state.name.split(" ")[0]} 👋",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
                 Text(
