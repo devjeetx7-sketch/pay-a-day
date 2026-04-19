@@ -251,36 +251,48 @@ fun PremiumPlanCardClean(
     badgeColor: Color,
     onClick: () -> Unit
 ) {
-    val borderColor by animateColorAsState(if (isSelected) primaryColor else outlineColor)
-    val cardBgColor by animateColorAsState(if (isSelected) primaryColor.copy(alpha = 0.04f) else bgColor)
-    val elevation by animateDpAsState(if (isSelected) 4.dp else 1.dp)
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) primaryColor else outlineColor,
+        animationSpec = androidx.compose.animation.core.tween(200)
+    )
+    val cardBgColor by animateColorAsState(
+        targetValue = if (isSelected) primaryColor.copy(alpha = 0.02f) else bgColor,
+        animationSpec = androidx.compose.animation.core.tween(200)
+    )
+    val elevation by animateDpAsState(
+        targetValue = if (isSelected) 3.dp else 1.dp,
+        animationSpec = androidx.compose.animation.core.tween(200)
+    )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(16.dp)
-            ),
-        shape = RoundedCornerShape(16.dp),
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = cardBgColor),
+        border = androidx.compose.foundation.BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
 
             // Selection Check Circle inside corner
             if (isSelected) {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = primaryColor,
+                Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(12.dp)
-                        .size(18.dp)
-                )
+                        .padding(top = 10.dp, end = 10.dp)
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(primaryColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
 
             Column(
