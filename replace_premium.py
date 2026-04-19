@@ -1,4 +1,6 @@
-package com.dailywork.attedance.ui
+import os
+
+new_code = """package com.dailywork.attedance.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -342,3 +344,7 @@ fun PremiumPlanCardClean(
 
 @Composable
 fun borderStroke(width: androidx.compose.ui.unit.Dp, color: Color) = androidx.compose.foundation.BorderStroke(width, color)
+"""
+
+with open('android-app/app/src/main/java/com/dailywork/attedance/ui/PremiumScreen.kt', 'w') as f:
+    f.write(new_code)
