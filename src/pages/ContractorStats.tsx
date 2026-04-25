@@ -50,7 +50,7 @@ export const ContractorStats = () => {
 
         attSnap.docs.forEach((doc) => {
           const data = doc.data();
-          if (data.date.startsWith(yearMonth) && data.status === "present") {
+          if (data.status === "present") {
              const workerData = workersMap[data.user_id];
              if (workerData) {
                const dayVal = data.type === "half" ? 0.5 : 1;
