@@ -51,20 +51,18 @@ export const ContractorHistory = () => {
 
         attSnap.docs.forEach((doc) => {
           const data = doc.data();
-          if (data.date.startsWith(yearMonth)) {
-             const workerData = workersMap[data.user_id] || { name: 'Unknown', workType: 'Unknown' };
-             allRecords.push({
-                 id: doc.id,
-                 workerName: workerData.name,
-                 workerRole: workerData.workType || 'Labour',
-                 date: data.date,
-                 status: data.status,
-                 type: data.type,
-                 overtime_hours: data.overtime_hours,
-                 advance_amount: data.advance_amount,
-                 note: data.note
-             });
-          }
+          const workerData = workersMap[data.user_id] || { name: 'Unknown', workType: 'Unknown' };
+          allRecords.push({
+              id: doc.id,
+              workerName: workerData.name,
+              workerRole: workerData.workType || 'Labour',
+              date: data.date,
+              status: data.status,
+              type: data.type,
+              overtime_hours: data.overtime_hours,
+              advance_amount: data.advance_amount,
+              note: data.note
+          });
         });
       }
 
