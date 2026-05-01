@@ -36,22 +36,15 @@ class DailyWorkApplication : Application() {
 
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             val intent = Intent(applicationContext, CrashActivity::class.java).apply {
-                putExtra(CrashActivity.EXTRA_ERROR_INFO, getStackTrace(throwable))
+                putExtra(CrashActivity.EXTRA_ERROR_INFO, android.util.Log.getStackTraceString(throwable))
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
             startActivity(intent)
 
             // Kill the original process
             Process.killProcess(Process.myPid())
-            exitProcess(10)
+            exitProcess(1)
         }
-    }
-
-    private fun getStackTrace(throwable: Throwable): String {
-        val sw = StringWriter()
-        val pw = PrintWriter(sw)
-        throwable.printStackTrace(pw)
-        return sw.toString()
     }
 
     private fun isErrorHandlerProcess(): Boolean {

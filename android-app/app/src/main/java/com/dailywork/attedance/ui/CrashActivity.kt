@@ -44,10 +44,12 @@ class CrashActivity : ComponentActivity() {
                     CrashScreen(
                         errorTrace = errorTrace,
                         onRestart = {
-                            val intent = Intent(this, MainActivity::class.java).apply {
+                            val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             }
-                            startActivity(intent)
+                            if (intent != null) {
+                                startActivity(intent)
+                            }
                             finish()
                             exitProcess(0)
                         },
