@@ -12,11 +12,11 @@ interface SyncActionDao {
     suspend fun insert(action: SyncActionEntity)
 
     @Update
-    suspend fun update(action: SyncActionEntity)
+    suspend fun update(action: SyncActionEntity): Int
 
     @Query("SELECT * FROM sync_actions WHERE isSynced = 0 ORDER BY createdAt ASC")
     suspend fun getUnsyncedActions(): List<SyncActionEntity>
 
     @Query("DELETE FROM sync_actions WHERE id = :id")
-    suspend fun deleteById(id: String)
+    suspend fun deleteById(id: String): Int
 }
