@@ -21,6 +21,15 @@ android {
         }
     }
 
+    flavorDimensions += "version"
+    productFlavors {
+        create("admin") {
+            dimension = "version"
+            applicationIdSuffix = ".admin"
+            versionNameSuffix = "-admin"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

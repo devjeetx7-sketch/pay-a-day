@@ -1,0 +1,47 @@
+name: User Android Build (Test)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Generate temporary keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore temp.jks \
+            -alias temp-key \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 100 \
+            -storepass temp-password \
+            -keypass temp-password \
+            -dname "CN=WorkDaily, OU=Dev, O=WorkDaily, L=City, S=State, C=US"
+
+      - name: Build User Release APK
+        run: |
+          cd android-app
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/temp.jks \
+            -Pandroid.injected.signing.store.password=temp-password \
+            -Pandroid.injected.signing.key.alias=temp-key \
+            -Pandroid.injected.signing.key.password=temp-password
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-release-apk
+          path: android-app/app/build/outputs/apk/release/app-release.apk
