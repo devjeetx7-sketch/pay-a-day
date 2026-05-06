@@ -91,9 +91,21 @@ fun DailyWorkApp(factory: ViewModelFactory) {
     val tokenState by authViewModel.authTokenFlow.collectAsState(initial = "LOADING")
     val languageState by authViewModel.repository.languageFlow.collectAsState(initial = "LOADING")
     val roleState by authViewModel.userRoleFlow.collectAsState(initial = "LOADING")
+    val loginState by authViewModel.loginState.collectAsState()
+    val settingsState by settingsViewModel.state.collectAsState()
 
     if (tokenState == "LOADING" || languageState == "LOADING" || roleState == "LOADING") {
         return // Wait for datastore
+    }
+
+    if (loginState is com.dailywork.attedance.viewmodel.LoginState.Blocked) {
+        BlockedScreen(onLogout = {
+            authViewModel.logout()
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
+        })
+        return
     }
 
     NavHost(navController = navController, startDestination = "splash") {
@@ -101,7 +113,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
             SplashScreen(
                 onSplashFinished = {
                     val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                    if (languageState == null) {
+                    if (languageState == null && settingsState.isLanguageEnabled) {
                         navController.navigate("language_selection") {
                             popUpTo("splash") { inclusive = true }
                         }

@@ -34,7 +34,9 @@ data class SettingsState(
     val isSaving: Boolean = false,
     val savedMessage: String? = null,
     val isPremium: Boolean = false,
-    val triggerRestart: Boolean = false
+    val triggerRestart: Boolean = false,
+    val isLanguageEnabled: Boolean = true,
+    val isRoleUiEnabled: Boolean = true
 )
 
 class SettingsViewModel(
@@ -48,9 +50,11 @@ class SettingsViewModel(
     val state: StateFlow<SettingsState> = _state
 
     private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var configListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     init {
         setupListener()
+        setupConfigListener()
         viewModelScope.launch {
             repository.darkModeFlow.collect { isDark ->
                 _state.value = _state.value.copy(isDarkMode = isDark)
@@ -73,6 +77,20 @@ class SettingsViewModel(
         viewModelScope.launch {
             repository.saveRemindersPreference(enabled)
         }
+    }
+
+    private fun setupConfigListener() {
+        configListener = db.collection("config").document("settings")
+            .addSnapshotListener { snapshot, error ->
+                if (error == null && snapshot != null && snapshot.exists()) {
+                    val languageEnabled = snapshot.getBoolean("languageEnabled") ?: true
+                    val roleUiEnabled = snapshot.getBoolean("roleUiEnabled") ?: true
+                    _state.value = _state.value.copy(
+                        isLanguageEnabled = languageEnabled,
+                        isRoleUiEnabled = roleUiEnabled
+                    )
+                }
+            }
     }
 
     private fun setupListener() {
@@ -229,5 +247,6 @@ class SettingsViewModel(
     override fun onCleared() {
         super.onCleared()
         userListener?.remove()
+        configListener?.remove()
     }
 }
