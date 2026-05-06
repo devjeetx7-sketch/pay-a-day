@@ -646,3 +646,4 @@ fun SettingsScreenContent(
         }
     }
 }
+}
