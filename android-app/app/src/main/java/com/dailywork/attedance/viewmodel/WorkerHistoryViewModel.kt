@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.dailywork.attedance.data.FirestoreRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
+import android.util.Log
 import com.dailywork.attedance.utils.OvertimeCalculator
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -116,7 +118,7 @@ class WorkerHistoryViewModel(
             val type = doc.getString("type") ?: "full"
             val note = doc.getString("note") ?: ""
             val cleanedNote = OvertimeCalculator.cleanNote(note) ?: ""
-            val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
+            val timestamp = getSafeTimestamp(doc)
 
             if (status == "present" || status == "absent") {
                 newRecords.add(
@@ -194,9 +196,35 @@ class WorkerHistoryViewModel(
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val date = sdf.parse(dateStr)
             val outputSdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-            outputSdf.format(date!!)
+            date?.let { outputSdf.format(it) } ?: dateStr
         } catch (e: Exception) {
             dateStr
+        }
+    }
+
+    private fun getSafeTimestamp(doc: com.google.firebase.firestore.DocumentSnapshot): Long {
+        val field = "timestamp"
+        return try {
+            val rawValue = doc.get(field)
+            when (rawValue) {
+                is Timestamp -> rawValue.toDate().time
+                is Long -> rawValue
+                is String -> {
+                    val parsed = rawValue.toLongOrNull()
+                    if (parsed == null) {
+                        Log.e("Firestore", "Invalid timestamp format: $rawValue")
+                    }
+                    parsed ?: 0L
+                }
+                null -> 0L
+                else -> {
+                    Log.e("Firestore", "Invalid timestamp format: $rawValue")
+                    0L
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Firestore", "Error getting timestamp: ${e.message}")
+            0L
         }
     }
 
