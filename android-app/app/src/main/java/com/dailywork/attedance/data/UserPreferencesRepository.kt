@@ -73,8 +73,7 @@ class UserPreferencesRepository(private val context: Context) {
 
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
-            preferences.remove(ROLE_KEY)
-            preferences.remove(TOKEN_KEY)
+            preferences.clear()
         }
     }
 }
