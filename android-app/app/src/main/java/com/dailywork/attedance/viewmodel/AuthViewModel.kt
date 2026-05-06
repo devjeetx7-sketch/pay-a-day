@@ -185,10 +185,10 @@ class AuthViewModel(
     }
 
     fun logout() {
+        _loginState.value = LoginState.Idle
+        auth.signOut()
         viewModelScope.launch {
-            auth.signOut()
             repository.clearSession()
-            _loginState.value = LoginState.Idle
         }
     }
 }

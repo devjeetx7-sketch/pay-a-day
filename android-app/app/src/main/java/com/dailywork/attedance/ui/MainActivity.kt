@@ -100,11 +100,12 @@ fun DailyWorkApp(factory: ViewModelFactory) {
         composable("splash") {
             SplashScreen(
                 onSplashFinished = {
+                    val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
                     if (languageState == null) {
                         navController.navigate("language_selection") {
                             popUpTo("splash") { inclusive = true }
                         }
-                    } else if (tokenState == null) {
+                    } else if (currentUser == null) {
                         navController.navigate("login") {
                             popUpTo("splash") { inclusive = true }
                         }
@@ -172,7 +173,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                 onLogout = {
                     authViewModel.logout()
                     navController.navigate("login") {
-                        popUpTo("dashboard") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
