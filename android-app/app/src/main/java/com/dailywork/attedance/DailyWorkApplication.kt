@@ -41,6 +41,9 @@ class DailyWorkApplication : Application() {
             }
             startActivity(intent)
 
+            // Allow Crashlytics to report the crash
+            defaultExceptionHandler?.uncaughtException(thread, throwable)
+
             // Kill the original process
             Process.killProcess(Process.myPid())
             exitProcess(10)

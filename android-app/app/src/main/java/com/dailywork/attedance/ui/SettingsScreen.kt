@@ -407,6 +407,19 @@ fun SettingsScreenContent(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            if (com.dailywork.attedance.BuildConfig.DEBUG) {
+                Button(
+                    onClick = { throw RuntimeException("Test Crash - Crashlytics Verification") },
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = "Test Crash", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
             Button(
                 onClick = { showLogoutDialog = true },
                 modifier = Modifier
