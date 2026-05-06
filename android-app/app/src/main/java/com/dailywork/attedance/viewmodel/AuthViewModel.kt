@@ -175,6 +175,12 @@ class AuthViewModel(
                 .get()
                 .await()
 
+            val isBlocked = document.getBoolean("isBlocked") ?: false
+            if (isBlocked) {
+                _loginState.value = LoginState.Blocked
+                return
+            }
+
             val role = document.getString("role")
             if (role != null) {
                 repository.saveUserRole(role)
@@ -197,5 +203,6 @@ sealed class LoginState {
     object Idle : LoginState()
     object Loading : LoginState()
     data class Success(val token: String) : LoginState()
+    object Blocked : LoginState()
     data class Error(val message: String) : LoginState()
 }
