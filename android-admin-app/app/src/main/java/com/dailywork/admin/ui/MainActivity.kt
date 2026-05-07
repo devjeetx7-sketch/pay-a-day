@@ -3,6 +3,7 @@ package com.dailywork.admin.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
@@ -48,7 +49,7 @@ fun AdminApp() {
 
 @Composable
 fun LoadingScreen() {
-    Surface(modifier = androidx.compose.foundation.layout.fillMaxSize()) {
+    Surface(modifier = Modifier.fillMaxSize()) {
         androidx.compose.foundation.layout.Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
             CircularProgressIndicator()
         }
