@@ -13,6 +13,34 @@ import kotlinx.coroutines.tasks.await
 class AdminFirestoreRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
+    fun getAllUsers(): Flow<List<User>> = callbackFlow {
+        val subscription = db.collection("users")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val users = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(User::class.java)?.copy(uid = doc.id)
+                } ?: emptyList()
+                trySend(users)
+            }
+        awaitClose { subscription.remove() }
+    }
+
+    fun getUser(userId: String): Flow<User?> = callbackFlow {
+        val subscription = db.collection("users").document(userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val user = snapshot?.toObject(User::class.java)?.copy(uid = snapshot.id)
+                trySend(user)
+            }
+        awaitClose { subscription.remove() }
+    }
+
     fun getUsers(role: String): Flow<List<User>> = callbackFlow {
         val subscription = db.collection("users")
             .whereEqualTo("role", role)
@@ -32,6 +60,12 @@ class AdminFirestoreRepository(
     suspend fun setUserBlockedStatus(userId: String, isBlocked: Boolean) {
         db.collection("users").document(userId)
             .update("isBlocked", isBlocked)
+            .await()
+    }
+
+    suspend fun setUserPremiumStatus(userId: String, isPremium: Boolean) {
+        db.collection("users").document(userId)
+            .update("isPremium", isPremium)
             .await()
     }
 

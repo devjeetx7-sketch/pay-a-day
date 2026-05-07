@@ -6,20 +6,17 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import com.dailywork.admin.ui.screens.*
 import com.dailywork.admin.viewmodel.AuthState
 import com.dailywork.admin.viewmodel.AuthViewModel
@@ -87,36 +84,40 @@ fun MainScaffold(authViewModel: AuthViewModel) {
                     )
                 }
             }
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { navController.navigate(Screen.Dashboard.route) },
-                icon = { Icon(Icons.Default.Dashboard, contentDescription = null) },
-                text = { Text("Live Dashboard") }
-            )
-        },
-        floatingActionButtonPosition = FabPosition.Center
+        }
     ) { innerPadding ->
         NavHost(navController, startDestination = Screen.Users.route, Modifier.padding(innerPadding)) {
-        composable(Screen.Users.route) {
-            UsersScreen(onNotifyUser = { userId ->
-                navController.navigate("${Screen.Notifications.route}?userId=$userId")
-            })
-        }
-        composable(
-            route = "${Screen.Notifications.route}?userId={userId}",
-            arguments = listOf(
-                androidx.navigation.navArgument("userId") {
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId")
-            NotificationsScreen(targetUserId = userId)
-        }
+            composable(Screen.Users.route) {
+                UsersScreen(onUserClick = { userId ->
+                    navController.navigate("user_detail/$userId")
+                })
+            }
+            composable(
+                route = Screen.UserDetail.route,
+                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                UserDetailScreen(
+                    userId = userId,
+                    onBack = { navController.popBackStack() },
+                    onNotifyUser = { id ->
+                        navController.navigate("${Screen.Notifications.route}?userId=$id")
+                    }
+                )
+            }
+            composable(
+                route = "${Screen.Notifications.route}?userId={userId}",
+                arguments = listOf(
+                    navArgument("userId") {
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId")
+                NotificationsScreen(targetUserId = userId)
+            }
             composable(Screen.Settings.route) { SettingsScreen(onLogout = { authViewModel.logout() }) }
-            composable(Screen.Dashboard.route) { LiveDashboardScreen(onBack = { navController.popBackStack() }) }
         }
     }
 }
@@ -125,5 +126,5 @@ sealed class Screen(val route: String, val title: String, val icon: androidx.com
     object Users : Screen("users", "Users", Icons.Default.People)
     object Notifications : Screen("notifications", "Notify", Icons.Default.Notifications)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
-    object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Dashboard)
+    object UserDetail : Screen("user_detail/{userId}", "User Detail", Icons.Default.People)
 }

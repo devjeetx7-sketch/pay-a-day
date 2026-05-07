@@ -1,6 +1,9 @@
 package com.dailywork.admin.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
@@ -13,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dailywork.admin.viewmodel.SettingsViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onLogout: () -> Unit,
@@ -20,55 +24,73 @@ fun SettingsScreen(
 ) {
     val config by viewModel.config.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        Text(text = "Global Settings", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(text = "Feature Flags", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-
-                ToggleItem(
-                    title = "Language Selection",
-                    description = "Enable/Disable language choice in user app",
-                    checked = config.languageEnabled,
-                    onCheckedChange = { viewModel.updateConfig(config.copy(languageEnabled = it)) }
-                )
-
-                HorizontalDivider()
-
-                ToggleItem(
-                    title = "Push Notifications",
-                    description = "Global toggle for push notifications",
-                    checked = config.notificationsEnabled,
-                    onCheckedChange = { viewModel.updateConfig(config.copy(notificationsEnabled = it)) }
-                )
-
-                HorizontalDivider()
-
-                ToggleItem(
-                    title = "Role UI Visibility",
-                    description = "Show/Hide role selection in user app",
-                    checked = config.roleUiEnabled,
-                    onCheckedChange = { viewModel.updateConfig(config.copy(roleUiEnabled = it)) }
-                )
-            }
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Settings") })
         }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        OutlinedButton(
-            onClick = onLogout,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Icon(Icons.Default.Logout, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Logout Admin Session")
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Global Feature Flags",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    ToggleItem(
+                        title = "Language Selection",
+                        description = "Allow users to change app language",
+                        checked = config.languageEnabled,
+                        onCheckedChange = { viewModel.updateConfig(config.copy(languageEnabled = it)) }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                    ToggleItem(
+                        title = "Push Notifications",
+                        description = "Enable system-wide notifications",
+                        checked = config.notificationsEnabled,
+                        onCheckedChange = { viewModel.updateConfig(config.copy(notificationsEnabled = it)) }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                    ToggleItem(
+                        title = "Role UI Visibility",
+                        description = "Show role selection in registration",
+                        checked = config.roleUiEnabled,
+                        onCheckedChange = { viewModel.updateConfig(config.copy(roleUiEnabled = it)) }
+                    )
+                }
+            }
+
+            OutlinedButton(
+                onClick = onLogout,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Logout, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Logout Admin Session")
+            }
         }
     }
 }
