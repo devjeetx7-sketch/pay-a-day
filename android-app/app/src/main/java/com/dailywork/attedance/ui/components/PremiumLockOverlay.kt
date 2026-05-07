@@ -33,11 +33,11 @@ fun PremiumLockOverlay(
     content: @Composable () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // Main Content (Blurred when not premium)
+        // Main Content (Subtle blur when not premium)
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .blur(if (!isPremium) 20.dp else 0.dp)
+                .blur(if (!isPremium) 5.dp else 0.dp)
         ) {
             content()
         }
@@ -48,154 +48,82 @@ fun PremiumLockOverlay(
             enter = fadeIn(tween(500)),
             exit = fadeOut(tween(500))
         ) {
-            // Dark transparent overlay for premium feel & blocking interaction
+            // Soft scrim for elegant feel
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.5f),
-                                Color.Black.copy(alpha = 0.75f)
-                            )
-                        )
-                    )
-                    .clickable(enabled = true, onClick = {}) // Block clicks to underlying content
+                    .background(Color(0x22000000))
             ) {
-                Column(
+                Card(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "lock_anim")
-
-                    // Floating animation
-                    val translateY by infiniteTransition.animateFloat(
-                        initialValue = -10f,
-                        targetValue = 10f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(2000, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "float"
-                    )
-
-                    // Pulse animation for glow
-                    val pulseScale by infiniteTransition.animateFloat(
-                        initialValue = 1f,
-                        targetValue = 1.2f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1500, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "pulse"
-                    )
-
-                    Box(
+                    Column(
                         modifier = Modifier
-                            .offset(y = translateY.dp)
-                            .size(120.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        // Glow Effect
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .scale(pulseScale)
-                                .background(
-                                    Brush.radialGradient(
-                                        colors = listOf(
-                                            Color(0xFFA855F7).copy(alpha = 0.6f),
-                                            Color.Transparent
-                                        )
-                                    ),
-                                    CircleShape
-                                )
-                        )
-
-                        // Lock Circle
                         Surface(
-                            modifier = Modifier.size(80.dp),
+                            modifier = Modifier.size(56.dp),
                             shape = CircleShape,
-                            color = Color.White,
-                            tonalElevation = 8.dp,
-                            shadowElevation = 8.dp
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.Lock,
                                     contentDescription = null,
-                                    modifier = Modifier.size(40.dp),
-                                    tint = Color(0xFF6366F1)
-                                )
-
-                                // Small Crown on top right of lock
-                                Icon(
-                                    imageVector = Icons.Default.WorkspacePremium,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .align(Alignment.TopEnd)
-                                        .offset(x = (-4).dp, y = 4.dp),
-                                    tint = Color(0xFFF59E0B)
+                                    modifier = Modifier.size(24.dp),
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = stringResource(R.string.premium_feature_title),
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = stringResource(R.string.premium_feature_subtitle),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.8f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(40.dp))
-
-                    Button(
-                        onClick = onBuyPremium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .padding(horizontal = 16.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color(0xFF6366F1)
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                    ) {
                         Text(
-                            text = stringResource(R.string.buy_premium_btn),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                            text = stringResource(R.string.premium_feature_title),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
                         )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = stringResource(R.string.premium_feature_subtitle),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Button(
+                            onClick = onBuyPremium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.upgrade_to_premium),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = stringResource(R.string.upgrade_to_access_all),
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        textAlign = TextAlign.Center
-                    )
                 }
             }
         }

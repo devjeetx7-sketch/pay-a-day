@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
@@ -174,17 +175,32 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                                     }
 
                                         if (dashboardState.role == "contractor") {
-                                            item { ContractorStatsGrid(dashboardState) }
-                                            item { ContractorQuickActions(
-                                                onManageWorkers = { bottomNavController.navigate("workers") },
-                                                onMarkAttendance = {
-                                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
-                                                },
-                                                onAddAdvance = { showAdvanceDialog = true }
-                                            ) }
+                                            item {
+                                                ContractorStatsGrid(
+                                                    state = dashboardState,
+                                                    onNavigateToPremium = { navController.navigate("premium") }
+                                                )
+                                            }
+                                            item {
+                                                ContractorQuickActions(
+                                                    onManageWorkers = { bottomNavController.navigate("workers") },
+                                                    onMarkAttendance = {
+                                                        coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                                    },
+                                                    onAddAdvance = { showAdvanceDialog = true },
+                                                    isPremium = dashboardState.isPremium,
+                                                    onNavigateToPremium = { navController.navigate("premium") }
+                                                )
+                                            }
                                         } else {
                                             item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
-                                            item { PersonalQuickActions(onAddAdvance = { showAdvanceDialog = true }) }
+                                            item {
+                                                PersonalQuickActions(
+                                                    onAddAdvance = { showAdvanceDialog = true },
+                                                    isPremium = dashboardState.isPremium,
+                                                    onNavigateToPremium = { navController.navigate("premium") }
+                                                )
+                                            }
                                             item { PersonalDailyLog(dashboardState, dashboardViewModel) }
                                         }
 
@@ -530,7 +546,7 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
 }
 
 @Composable
-fun ContractorStatsGrid(state: DashboardState) {
+fun ContractorStatsGrid(state: DashboardState, onNavigateToPremium: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Top row: 2 cards side by side
         Row(
@@ -538,7 +554,7 @@ fun ContractorStatsGrid(state: DashboardState) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f), isPremium = !state.isPremium)
+            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f), isLocked = !state.isPremium, onNavigateToPremium = onNavigateToPremium)
         }
 
         // Bottom row: 3 cards side by side (smaller width)
@@ -546,26 +562,15 @@ fun ContractorStatsGrid(state: DashboardState) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f), isPremium = !state.isPremium)
-            StatCardSmall("Total Paid", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f), isPremium = !state.isPremium)
-            StatCardSmall("Pending", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f), isPremium = !state.isPremium)
+            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f), isLocked = !state.isPremium, onNavigateToPremium = onNavigateToPremium)
+            StatCardSmall("Total Paid", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f), isLocked = !state.isPremium, onNavigateToPremium = onNavigateToPremium)
+            StatCardSmall("Pending", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f), isLocked = !state.isPremium, onNavigateToPremium = onNavigateToPremium)
         }
     }
 }
 
 @Composable
-fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isPremium: Boolean = false) {
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-    val shimmerAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "shimmer"
-    )
-
+fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isLocked: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
@@ -577,53 +582,50 @@ fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modi
         modifier = modifier
             .height(120.dp)
             .graphicsLayer(scaleX = scale, scaleY = scale)
-            .clickable(enabled = isPremium) { /* Haptic or action here if needed */ },
+            .clickable { if (isLocked) onNavigateToPremium() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isPremium) Color.Transparent else MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isPremium) Color(0xFFA855F7) else MaterialTheme.colorScheme.outline)
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isLocked) Color(0xFFA855F7).copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline)
     ) {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .background(
-                if (isPremium) Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF6366F1).copy(alpha = 0.15f * shimmerAlpha),
-                        Color(0xFFEC4899).copy(alpha = 0.15f * shimmerAlpha)
-                    )
-                ) else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
-            )
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .blur(if (isLocked) 5.dp else 0.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Icon(icon, contentDescription = null, tint = if (isPremium) Color.Gray else color, modifier = Modifier.size(24.dp))
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(if (isPremium) "•••" else value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
-            if (isPremium) {
-                Icon(
-                    Icons.Default.Lock,
-                    contentDescription = null,
+            if (isLocked) {
+                Box(
                     modifier = Modifier
-                        .size(16.dp)
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                    tint = Color(0xFFA855F7)
-                )
+                        .fillMaxSize()
+                        .background(Color(0x22000000))
+                ) {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                        tint = Color(0xFFA855F7)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isPremium: Boolean = false) {
+fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isLocked: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
@@ -635,63 +637,70 @@ fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color,
         modifier = modifier
             .height(100.dp)
             .graphicsLayer(scaleX = scale, scaleY = scale)
-            .clickable(enabled = isPremium) { },
+            .clickable { if (isLocked) onNavigateToPremium() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isPremium) Color(0xFFA855F7).copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isPremium) Color(0xFFA855F7).copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline)
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isLocked) Color(0xFFA855F7).copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .blur(if (isLocked) 5.dp else 0.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(icon, contentDescription = null, tint = if (isPremium) Color.Gray else color, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(if (isPremium) "•••" else value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
-            if (isPremium) {
-                Icon(
-                    Icons.Default.Lock,
-                    contentDescription = null,
+            if (isLocked) {
+                Box(
                     modifier = Modifier
-                        .size(12.dp)
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp),
-                    tint = Color(0xFFA855F7)
-                )
+                        .fillMaxSize()
+                        .background(Color(0x22000000))
+                ) {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(12.dp)
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp),
+                        tint = Color(0xFFA855F7)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun ContractorQuickActions(onManageWorkers: () -> Unit, onMarkAttendance: () -> Unit, onAddAdvance: () -> Unit, isPremium: Boolean = false) {
+fun ContractorQuickActions(onManageWorkers: () -> Unit, onMarkAttendance: () -> Unit, onAddAdvance: () -> Unit, isPremium: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
     Column {
         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.quick_actions), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
 
         QuickActionItem("Manage Workers", "Add, edit or remove workers", Icons.Default.People, MaterialTheme.colorScheme.primary, onClick = onManageWorkers)
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981), onClick = onMarkAttendance, isPremium = !isPremium)
+        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981), onClick = onMarkAttendance, isLocked = !isPremium, onNavigateToPremium = onNavigateToPremium)
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance, isPremium = !isPremium)
+        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance, isLocked = !isPremium, onNavigateToPremium = onNavigateToPremium)
     }
 }
 
 @Composable
-fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}, isPremium: Boolean = false) {
+fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}, isLocked: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (isPremium) Color(0xFFA855F7).copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface)
-            .border(1.dp, if (isPremium) Color(0xFFA855F7).copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, if (isLocked) Color(0xFFA855F7).copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+            .clickable { if (isLocked) onNavigateToPremium() else onClick() }
             .padding(20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -705,7 +714,13 @@ fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: C
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    if (isLocked) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFA855F7), modifier = Modifier.size(14.dp))
+                    }
+                }
                 Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -746,11 +761,11 @@ fun PersonalStatsGrid(state: DashboardState, onNavigatePassbook: () -> Unit) {
 }
 
 @Composable
-fun PersonalQuickActions(onAddAdvance: () -> Unit) {
+fun PersonalQuickActions(onAddAdvance: () -> Unit, isPremium: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
     Column {
         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.quick_actions), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
         Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
-            QuickActionItem("Add Advance Payment", "Record money received", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance)
+            QuickActionItem("Add Advance Payment", "Record money received", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance, isLocked = !isPremium, onNavigateToPremium = onNavigateToPremium)
         }
     }
 }
