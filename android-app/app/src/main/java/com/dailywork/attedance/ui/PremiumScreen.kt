@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -268,7 +269,7 @@ fun PremiumPlanItem(
             .clickable { onClick() }
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(20.dp),
-        border = borderStroke(if (tag == "Best Value") 2.dp else 1.dp, if (tag == "Best Value") primaryColor else Color.LightGray.copy(alpha = 0.5f)),
+        border = androidx.compose.foundation.BorderStroke(if (tag == "Best Value") 2.dp else 1.dp, if (tag == "Best Value") primaryColor else Color.LightGray.copy(alpha = 0.5f)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Box(modifier = Modifier.padding(20.dp)) {
