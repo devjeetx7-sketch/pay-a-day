@@ -32,21 +32,57 @@ class UsersViewModel(
     private val _sortOrder = MutableStateFlow(SortOrder.RECENT_ACTIVITY)
     val sortOrder: StateFlow<SortOrder> = _sortOrder
 
+    private data class UserFilterState(
+        val query: String,
+        val role: String?,
+        val premium: Boolean?,
+        val blocked: Boolean?,
+        val sortOrder: SortOrder
+    )
+
+    private val filterState = combine(
+        _searchQuery,
+        _roleFilter,
+        _premiumFilter,
+        _blockedFilter,
+        _sortOrder
+    ) { query: String, role: String?, premium: Boolean?, blocked: Boolean?, sortOrder: SortOrder ->
+        UserFilterState(
+            query = query,
+            role = role,
+            premium = premium,
+            blocked = blocked,
+            sortOrder = sortOrder
+        )
+    }
+
     val filteredUsers: StateFlow<List<User>> = combine(
-        _allUsers, _searchQuery, _roleFilter, _premiumFilter, _blockedFilter, _sortOrder
-    ) { users, query, role, premium, blocked, sort ->
-        users.filter { user ->
-            val matchesQuery = query.isEmpty() || user.name.contains(query, ignoreCase = true) || user.email.contains(query, ignoreCase = true)
-            val matchesRole = role == null || user.role == role
-            val matchesPremium = premium == null || user.isPremium == premium
-            val matchesBlocked = blocked == null || user.isBlocked == blocked
-            matchesQuery && matchesRole && matchesPremium && matchesBlocked
-        }.sortedWith { u1, u2 ->
-            when (sort) {
-                SortOrder.RECENT_ACTIVITY -> u2.lastActive.compareTo(u1.lastActive)
-                SortOrder.JOINED_DATE -> u2.createdAt.compareTo(u1.createdAt)
+        _allUsers,
+        filterState
+    ) { users: List<User>, filters: UserFilterState ->
+        val query = filters.query.trim().lowercase()
+
+        users
+            .filter { user ->
+                query.isBlank() ||
+                        user.name.lowercase().contains(query) ||
+                        user.email.lowercase().contains(query)
             }
-        }
+            .filter { user ->
+                filters.role == null || user.role == filters.role
+            }
+            .filter { user ->
+                filters.premium == null || user.isPremium == filters.premium
+            }
+            .filter { user ->
+                filters.blocked == null || user.isBlocked == filters.blocked
+            }
+            .let { list ->
+                when (filters.sortOrder) {
+                    SortOrder.RECENT_ACTIVITY -> list.sortedByDescending { it.lastActive }
+                    SortOrder.JOINED_DATE -> list.sortedByDescending { it.createdAt }
+                }
+            }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
