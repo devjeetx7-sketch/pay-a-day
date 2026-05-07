@@ -196,4 +196,14 @@
     <string name="premium_pay_once">Pay once, use forever</string>
     <string name="premium_best_value">Best Value</string>
     <string name="premium_one_time">One-time</string>
+
+    <!-- Premium Lock Overlay -->
+    <string name="premium_feature_title">Premium Feature</string>
+    <string name="premium_feature_subtitle">Unlock advanced analytics &amp; premium activities</string>
+    <string name="buy_premium_btn">Buy Premium</string>
+    <string name="upgrade_to_access_all">Upgrade to access all advanced features</string>
+    <string name="worker_limit_reached_title">Worker Limit Reached</string>
+    <string name="worker_limit_reached_msg">Free users can add up to 5 workers only. Upgrade to Premium for unlimited workers.</string>
+    <string name="premium_lock_badge">PREMIUM</string>
+    <string name="unlock_unlimited_workers">Unlock Unlimited Workers</string>
 </resources>

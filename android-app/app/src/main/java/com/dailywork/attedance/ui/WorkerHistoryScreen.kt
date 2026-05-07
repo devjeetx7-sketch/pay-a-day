@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dailywork.attedance.viewmodel.HistoryRecord
+import com.dailywork.attedance.ui.components.PremiumLockOverlay
 import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -34,7 +35,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 @Composable
 fun WorkerHistoryScreen(
     viewModel: WorkerHistoryViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToPremium: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     var expandedFilterMenu by remember { mutableStateOf(false) }
@@ -73,13 +75,17 @@ fun WorkerHistoryScreen(
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .nestedScroll(pullRefreshState.nestedScrollConnection)
-                .background(MaterialTheme.colorScheme.background)
+        PremiumLockOverlay(
+            isPremium = state.isPremium,
+            onBuyPremium = onNavigateToPremium
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .nestedScroll(pullRefreshState.nestedScrollConnection)
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -167,11 +173,12 @@ fun WorkerHistoryScreen(
                 }
             }
 
-            PullToRefreshContainer(
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                contentColor = MaterialTheme.colorScheme.primary
-            )
+                PullToRefreshContainer(
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }

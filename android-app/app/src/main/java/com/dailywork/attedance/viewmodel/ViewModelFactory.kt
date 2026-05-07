@@ -67,11 +67,11 @@ class ViewModelFactory(
         }
         if (modelClass.isAssignableFrom(WorkerDetailViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return WorkerDetailViewModel(firestoreRepository) as T
+            return WorkerDetailViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(WorkerHistoryViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return WorkerHistoryViewModel(firestoreRepository) as T
+            return WorkerHistoryViewModel(repository, firestoreRepository) as T
         }
         if (modelClass.isAssignableFrom(PremiumViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
