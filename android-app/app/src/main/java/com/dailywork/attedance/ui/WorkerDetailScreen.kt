@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
-import com.dailywork.attedance.ui.components.PremiumLockOverlay
+import com.dailywork.attedance.ui.components.*
 import com.dailywork.attedance.utils.PassbookPdfGenerator
 import com.dailywork.attedance.utils.PdfData
 import com.dailywork.attedance.utils.PdfLog
@@ -180,15 +180,13 @@ fun WorkerDetailScreenContent(
         context.startActivity(intent)
     }
 
-    PremiumLockOverlay(
-        isPremium = state.isPremium,
-        onBuyPremium = onNavigateToPremium
+    var showPremiumBottomSheet by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(pullRefreshState.nestedScrollConnection)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(pullRefreshState.nestedScrollConnection)
-        ) {
             if (state.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -297,7 +295,7 @@ fun WorkerDetailScreenContent(
                             if (state.isPremium) {
                                 exportPDF()
                             } else {
-                                onNavigateToPremium()
+                                showPremiumBottomSheet = true
                             }
                         },
                         modifier = Modifier.weight(1f).height(48.dp),
@@ -305,7 +303,11 @@ fun WorkerDetailScreenContent(
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Icon(if (state.isPremium) Icons.Default.PictureAsPdf else Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
+                        if (state.isPremium) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                        } else {
+                            PremiumLockedIcon(modifier = Modifier.size(18.dp))
+                        }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.export_pdf), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
@@ -315,14 +317,18 @@ fun WorkerDetailScreenContent(
                             if (state.isPremium) {
                                 shareViaWhatsApp()
                             } else {
-                                onNavigateToPremium()
+                                showPremiumBottomSheet = true
                             }
                         },
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
                     ) {
-                        Icon(if (state.isPremium) Icons.Default.Share else Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
+                        if (state.isPremium) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
+                        } else {
+                            PremiumLockedIcon(modifier = Modifier.size(18.dp))
+                        }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.whatsapp), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
@@ -453,11 +459,11 @@ fun WorkerDetailScreenContent(
                                     if (log.status == "present" || log.status == "absent") {
                                         val textColor = if (log.status == "present") Color(0xFF16A34A) else Color(0xFFDC2626)
                                         val text = if (log.status == "present") { if (log.type == "half") "Half Day" else "Present" } else "Absent"
-                                        Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = textColor)
+                                        Text(maskText(text, state.isPremium, "Locked"), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (state.isPremium) textColor else MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
 
                                     if (log.advanceAmount != null && log.advanceAmount > 0) {
-                                        Text("₹${log.advanceAmount.toInt()} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
+                                        Text("₹${maskText(log.advanceAmount.toInt().toString(), state.isPremium, "--")} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (state.isPremium) Color(0xFFEA580C) else MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
 
@@ -504,5 +510,17 @@ fun WorkerDetailScreenContent(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         }
+
+        if (showPremiumBottomSheet) {
+            PremiumUpgradeBottomSheet(
+                onDismiss = { showPremiumBottomSheet = false },
+                onUpgrade = {
+                    showPremiumBottomSheet = false
+                    onNavigateToPremium()
+                },
+                titleRes = com.dailywork.attedance.R.string.premium_feature_title,
+                msgRes = com.dailywork.attedance.R.string.upgrade_to_access_all,
+                buttonRes = com.dailywork.attedance.R.string.upgrade_to_premium
+            )
+        }
     }
-}

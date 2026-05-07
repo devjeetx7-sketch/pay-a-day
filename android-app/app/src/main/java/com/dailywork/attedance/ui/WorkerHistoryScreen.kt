@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dailywork.attedance.viewmodel.HistoryRecord
-import com.dailywork.attedance.ui.components.PremiumLockOverlay
+import com.dailywork.attedance.ui.components.*
 import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -75,17 +75,13 @@ fun WorkerHistoryScreen(
             )
         }
     ) { paddingValues ->
-        PremiumLockOverlay(
-            isPremium = state.isPremium,
-            onBuyPremium = onNavigateToPremium
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .nestedScroll(pullRefreshState.nestedScrollConnection)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .nestedScroll(pullRefreshState.nestedScrollConnection)
-                    .background(MaterialTheme.colorScheme.background)
-            ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -167,7 +163,15 @@ fun WorkerHistoryScreen(
                 } else {
                     items(state.filteredRecords, key = { it.id }) { record ->
                         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            HistoryItemCard(record)
+                            HistoryItemCard(record, isPremium = state.isPremium)
+                        }
+                    }
+
+                    if (!state.isPremium) {
+                        item {
+                            Box(modifier = Modifier.padding(16.dp)) {
+                                InlinePremiumCard(onUpgrade = onNavigateToPremium)
+                            }
                         }
                     }
                 }
@@ -181,10 +185,9 @@ fun WorkerHistoryScreen(
             }
         }
     }
-}
 
 @Composable
-fun HistoryItemCard(record: HistoryRecord) {
+fun HistoryItemCard(record: HistoryRecord, isPremium: Boolean = true) {
     val isPayment = record.type == "Payment"
     val iconColor = if (isPayment) Color(0xFFF97316) else MaterialTheme.colorScheme.primary
     val icon = if (isPayment) Icons.Default.Payment else Icons.Default.Work
@@ -214,15 +217,15 @@ fun HistoryItemCard(record: HistoryRecord) {
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(record.workerName, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    Text("${record.date} • ${record.type}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(maskText(record.workerName, isPremium), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text("${maskText(record.date, isPremium, "--/--/----")} • ${record.type}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             Column(horizontalAlignment = Alignment.End) {
                 if (isPayment) {
-                    Text("₹${record.amount?.toInt()}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = iconColor)
-                    Text(record.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                    Text("₹${maskText(record.amount?.toInt()?.toString() ?: "", isPremium, "--")}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = iconColor)
+                    Text(maskText(record.description, isPremium), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.End)
                 } else {
                     val statusColor = when (record.status) {
                         "Present" -> Color(0xFF10B981)
@@ -230,9 +233,17 @@ fun HistoryItemCard(record: HistoryRecord) {
                         "Absent" -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
-                    Text(record.status ?: "", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = statusColor)
-                    if (record.description != "Daily Work") {
-                         Text(record.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                    if (isPremium) {
+                        Text(record.status ?: "", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = statusColor)
+                        if (record.description != "Daily Work") {
+                             Text(record.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Locked", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            PremiumLockedIcon(modifier = Modifier.size(14.dp))
+                        }
                     }
                 }
             }
