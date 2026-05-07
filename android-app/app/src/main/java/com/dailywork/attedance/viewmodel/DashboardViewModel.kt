@@ -78,6 +78,11 @@ class DashboardViewModel(
                 }
             }
         }
+        viewModelScope.launch {
+            repository.isPremiumFlow.collect { isPremium ->
+                _dashboardState.update { it.copy(isPremium = isPremium) }
+            }
+        }
     }
 
     fun refresh() {
@@ -99,13 +104,11 @@ class DashboardViewModel(
 
                 val name = snapshot.getString("name") ?: user.displayName ?: "User"
                 val photoUrl = user.photoUrl?.toString() ?: ""
-                val isPremium = snapshot.getBoolean("isPremium") ?: false
                 cachedDefaultWage = snapshot.getDouble("daily_wage") ?: 500.0
 
                 _dashboardState.value = _dashboardState.value.copy(
                     name = name,
                     photoUrl = photoUrl,
-                    isPremium = isPremium,
                     isRefreshing = false
                 )
 
@@ -356,24 +359,6 @@ class DashboardViewModel(
         }
     }
 
-    fun upgradeToPremium(onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            val user = auth.currentUser ?: return@launch
-
-            // Optimistic UI Update
-            _dashboardState.value = _dashboardState.value.copy(isPremium = true)
-
-            try {
-                db.collection("users").document(user.uid)
-                    .set(hashMapOf("isPremium" to true), SetOptions.merge())
-                    .await()
-                onSuccess()
-            } catch (e: Exception) {
-                // Revert optimistic update on error
-                _dashboardState.value = _dashboardState.value.copy(isPremium = false)
-            }
-        }
-    }
 
     override fun onCleared() {
         super.onCleared()

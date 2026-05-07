@@ -112,6 +112,9 @@ dependencies {
     // Icons
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
+    // Google Play Billing
+    implementation("com.android.billingclient:billing-ktx:6.2.1")
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
