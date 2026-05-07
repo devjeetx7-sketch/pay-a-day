@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dailywork.admin.data.model.User
+import com.dailywork.admin.ui.utils.formatTimestamp
 import com.dailywork.admin.viewmodel.UsersViewModel
-import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -250,11 +250,6 @@ fun UserInfoCard(user: User) {
     }
 }
 
-fun formatTimestamp(timestamp: Long): String {
-    if (timestamp == 0L) return "Never"
-    val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
-    return sdf.format(Date(timestamp))
-}
 
 @Composable
 fun InfoRow(icon: ImageVector, label: String, value: String) {
