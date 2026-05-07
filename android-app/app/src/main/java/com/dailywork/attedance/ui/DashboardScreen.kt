@@ -177,8 +177,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                                         if (dashboardState.role == "contractor") {
                                             item {
                                                 ContractorStatsGrid(
-                                                    state = dashboardState,
-                                                    onNavigateToPremium = { navController.navigate("premium") }
+                                                    state = dashboardState
                                                 )
                                             }
                                             item {
@@ -187,18 +186,14 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                                                     onMarkAttendance = {
                                                         coroutineScope.launch { pagerState.animateScrollToPage(1) }
                                                     },
-                                                    onAddAdvance = { showAdvanceDialog = true },
-                                                    isPremium = dashboardState.isPremium,
-                                                    onNavigateToPremium = { navController.navigate("premium") }
+                                                    onAddAdvance = { showAdvanceDialog = true }
                                                 )
                                             }
                                         } else {
                                             item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
                                             item {
                                                 PersonalQuickActions(
-                                                    onAddAdvance = { showAdvanceDialog = true },
-                                                    isPremium = dashboardState.isPremium,
-                                                    onNavigateToPremium = { navController.navigate("premium") }
+                                                    onAddAdvance = { showAdvanceDialog = true }
                                                 )
                                             }
                                             item { PersonalDailyLog(dashboardState, dashboardViewModel) }
@@ -546,7 +541,7 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
 }
 
 @Composable
-fun ContractorStatsGrid(state: DashboardState, onNavigateToPremium: () -> Unit) {
+fun ContractorStatsGrid(state: DashboardState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Top row: 2 cards side by side
         Row(
@@ -554,7 +549,7 @@ fun ContractorStatsGrid(state: DashboardState, onNavigateToPremium: () -> Unit) 
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f), isLocked = !state.isPremium, onNavigateToPremium = onNavigateToPremium)
+            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f))
         }
 
         // Bottom row: 3 cards side by side (smaller width)
@@ -562,15 +557,15 @@ fun ContractorStatsGrid(state: DashboardState, onNavigateToPremium: () -> Unit) 
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f), isLocked = !state.isPremium, onNavigateToPremium = onNavigateToPremium)
-            StatCardSmall("Total Paid", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f), isLocked = !state.isPremium, onNavigateToPremium = onNavigateToPremium)
-            StatCardSmall("Pending", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f), isLocked = !state.isPremium, onNavigateToPremium = onNavigateToPremium)
+            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f))
+            StatCardSmall("Total Paid", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f))
+            StatCardSmall("Pending", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isLocked: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
+fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
@@ -581,20 +576,18 @@ fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modi
     Card(
         modifier = modifier
             .height(120.dp)
-            .graphicsLayer(scaleX = scale, scaleY = scale)
-            .clickable { if (isLocked) onNavigateToPremium() },
+            .graphicsLayer(scaleX = scale, scaleY = scale),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isLocked) Color(0xFFA855F7).copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline)
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
-                    .blur(if (isLocked) 5.dp else 0.dp),
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
@@ -602,30 +595,12 @@ fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modi
                 Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-
-            if (isLocked) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0x22000000))
-                ) {
-                    Icon(
-                        Icons.Default.Lock,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp),
-                        tint = Color(0xFFA855F7)
-                    )
-                }
-            }
         }
     }
 }
 
 @Composable
-fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isLocked: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
+fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
@@ -636,20 +611,18 @@ fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color,
     Card(
         modifier = modifier
             .height(100.dp)
-            .graphicsLayer(scaleX = scale, scaleY = scale)
-            .clickable { if (isLocked) onNavigateToPremium() },
+            .graphicsLayer(scaleX = scale, scaleY = scale),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isLocked) Color(0xFFA855F7).copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline)
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(8.dp)
-                    .blur(if (isLocked) 5.dp else 0.dp),
+                    .padding(8.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -658,49 +631,32 @@ fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color,
                 Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
-            if (isLocked) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0x22000000))
-                ) {
-                    Icon(
-                        Icons.Default.Lock,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(12.dp)
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp),
-                        tint = Color(0xFFA855F7)
-                    )
-                }
-            }
         }
     }
 }
 
 @Composable
-fun ContractorQuickActions(onManageWorkers: () -> Unit, onMarkAttendance: () -> Unit, onAddAdvance: () -> Unit, isPremium: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
+fun ContractorQuickActions(onManageWorkers: () -> Unit, onMarkAttendance: () -> Unit, onAddAdvance: () -> Unit) {
     Column {
         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.quick_actions), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
 
         QuickActionItem("Manage Workers", "Add, edit or remove workers", Icons.Default.People, MaterialTheme.colorScheme.primary, onClick = onManageWorkers)
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981), onClick = onMarkAttendance, isLocked = !isPremium, onNavigateToPremium = onNavigateToPremium)
+        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981), onClick = onMarkAttendance)
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance, isLocked = !isPremium, onNavigateToPremium = onNavigateToPremium)
+        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance)
     }
 }
 
 @Composable
-fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}, isLocked: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
+fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, if (isLocked) Color(0xFFA855F7).copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
-            .clickable { if (isLocked) onNavigateToPremium() else onClick() }
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+            .clickable { onClick() }
             .padding(20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -716,10 +672,6 @@ fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: C
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    if (isLocked) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFA855F7), modifier = Modifier.size(14.dp))
-                    }
                 }
                 Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -761,11 +713,11 @@ fun PersonalStatsGrid(state: DashboardState, onNavigatePassbook: () -> Unit) {
 }
 
 @Composable
-fun PersonalQuickActions(onAddAdvance: () -> Unit, isPremium: Boolean = false, onNavigateToPremium: () -> Unit = {}) {
+fun PersonalQuickActions(onAddAdvance: () -> Unit) {
     Column {
         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.quick_actions), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
         Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
-            QuickActionItem("Add Advance Payment", "Record money received", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance, isLocked = !isPremium, onNavigateToPremium = onNavigateToPremium)
+            QuickActionItem("Add Advance Payment", "Record money received", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance)
         }
     }
 }
