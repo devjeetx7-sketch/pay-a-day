@@ -52,21 +52,14 @@ class WorkersViewModel(
                     _state.value = _state.value.copy(role = role)
                     if (role == "contractor") {
                         setupListener()
-                        setupUserListener()
                     }
                 }
             }
         }
-    }
-
-    private fun setupUserListener() {
-        val user = auth.currentUser ?: return
-        userListener?.remove()
-        userListener = db.collection("users").document(user.uid).addSnapshotListener { snapshot, error ->
-            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-            _state.value = _state.value.copy(
-                isPremium = snapshot.getBoolean("isPremium") ?: false
-            )
+        viewModelScope.launch {
+            repository.isPremiumFlow.collect { isPremium ->
+                _state.value = _state.value.copy(isPremium = isPremium)
+            }
         }
     }
 
@@ -74,14 +67,12 @@ class WorkersViewModel(
         if (_state.value.isRefreshing) return
         _state.value = _state.value.copy(isRefreshing = true)
         setupListener()
-        setupUserListener()
     }
 
     private fun setupListener() {
         auth.currentUser ?: return
 
         workersListener?.remove()
-        userListener?.remove()
 
         workersListener = firestoreRepository.getContractorWorkers()
             ?.limit(50) // Basic pagination limit
@@ -115,6 +106,12 @@ class WorkersViewModel(
     fun saveWorker(worker: WorkerItem) {
         viewModelScope.launch {
             auth.currentUser ?: return@launch
+
+            if (!_state.value.isPremium && _state.value.workers.size >= 5 && worker.id.isEmpty()) {
+                _state.value = _state.value.copy(errorMessage = "Worker limit reached. Please upgrade to Premium for unlimited workers.")
+                return@launch
+            }
+
             _state.value = _state.value.copy(isSaving = true, errorMessage = null)
 
             try {

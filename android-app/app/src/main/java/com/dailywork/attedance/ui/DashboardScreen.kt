@@ -13,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -203,6 +205,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                         2 -> {
                             StatsScreenContent(
                                 viewModel = statsViewModel,
+                                onNavigateToPremium = { navController.navigate("premium") },
                                 onNavigateToWorkerHistory = {
                                     coroutineScope.launch {
                                         bottomNavController.navigate("worker_history")
@@ -265,7 +268,8 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
             composable("worker_history") {
                 WorkerHistoryScreen(
                     viewModel = workerHistoryViewModel,
-                    onNavigateBack = { bottomNavController.navigateUp() }
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateToPremium = { navController.navigate("premium") }
                 )
             }
         }
@@ -534,7 +538,7 @@ fun ContractorStatsGrid(state: DashboardState) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f))
+            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f), isPremium = !state.isPremium)
         }
 
         // Bottom row: 3 cards side by side (smaller width)
@@ -542,75 +546,151 @@ fun ContractorStatsGrid(state: DashboardState) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f))
-            StatCardSmall("Total Paid", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f))
-            StatCardSmall("Pending", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f))
+            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f), isPremium = !state.isPremium)
+            StatCardSmall("Total Paid", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f), isPremium = !state.isPremium)
+            StatCardSmall("Pending", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f), isPremium = !state.isPremium)
         }
     }
 }
 
 @Composable
-fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
+fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isPremium: Boolean = false) {
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val shimmerAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shimmer"
+    )
+
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(100),
+        label = "scale"
+    )
+
     Card(
-        modifier = modifier.height(120.dp),
+        modifier = modifier
+            .height(120.dp)
+            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .clickable(enabled = isPremium) { /* Haptic or action here if needed */ },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPremium) Color.Transparent else MaterialTheme.colorScheme.surface
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isPremium) Color(0xFFA855F7) else MaterialTheme.colorScheme.outline)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.Center
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(
+                if (isPremium) Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF6366F1).copy(alpha = 0.15f * shimmerAlpha),
+                        Color(0xFFEC4899).copy(alpha = 0.15f * shimmerAlpha)
+                    )
+                ) else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
+            )
         ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = if (isPremium) Color.Gray else color, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(if (isPremium) "•••" else value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            if (isPremium) {
+                Icon(
+                    Icons.Default.Lock,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    tint = Color(0xFFA855F7)
+                )
+            }
         }
     }
 }
 
 @Composable
-fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
+fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, isPremium: Boolean = false) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(100),
+        label = "scale"
+    )
+
     Card(
-        modifier = modifier.height(100.dp),
+        modifier = modifier
+            .height(100.dp)
+            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .clickable(enabled = isPremium) { },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPremium) Color(0xFFA855F7).copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isPremium) Color(0xFFA855F7).copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(icon, contentDescription = null, tint = if (isPremium) Color.Gray else color, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(if (isPremium) "•••" else value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+            if (isPremium) {
+                Icon(
+                    Icons.Default.Lock,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(12.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp),
+                    tint = Color(0xFFA855F7)
+                )
+            }
         }
     }
 }
 
 @Composable
-fun ContractorQuickActions(onManageWorkers: () -> Unit, onMarkAttendance: () -> Unit, onAddAdvance: () -> Unit) {
+fun ContractorQuickActions(onManageWorkers: () -> Unit, onMarkAttendance: () -> Unit, onAddAdvance: () -> Unit, isPremium: Boolean = false) {
     Column {
         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.quick_actions), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
 
         QuickActionItem("Manage Workers", "Add, edit or remove workers", Icons.Default.People, MaterialTheme.colorScheme.primary, onClick = onManageWorkers)
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981), onClick = onMarkAttendance)
+        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981), onClick = onMarkAttendance, isPremium = !isPremium)
         Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance)
+        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance, isPremium = !isPremium)
     }
 }
 
 @Composable
-fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}) {
+fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}, isPremium: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+            .background(if (isPremium) Color(0xFFA855F7).copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface)
+            .border(1.dp, if (isPremium) Color(0xFFA855F7).copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
             .clickable { onClick() }
             .padding(20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,

@@ -13,9 +13,11 @@ import java.util.Date
 import java.util.Locale
 
 import com.dailywork.attedance.data.FirestoreRepository
+import com.dailywork.attedance.data.UserPreferencesRepository
 import com.dailywork.attedance.utils.OvertimeCalculator
 
 class WorkerDetailViewModel(
+    private val repository: UserPreferencesRepository,
     private val firestoreRepository: FirestoreRepository
 ) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
@@ -31,29 +33,24 @@ class WorkerDetailViewModel(
 
     private var cachedDocs: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
 
+    init {
+        viewModelScope.launch {
+            repository.isPremiumFlow.collect { isPremium ->
+                _state.update { it.copy(isPremium = isPremium) }
+            }
+        }
+    }
+
     fun initialize(id: String) {
         if (workerId == id) return
         workerId = id
         setupListeners()
-        setupUserListener()
-    }
-
-    private fun setupUserListener() {
-        val user = auth.currentUser ?: return
-        userListener?.remove()
-        userListener = db.collection("users").document(user.uid).addSnapshotListener { snapshot, error ->
-            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-            _state.value = _state.value.copy(
-                isPremium = snapshot.getBoolean("isPremium") ?: false
-            )
-        }
     }
 
     fun refresh() {
         if (_state.value.isRefreshing) return
         _state.value = _state.value.copy(isRefreshing = true)
         setupListeners()
-        setupUserListener()
     }
 
     fun changeMonth(offset: Int) {
@@ -73,7 +70,6 @@ class WorkerDetailViewModel(
 
         workerListener?.remove()
         attendanceListener?.remove()
-        userListener?.remove()
 
         workerListener = firestoreRepository.getContractorWorkers()?.document(wId)
             ?.addSnapshotListener { snapshot, error ->

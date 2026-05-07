@@ -60,6 +60,7 @@ data class StatsState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val selectedMonthDate: Date = Date(),
+    val isPremium: Boolean = false,
 
     // Contractor
     val contractorStats: ContractorStatsData = ContractorStatsData(),
@@ -91,9 +92,14 @@ class StatsViewModel(
         viewModelScope.launch {
             repository.userRoleFlow.collect { role ->
                 if (role != null) {
-                    _statsState.value = _statsState.value.copy(role = role)
+                    _statsState.update { it.copy(role = role) }
                     setupListeners(role)
                 }
+            }
+        }
+        viewModelScope.launch {
+            repository.isPremiumFlow.collect { isPremium ->
+                _statsState.update { it.copy(isPremium = isPremium) }
             }
         }
     }

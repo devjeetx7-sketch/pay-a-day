@@ -76,6 +76,11 @@ class PassbookViewModel(
                 }
             }
         }
+        viewModelScope.launch {
+            repository.isPremiumFlow.collect { isPremium ->
+                _state.value = _state.value.copy(isPremium = isPremium)
+            }
+        }
     }
 
     fun refresh() {

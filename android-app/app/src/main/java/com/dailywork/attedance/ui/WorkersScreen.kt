@@ -27,11 +27,21 @@ import java.util.Calendar
 import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -78,6 +88,8 @@ fun WorkersScreenContent(
             pullRefreshState.endRefresh()
         }
     }
+
+    var showPremiumBottomSheet by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -127,8 +139,8 @@ fun WorkersScreenContent(
                                 if (state.workers.isEmpty()) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Button(onClick = {
-                                        if (!state.isPremium && state.workers.size >= 10) {
-                                            onNavigateToPremium()
+                                        if (!state.isPremium && state.workers.size >= 5) {
+                                            showPremiumBottomSheet = true
                                         } else {
                                             editingWorker = null
                                             showFormDialog = true
@@ -219,8 +231,8 @@ fun WorkersScreenContent(
 
         FloatingActionButton(
             onClick = {
-                if (!state.isPremium && state.workers.size >= 10) {
-                    onNavigateToPremium()
+                if (!state.isPremium && state.workers.size >= 5) {
+                    showPremiumBottomSheet = true
                 } else {
                     editingWorker = null
                     showFormDialog = true
@@ -262,7 +274,124 @@ fun WorkersScreenContent(
                 }
             )
         }
+
+        if (showPremiumBottomSheet) {
+            PremiumUpgradeBottomSheet(
+                onDismiss = { showPremiumBottomSheet = false },
+                onUpgrade = {
+                    showPremiumBottomSheet = false
+                    onNavigateToPremium()
+                }
+            )
+        }
+
         } // end else
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PremiumUpgradeBottomSheet(
+    onDismiss: () -> Unit,
+    onUpgrade: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        val infiniteTransition = rememberInfiniteTransition(label = "premium_anim")
+        val scale by infiniteTransition.animateFloat(
+            initialValue = 0.95f,
+            targetValue = 1.05f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "scale"
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .scale(scale)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Color(0xFF6366F1), Color(0xFFA855F7), Color(0xFFEC4899))
+                        ),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.WorkspacePremium,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = stringResource(com.dailywork.attedance.R.string.worker_limit_reached_title),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = stringResource(com.dailywork.attedance.R.string.worker_limit_reached_msg),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = onUpgrade,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFA855F7)
+                )
+            ) {
+                Text(
+                    text = stringResource(com.dailywork.attedance.R.string.unlock_unlimited_workers),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(com.dailywork.attedance.R.string.cancel),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

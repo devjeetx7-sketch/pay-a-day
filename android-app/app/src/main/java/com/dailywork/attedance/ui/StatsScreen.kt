@@ -47,6 +47,9 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import com.dailywork.attedance.ui.components.CustomToggleTab
+import com.dailywork.attedance.ui.components.PremiumLockOverlay
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -84,6 +87,7 @@ fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") 
 @Composable
 fun StatsScreenContent(
     viewModel: StatsViewModel,
+    onNavigateToPremium: () -> Unit = {},
     onNavigateToWorkerHistory: () -> Unit = {}
 ) {
     val state by viewModel.statsState.collectAsState()
@@ -124,44 +128,49 @@ fun StatsScreenContent(
             )
         }
     ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .nestedScroll(pullRefreshState.nestedScrollConnection)
+        PremiumLockOverlay(
+            isPremium = state.isPremium,
+            onBuyPremium = onNavigateToPremium
         ) {
-            if (state.isLoading && state.role.isEmpty()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                val statsContent = @Composable {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        CustomToggleTab(
-                            tabs = tabs,
-                            selectedTabIndex = selectedTabIndex,
-                            onTabSelected = { selectedTabIndex = it }
-                        )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .nestedScroll(pullRefreshState.nestedScrollConnection)
+            ) {
+                if (state.isLoading && state.role.isEmpty()) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else {
+                    val statsContent = @Composable {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            CustomToggleTab(
+                                tabs = tabs,
+                                selectedTabIndex = selectedTabIndex,
+                                onTabSelected = { selectedTabIndex = it }
+                            )
+                        }
+                        if (state.role == "contractor") {
+                            ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                        } else {
+                            PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                        }
                     }
-                    if (state.role == "contractor") {
-                        ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
-                    } else {
-                        PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
-                    }
-                }
 
-                // Both views already use LazyColumn internally
-                Column(modifier = Modifier.fillMaxSize()) {
-                    statsContent()
+                    // Both views already use LazyColumn internally
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        statsContent()
+                    }
                 }
+                PullToRefreshContainer(
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
             }
-            PullToRefreshContainer(
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                contentColor = MaterialTheme.colorScheme.primary
-            )
         }
     }
 }

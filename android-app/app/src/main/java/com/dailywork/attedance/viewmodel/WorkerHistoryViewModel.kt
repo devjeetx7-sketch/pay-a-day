@@ -8,6 +8,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import android.util.Log
 import com.dailywork.attedance.utils.OvertimeCalculator
 import com.google.firebase.Timestamp
+import com.dailywork.attedance.data.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -33,10 +34,12 @@ data class WorkerHistoryState(
     val records: List<HistoryRecord> = emptyList(),
     val filteredRecords: List<HistoryRecord> = emptyList(),
     val searchQuery: String = "",
-    val selectedFilter: String = "All"
+    val selectedFilter: String = "All",
+    val isPremium: Boolean = false
 )
 
 class WorkerHistoryViewModel(
+    private val repository: UserPreferencesRepository,
     private val firestoreRepository: FirestoreRepository
 ) : ViewModel() {
 
@@ -50,6 +53,11 @@ class WorkerHistoryViewModel(
 
     init {
         setupWorkersListener()
+        viewModelScope.launch {
+            repository.isPremiumFlow.collect { isPremium ->
+                _state.update { it.copy(isPremium = isPremium) }
+            }
+        }
     }
 
     fun refresh() {
