@@ -69,7 +69,6 @@
     <string name="role_management">Role Management</string>
     <string name="dailywork_premium">DailyWork Premium</string>
     <string name="thank_you_for_your_purchase">Thank you for your purchase ❤️</string>
-    <string name="upgrade_to_premium">Upgrade to Premium</string>
     <string name="unlock_all_features">Unlock all features</string>
     <string name="data_export">Data &amp; Export</string>
     <string name="attendance_payment_logs">Attendance &amp; Payment logs</string>
@@ -198,8 +197,8 @@
     <string name="premium_one_time">One-time</string>
 
     <!-- Premium Lock Overlay -->
-    <string name="premium_feature_title">Premium Feature</string>
-    <string name="premium_feature_subtitle">Unlock advanced analytics &amp; premium activities</string>
+    <string name="premium_feature_title">Unlock Premium Features</string>
+    <string name="upgrade_to_premium">Buy Premium</string>
     <string name="buy_premium_btn">Buy Premium</string>
     <string name="upgrade_to_access_all">Upgrade to access all advanced features</string>
     <string name="worker_limit_reached_title">Worker Limit Reached</string>

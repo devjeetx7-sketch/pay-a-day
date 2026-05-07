@@ -32,7 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dailywork.attedance.ui.components.CustomToggleTab
-import com.dailywork.attedance.ui.components.PremiumLockOverlay
+import com.dailywork.attedance.ui.components.PremiumUpgradeBottomSheet
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.dailywork.attedance.utils.PassbookPdfGenerator
@@ -203,26 +203,24 @@ fun PassbookScreenContent(
         }
     }
 
-    PremiumLockOverlay(
-        isPremium = state.isPremium,
-        onBuyPremium = onNavigateToPremium
+    var showPremiumBottomSheet by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(pullRefreshState.nestedScrollConnection)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(pullRefreshState.nestedScrollConnection)
-        ) {
-            if (state.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                             IconButton(onClick = onNavigateBack) {
@@ -300,7 +298,7 @@ fun PassbookScreenContent(
                                     if (state.isPremium) {
                                         exportPDF()
                                     } else {
-                                        onNavigateToPremium()
+                                        showPremiumBottomSheet = true
                                     }
                                 },
                                 modifier = Modifier.weight(1f).height(48.dp),
@@ -318,7 +316,7 @@ fun PassbookScreenContent(
                                     if (state.isPremium) {
                                         shareViaWhatsApp()
                                     } else {
-                                        onNavigateToPremium()
+                                        showPremiumBottomSheet = true
                                     }
                                 },
                                 modifier = Modifier.weight(1f).height(48.dp),
@@ -507,5 +505,17 @@ fun PassbookScreenContent(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         }
+
+        if (showPremiumBottomSheet) {
+            PremiumUpgradeBottomSheet(
+                onDismiss = { showPremiumBottomSheet = false },
+                onUpgrade = {
+                    showPremiumBottomSheet = false
+                    onNavigateToPremium()
+                },
+                titleRes = com.dailywork.attedance.R.string.premium_feature_title,
+                msgRes = com.dailywork.attedance.R.string.upgrade_to_access_all,
+                buttonRes = com.dailywork.attedance.R.string.upgrade_to_premium
+            )
+        }
     }
-}
