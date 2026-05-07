@@ -20,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +48,9 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import com.dailywork.attedance.ui.components.CustomToggleTab
-import com.dailywork.attedance.ui.components.PremiumLockOverlay
+import com.dailywork.attedance.ui.components.PremiumLockedIcon
+import com.dailywork.attedance.ui.components.InlinePremiumCard
+import com.dailywork.attedance.ui.components.maskText
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateFloatAsState
@@ -128,16 +131,12 @@ fun StatsScreenContent(
             )
         }
     ) { padding ->
-        PremiumLockOverlay(
-            isPremium = state.isPremium,
-            onBuyPremium = onNavigateToPremium
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .nestedScroll(pullRefreshState.nestedScrollConnection)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .nestedScroll(pullRefreshState.nestedScrollConnection)
-            ) {
                 if (state.isLoading && state.role.isEmpty()) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
@@ -154,9 +153,9 @@ fun StatsScreenContent(
                             )
                         }
                         if (state.role == "contractor") {
-                            ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                            ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigateToPremium = onNavigateToPremium)
                         } else {
-                            PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                            PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigateToPremium = onNavigateToPremium)
                         }
                     }
 
@@ -173,10 +172,9 @@ fun StatsScreenContent(
             }
         }
     }
-}
 
 @Composable
-fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.viewmodel.StatsState, isAllTime: Boolean) {
+fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.viewmodel.StatsState, isAllTime: Boolean, onNavigateToPremium: () -> Unit = {}) {
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
 
@@ -219,16 +217,28 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                         Icon(Icons.Default.Analytics, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.system_overview), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+                        if (!state.isPremium) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            PremiumLockedIcon()
+                        }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_workforce), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            AnimatedCounter(targetValue = state.contractorStats.totalWorkers)
+                            if (state.isPremium) {
+                                AnimatedCounter(targetValue = state.contractorStats.totalWorkers)
+                            } else {
+                                Text("--", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            }
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_man_days), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            AnimatedCounter(targetValue = currentTotalDays.toInt())
+                            if (state.isPremium) {
+                                AnimatedCounter(targetValue = currentTotalDays.toInt())
+                            } else {
+                                Text("--", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     }
                 }
@@ -264,7 +274,8 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                     prefix = "₹",
                     color = Color(0xFF3B82F6),
                     icon = Icons.Default.Payments,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    isPremium = state.isPremium
                 )
                 StatBox(
                     label = "TOTAL ADVANCE",
@@ -272,7 +283,8 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                     prefix = "₹",
                     color = Color(0xFFF97316),
                     icon = Icons.Default.AccountBalanceWallet,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    isPremium = state.isPremium
                 )
             }
         }
@@ -281,9 +293,17 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
             item {
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_costs), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_costs), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            if (!state.isPremium) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                PremiumLockedIcon()
+                            }
+                        }
                         Spacer(modifier = Modifier.height(16.dp))
-                        EarningsLineChart(dailyRecords = dailyRecords)
+                        Box(modifier = if (!state.isPremium) Modifier.alpha(0.3f) else Modifier) {
+                            EarningsLineChart(dailyRecords = dailyRecords)
+                        }
                     }
                 }
             }
@@ -294,7 +314,13 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
 
             Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                 Column {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cost_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cost_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        if (!state.isPremium) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            PremiumLockedIcon()
+                        }
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (currentTopWorkers.isEmpty()) {
@@ -309,21 +335,27 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
 
                             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(worker.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("₹${worker.cost.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                                    Text(maskText(worker.name, state.isPremium), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("₹${maskText(worker.cost.toInt().toString(), state.isPremium, "--")}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                                        Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(animatedProgress).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                                        Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(if (state.isPremium) animatedProgress else 0.3f).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("${worker.days}d", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${if (state.isPremium) worker.days else "--"}d", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
+
+        if (!state.isPremium) {
+            item {
+                InlinePremiumCard(onUpgrade = onNavigateToPremium)
             }
         }
     }
@@ -336,7 +368,8 @@ fun StatBox(
     prefix: String = "",
     color: Color,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPremium: Boolean = true
 ) {
     Card(
         modifier = modifier,
@@ -347,15 +380,25 @@ fun StatBox(
         Column(modifier = Modifier.padding(16.dp)) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!isPremium) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    PremiumLockedIcon(modifier = Modifier.size(12.dp))
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
-            AnimatedCounter(targetValue = value, prefix = prefix)
+            if (isPremium) {
+                AnimatedCounter(targetValue = value, prefix = prefix)
+            } else {
+                Text("$prefix --", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }
 
 @Composable
-fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.viewmodel.StatsState, isAllTime: Boolean) {
+fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.viewmodel.StatsState, isAllTime: Boolean, onNavigateToPremium: () -> Unit = {}) {
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
 
@@ -388,16 +431,36 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (!state.isPremium) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                PremiumLockedIcon(modifier = Modifier.size(12.dp))
+                            }
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedCounter(targetValue = currentEarnings.toInt(), prefix = "₹")
+                        if (state.isPremium) {
+                            AnimatedCounter(targetValue = currentEarnings.toInt(), prefix = "₹")
+                        } else {
+                            Text("₹ --", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (!state.isPremium) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                PremiumLockedIcon(modifier = Modifier.size(12.dp))
+                            }
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedCounter(targetValue = currentDays.toInt())
+                        if (state.isPremium) {
+                            AnimatedCounter(targetValue = currentDays.toInt())
+                        } else {
+                            Text("--", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
             }
@@ -426,9 +489,17 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
             item {
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_earnings), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_earnings), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            if (!state.isPremium) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                PremiumLockedIcon()
+                            }
+                        }
                         Spacer(modifier = Modifier.height(16.dp))
-                        EarningsLineChart(dailyRecords = dailyRecords)
+                        Box(modifier = if (!state.isPremium) Modifier.alpha(0.3f) else Modifier) {
+                            EarningsLineChart(dailyRecords = dailyRecords)
+                        }
                     }
                 }
             }
@@ -438,7 +509,13 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
             item {
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                     Column {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.attendance_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.attendance_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            if (!state.isPremium) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                PremiumLockedIcon()
+                            }
+                        }
                         Spacer(modifier = Modifier.height(24.dp))
 
                         // Present includes half days in the count, so subtract them for purely full-day slices
@@ -458,7 +535,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                             val absentColor = MaterialTheme.colorScheme.error
 
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
+                                Box(modifier = Modifier.size(120.dp).alpha(if (state.isPremium) 1f else 0.3f), contentAlignment = Alignment.Center) {
                                     Canvas(modifier = Modifier.size(100.dp)) {
                                         val strokeWidth = 24.dp.toPx()
 
@@ -537,6 +614,12 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
         }
 
         if (!isAllTime) {
+            if (!state.isPremium) {
+                item {
+                    InlinePremiumCard(onUpgrade = onNavigateToPremium)
+                }
+            }
+
             item {
                 Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.all_time_stats), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(16.dp))

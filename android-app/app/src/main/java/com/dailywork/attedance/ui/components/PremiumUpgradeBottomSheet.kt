@@ -18,7 +18,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,8 +54,8 @@ fun PremiumUpgradeBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
-                .padding(bottom = 32.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = 8.dp, bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -64,9 +63,7 @@ fun PremiumUpgradeBottomSheet(
                     .size(80.dp)
                     .scale(scale)
                     .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFF6366F1), Color(0xFFA855F7), Color(0xFFEC4899))
-                        ),
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                         CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -75,7 +72,7 @@ fun PremiumUpgradeBottomSheet(
                     Icons.Default.WorkspacePremium,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -108,14 +105,13 @@ fun PremiumUpgradeBottomSheet(
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFA855F7)
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
                     text = stringResource(buttonRes),
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.Bold
                 )
             }
 
