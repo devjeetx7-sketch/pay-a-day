@@ -1,12 +1,15 @@
 package com.dailywork.attedance.ui
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
+import android.app.Activity
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,80 +19,50 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.android.billingclient.api.ProductDetails
+import com.dailywork.attedance.R
+import com.dailywork.attedance.ui.premium.PremiumViewModel
 import com.dailywork.attedance.viewmodel.DashboardViewModel
-
-data class Plan(val id: String, val label: String, val price: Int, val tag: String? = null)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PremiumScreen(
     navController: NavController,
+    premiumViewModel: PremiumViewModel,
     dashboardViewModel: DashboardViewModel
 ) {
+    val uiState by premiumViewModel.uiState.collectAsState()
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
     val isContractor = dashboardState.role == "contractor"
+    val context = LocalContext.current
 
-    val basePrice = if (isContractor) 99 else 49
-
-    val plans = listOf(
-        Plan("monthly", "Monthly", basePrice),
-        Plan("half-yearly", "6 Months", basePrice * 5, "Save 16%"),
-        Plan("yearly", "Yearly", basePrice * 10, "Save 16%"),
-        Plan("lifetime", "Lifetime", basePrice * 20, "Best Value")
-    )
-
-    var selectedPlanId by remember { mutableStateOf("lifetime") }
-    val selectedPlan = plans.find { it.id == selectedPlanId } ?: plans.last()
-
-    // Core App UI Colors
-    val surfaceColor = MaterialTheme.colorScheme.surface
     val backgroundColor = MaterialTheme.colorScheme.background
     val primaryColor = MaterialTheme.colorScheme.primary
     val textPrimary = MaterialTheme.colorScheme.onBackground
     val textSecondary = MaterialTheme.colorScheme.onSurfaceVariant
-    val outlineColor = MaterialTheme.colorScheme.outlineVariant
-    val premiumBadgeColor = Color(0xFFF59E0B) // Amber
-
-    val personalFeatures = listOf(
-        "Unlimited passbook history",
-        "PDF export",
-        "Cloud backup",
-        "Overtime history",
-        "Advanced statistics",
-        "Faster sync",
-        "Backup restore"
+    val premiumGradient = Brush.linearGradient(
+        colors = listOf(Color(0xFF6366F1), Color(0xFFA855F7), Color(0xFFEC4899))
     )
-
-    val contractorFeatures = listOf(
-        "Unlimited workers",
-        "Worker attendance history",
-        "Worker passbook export",
-        "Contractor statistics",
-        "Advance payment tracking",
-        "Worker overtime reports",
-        "Cloud backup"
-    )
-
-    val currentFeatures = if (isContractor) contractorFeatures else personalFeatures
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork_premium), fontWeight = FontWeight.Bold, color = textPrimary) },
+                title = { Text(stringResource(R.string.dailywork_premium), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = textPrimary)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
             )
         }
     ) { padding ->
@@ -98,259 +71,287 @@ fun PremiumScreen(
                 .fillMaxSize()
                 .background(backgroundColor)
                 .padding(padding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+            contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-
-            // Header Section
+            // Premium Header Card
             item {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Unlock advanced tools for smarter work management",
-                        fontSize = 15.sp,
-                        color = textSecondary,
-                        lineHeight = 22.sp
-                    )
+                PremiumHeaderCard(premiumGradient, uiState.isPremium)
+            }
+
+            if (uiState.isPremium) {
+                item {
+                    SubscriptionActiveCard(uiState.premiumType, onManage = { premiumViewModel.manageSubscription(context) })
                 }
             }
 
-            // Features Card
+            // Features Section
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = surfaceColor),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    border = borderStroke(1.dp, outlineColor)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Text(
-                            text = "Premium Features",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textPrimary,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-
-                        currentFeatures.forEach { feature ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = textPrimary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(feature, fontSize = 14.sp, color = textPrimary, fontWeight = FontWeight.Medium)
-                            }
-                        }
-                    }
-                }
+                PremiumFeaturesList(isContractor, textPrimary, textSecondary)
             }
 
-            // Billing Section
-            item {
-                Column(modifier = Modifier.fillMaxWidth()) {
+            // Pricing Plans
+            if (!uiState.isPremium) {
+                item {
                     Text(
-                        text = "Choose Your Plan",
+                        stringResource(R.string.premium_choose_plan),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = textPrimary,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
+                }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                PremiumPlanCardClean(plans[0], selectedPlanId == plans[0].id, primaryColor, surfaceColor, textPrimary, textSecondary, outlineColor, premiumBadgeColor) { selectedPlanId = plans[0].id }
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                PremiumPlanCardClean(plans[1], selectedPlanId == plans[1].id, primaryColor, surfaceColor, textPrimary, textSecondary, outlineColor, premiumBadgeColor) { selectedPlanId = plans[1].id }
-                            }
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                PremiumPlanCardClean(plans[2], selectedPlanId == plans[2].id, primaryColor, surfaceColor, textPrimary, textSecondary, outlineColor, premiumBadgeColor) { selectedPlanId = plans[2].id }
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                PremiumPlanCardClean(plans[3], selectedPlanId == plans[3].id, primaryColor, surfaceColor, textPrimary, textSecondary, outlineColor, premiumBadgeColor) { selectedPlanId = plans[3].id }
-                            }
-                        }
+                if (uiState.isLoading) {
+                    items(3) {
+                        LoadingSkeleton()
+                    }
+                } else {
+                    items(uiState.products.sortedBy { it.productId }) { product ->
+                        PremiumPlanItem(
+                            product = product,
+                            isSelected = false, // Simplified for this UI, could add selection state
+                            primaryColor = primaryColor,
+                            onClick = { premiumViewModel.buyProduct(context as Activity, product) }
+                        )
                     }
                 }
             }
 
-            // CTA Bottom Card
+            // Restore Purchases
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = surfaceColor),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    border = borderStroke(1.dp, outlineColor.copy(alpha=0.5f))
+                TextButton(
+                    onClick = { premiumViewModel.restorePurchases() },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("Get ${selectedPlan.label} Plan", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = textPrimary)
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Secure your data with export and cloud backup", fontSize = 14.sp, color = textSecondary, textAlign = TextAlign.Center)
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Button(
-                            onClick = { /* Implement Upgrade */ },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                        ) {
-                            Text("Upgrade for ₹${selectedPlan.price}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
-                        }
-                    }
+                    Text(stringResource(R.string.premium_restore_purchases), color = primaryColor)
                 }
             }
 
+            // Trust Badges
             item {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel_anytime_no_hidden_fees),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = textSecondary
-                    )
-                }
+                TrustBadges(textSecondary)
             }
         }
     }
 }
 
 @Composable
-fun PremiumPlanCardClean(
-    plan: Plan,
+fun PremiumHeaderCard(gradient: Brush, isPremium: Boolean) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(160.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize().background(gradient)) {
+            Column(
+                modifier = Modifier.padding(24.dp).align(Alignment.CenterStart)
+            ) {
+                Text(
+                    text = if (isPremium) stringResource(R.string.premium_you_are_pro) else stringResource(R.string.premium_go_premium),
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = if (isPremium) stringResource(R.string.premium_enjoy_features) else stringResource(R.string.premium_unlock_potential),
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 14.sp
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.WorkspacePremium,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(120.dp)
+                    .align(Alignment.CenterEnd)
+                    .offset(x = 20.dp)
+                    .graphicsLayer(alpha = 0.2f),
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+fun SubscriptionActiveCard(type: String?, onManage: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Verified, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.premium_active_subscription), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.premium_plan_label, type?.replaceFirstChar { it.uppercase() } ?: "Premium"), fontSize = 14.sp)
+            }
+            Button(onClick = onManage, shape = RoundedCornerShape(12.dp)) {
+                Text(stringResource(R.string.premium_manage_subscription))
+            }
+        }
+    }
+}
+
+@Composable
+fun PremiumFeaturesList(isContractor: Boolean, textPrimary: Color, textSecondary: Color) {
+    val features = if (isContractor) {
+        listOf(
+            "Unlimited workers management",
+            "Full worker history & reports",
+            "Advanced export to PDF/Excel",
+            "Cloud sync & backup",
+            "No advertisements",
+            "Priority support"
+        )
+    } else {
+        listOf(
+            "Unlimited attendance tracking",
+            "Overtime & Wage analytics",
+            "PDF Passbook generation",
+            "Auto-backup to Cloud",
+            "Multiple device sync",
+            "Personalized reports"
+        )
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        features.forEach { feature ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF10B981),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(feature, color = textPrimary, fontSize = 15.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun PremiumPlanItem(
+    product: ProductDetails,
     isSelected: Boolean,
     primaryColor: Color,
-    bgColor: Color,
-    textColor: Color,
-    textSecondary: Color,
-    outlineColor: Color,
-    badgeColor: Color,
     onClick: () -> Unit
 ) {
-    val borderColor by animateColorAsState(
-        targetValue = if (isSelected) primaryColor else outlineColor,
-        animationSpec = androidx.compose.animation.core.tween(200)
-    )
-    val cardBgColor by animateColorAsState(
-        targetValue = if (isSelected) primaryColor.copy(alpha = 0.02f) else bgColor,
-        animationSpec = androidx.compose.animation.core.tween(200)
-    )
-    val elevation by animateDpAsState(
-        targetValue = if (isSelected) 3.dp else 1.dp,
-        animationSpec = androidx.compose.animation.core.tween(200)
-    )
+    val price = if (product.productType == "subs") {
+        product.subscriptionOfferDetails?.firstOrNull()?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice
+    } else {
+        product.oneTimePurchaseOfferDetails?.formattedPrice
+    }
+
+    val title = when (product.productId) {
+        "workdaily_premium_monthly" -> stringResource(R.string.premium_monthly_plan)
+        "workdaily_premium_yearly" -> stringResource(R.string.premium_yearly_plan)
+        "workdaily_premium_lifetime" -> stringResource(R.string.premium_lifetime_access)
+        else -> product.name
+    }
+
+    val tag = when (product.productId) {
+        "workdaily_premium_yearly" -> stringResource(R.string.premium_best_value)
+        "workdaily_premium_lifetime" -> stringResource(R.string.premium_one_time)
+        else -> null
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBgColor),
-        border = androidx.compose.foundation.BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(20.dp),
+        border = borderStroke(if (tag == "Best Value") 2.dp else 1.dp, if (tag == "Best Value") primaryColor else Color.LightGray.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-
-            // Selection Check Circle inside corner
-            if (isSelected) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 10.dp, end = 10.dp)
-                        .size(22.dp)
-                        .clip(CircleShape)
-                        .background(primaryColor),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(14.dp)
+        Box(modifier = Modifier.padding(20.dp)) {
+            Column {
+                if (tag != null) {
+                    Text(
+                        tag,
+                        color = primaryColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .background(primaryColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-
-                // Best Value Badge
-                if (plan.tag == "Best Value") {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(badgeColor)
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            plan.tag,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                } else if (plan.tag != null) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(primaryColor.copy(alpha=0.1f))
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            plan.tag,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = primaryColor
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                } else {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text(
-                    plan.label,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = textSecondary
+                    text = if (product.productId == "workdaily_premium_monthly") stringResource(R.string.premium_billed_monthly) else if (product.productId == "workdaily_premium_yearly") stringResource(R.string.premium_billed_annually) else stringResource(R.string.premium_pay_once),
+                    fontSize = 13.sp,
+                    color = Color.Gray
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text("₹${plan.price}", fontSize = 22.sp, fontWeight = FontWeight.Black, color = textColor)
-                }
             }
+            Text(
+                price ?: "--",
+                modifier = Modifier.align(Alignment.CenterEnd),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 20.sp,
+                color = primaryColor
+            )
         }
     }
 }
 
 @Composable
-fun borderStroke(width: androidx.compose.ui.unit.Dp, color: Color) = androidx.compose.foundation.BorderStroke(width, color)
+fun LoadingSkeleton() {
+    val infiniteTransition = rememberInfiniteTransition()
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.LightGray.copy(alpha = alpha))
+            .padding(vertical = 4.dp)
+    )
+}
+
+@Composable
+fun TrustBadges(textSecondary: Color) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Security, contentDescription = null, modifier = Modifier.size(16.dp), tint = textSecondary)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(R.string.premium_secure_payment), fontSize = 12.sp, color = textSecondary)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(16.dp), tint = textSecondary)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(R.string.premium_cancel_anytime), fontSize = 12.sp, color = textSecondary)
+            }
+        }
+        Text(
+            stringResource(R.string.premium_google_play_secure),
+            fontSize = 11.sp,
+            color = textSecondary,
+            textAlign = TextAlign.Center
+        )
+    }
+}

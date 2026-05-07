@@ -65,6 +65,11 @@ class SettingsViewModel(
                 _state.value = _state.value.copy(isRemindersEnabled = enabled)
             }
         }
+        viewModelScope.launch {
+            repository.isPremiumFlow.collect { isPremium ->
+                _state.value = _state.value.copy(isPremium = isPremium)
+            }
+        }
     }
 
     fun toggleTheme(isDark: Boolean) {
@@ -104,7 +109,6 @@ class SettingsViewModel(
                     val currentRole = snapshot.getString("role") ?: ""
                     val currentPhone = snapshot.getString("phone") ?: ""
                     val currentProfileImageUrl = snapshot.getString("profileImageUrl") ?: ""
-                    val isPremium = snapshot.getBoolean("isPremium") ?: false
 
                     _state.value = _state.value.copy(
                         name = currentName,
@@ -118,8 +122,7 @@ class SettingsViewModel(
                         originalPhone = currentPhone,
                         profileImageUrl = currentProfileImageUrl,
                         originalProfileImageUrl = currentProfileImageUrl,
-                        language = snapshot.getString("language") ?: "en",
-                        isPremium = isPremium
+                        language = snapshot.getString("language") ?: "en"
                     )
                 }
             }
