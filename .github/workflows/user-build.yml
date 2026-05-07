@@ -1,8 +1,6 @@
 name: User Android Build (Test)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
