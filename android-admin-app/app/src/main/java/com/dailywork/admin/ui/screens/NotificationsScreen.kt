@@ -77,7 +77,7 @@ fun NotificationsScreen(
             enabled = title.isNotEmpty() && message.isNotEmpty() && !isSending
         ) {
             if (isSending) {
-                CircularProgressIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary)
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
             } else {
                 Text("Send Push Notification")
             }
