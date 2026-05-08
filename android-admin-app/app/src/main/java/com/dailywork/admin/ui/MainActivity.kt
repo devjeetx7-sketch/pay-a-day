@@ -3,18 +3,20 @@ package com.dailywork.admin.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
@@ -22,6 +24,7 @@ import com.dailywork.admin.ui.screens.*
 import com.dailywork.admin.viewmodel.AuthState
 import com.dailywork.admin.viewmodel.AuthViewModel
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +38,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AdminApp() {
-    val authViewModel: AuthViewModel = viewModel()
+    val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.authState.collectAsState()
 
     when (authState) {
@@ -59,6 +62,7 @@ fun MainScaffold(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     val items = listOf(
         Screen.Users,
+        Screen.Reports,
         Screen.Notifications,
         Screen.Settings
     )
@@ -90,6 +94,11 @@ fun MainScaffold(authViewModel: AuthViewModel) {
         NavHost(navController, startDestination = Screen.Users.route, Modifier.padding(innerPadding)) {
             composable(Screen.Users.route) {
                 UsersScreen(onUserClick = { userId ->
+                    navController.navigate("user_detail/$userId")
+                })
+            }
+            composable(Screen.Reports.route) {
+                ReportsScreen(onUserClick = { userId ->
                     navController.navigate("user_detail/$userId")
                 })
             }
@@ -125,6 +134,7 @@ fun MainScaffold(authViewModel: AuthViewModel) {
 
 sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Users : Screen("users", "Users", Icons.Default.People)
+    object Reports : Screen("reports", "Reports", Icons.Default.Flag)
     object Notifications : Screen("notifications", "Notify", Icons.Default.Notifications)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     object UserDetail : Screen("user_detail/{userId}", "User Detail", Icons.Default.People)

@@ -3,12 +3,15 @@ package com.dailywork.admin.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dailywork.admin.data.repository.FCMRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class NotificationsViewModel(
-    private val repository: FCMRepository = FCMRepository()
+@HiltViewModel
+class NotificationsViewModel @Inject constructor(
+    private val repository: FCMRepository
 ) : ViewModel() {
 
     private val _isSending = MutableStateFlow(false)
