@@ -2,6 +2,8 @@ package com.dailywork.attedance.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,7 +77,7 @@ class WorkerDetailViewModel(
         workerListener = firestoreRepository.getContractorWorkers()?.document(wId)
             ?.addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && snapshot.exists()) {
-                    val joinedDateLong = snapshot.getTimestamp("created_at")?.toDate()?.time ?: Date().time
+                    val joinedDateLong = getSafeTimestamp(snapshot, "created_at")
                     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                     _state.value = _state.value.copy(
                         name = snapshot.getString("name") ?: "Worker",
@@ -251,6 +253,25 @@ class WorkerDetailViewModel(
                 firestoreRepository.deleteWorkerAttendance(wId, date, date)
                 firestoreRepository.deleteWorkerAttendance(wId, "${date}_advance", date)
             } catch (e: Exception) { }
+        }
+    }
+
+    private fun getSafeTimestamp(snapshot: com.google.firebase.firestore.DocumentSnapshot, field: String): Long {
+        return try {
+            val rawValue = snapshot.get(field)
+            when (rawValue) {
+                is Timestamp -> rawValue.toDate().time
+                is Long -> rawValue
+                is String -> rawValue.toLongOrNull() ?: Date().time
+                null -> Date().time
+                else -> {
+                    Log.e("Firestore", "Invalid timestamp format for $field: $rawValue")
+                    Date().time
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Firestore", "Error getting timestamp for $field: ${e.message}")
+            Date().time
         }
     }
 
