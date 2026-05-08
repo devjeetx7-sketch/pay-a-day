@@ -20,6 +20,9 @@ class AuthViewModel(
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState
 
+    private var pendingRegistration: Map<String, String>? = null
+    private var generatedOtp: String? = null
+
     val userRoleFlow = repository.userRoleFlow
     val authTokenFlow = repository.authTokenFlow
 
@@ -54,10 +57,50 @@ class AuthViewModel(
     }
 
     fun registerWithEmail(email: String, pass: String, name: String) {
-         viewModelScope.launch {
+        viewModelScope.launch {
             _loginState.value = LoginState.Loading
             try {
                 if (email.isNotEmpty() && pass.isNotEmpty()) {
+                    pendingRegistration = mapOf(
+                        "email" to email,
+                        "pass" to pass,
+                        "name" to name
+                    )
+                    sendOtp(email)
+                } else {
+                    _loginState.value = LoginState.Error("Email and password cannot be empty")
+                }
+            } catch (e: Exception) {
+                _loginState.value = LoginState.Error(e.message ?: "Registration failed")
+            }
+        }
+    }
+
+    private fun sendOtp(email: String) {
+        val otp = (100000..999999).random().toString()
+        generatedOtp = otp
+        // In a real app, send email here. For now, log it.
+        android.util.Log.d("AuthViewModel", "OTP for $email: $otp")
+        _loginState.value = LoginState.OtpSent
+    }
+
+    fun resendOtp() {
+        val email = pendingRegistration?.get("email")
+        if (email != null) {
+            _loginState.value = LoginState.Loading
+            sendOtp(email)
+        }
+    }
+
+    fun verifyOtp(otp: String) {
+        viewModelScope.launch {
+            _loginState.value = LoginState.Loading
+            if (otp == generatedOtp) {
+                val email = pendingRegistration?.get("email") ?: ""
+                val pass = pendingRegistration?.get("pass") ?: ""
+                val name = pendingRegistration?.get("name") ?: ""
+
+                try {
                     val result = auth.createUserWithEmailAndPassword(email, pass).await()
                     val uid = result.user?.uid ?: ""
 
@@ -77,11 +120,11 @@ class AuthViewModel(
 
                     repository.saveAuthToken(uid)
                     _loginState.value = LoginState.Success(uid)
-                } else {
-                    _loginState.value = LoginState.Error("Email and password cannot be empty")
+                } catch (e: Exception) {
+                    _loginState.value = LoginState.Error(e.message ?: "Registration failed after OTP")
                 }
-            } catch (e: Exception) {
-                _loginState.value = LoginState.Error(e.message ?: "Registration failed")
+            } else {
+                _loginState.value = LoginState.Error("Invalid OTP")
             }
         }
     }
@@ -205,4 +248,5 @@ sealed class LoginState {
     data class Success(val token: String) : LoginState()
     object Blocked : LoginState()
     data class Error(val message: String) : LoginState()
+    object OtpSent : LoginState()
 }

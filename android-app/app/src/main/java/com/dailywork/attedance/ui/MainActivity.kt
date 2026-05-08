@@ -3,6 +3,7 @@ package com.dailywork.attedance.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -172,6 +173,13 @@ fun DailyWorkApp(factory: ViewModelFactory) {
             )
         }
         composable("login") {
+            val localLoginState by authViewModel.loginState.collectAsState()
+            LaunchedEffect(localLoginState) {
+                if (localLoginState is com.dailywork.attedance.viewmodel.LoginState.OtpSent) {
+                    navController.navigate("otp_verification")
+                }
+            }
+
             LoginScreen(
                 authViewModel = authViewModel,
                 selectedLanguage = languageState ?: "en",
@@ -186,6 +194,25 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                             popUpTo("login") { inclusive = true }
                         }
                     }
+                }
+            )
+        }
+        composable("otp_verification") {
+            OtpVerificationScreen(
+                authViewModel = authViewModel,
+                onVerificationSuccess = {
+                    if (roleState != null && roleState!!.isNotEmpty()) {
+                        navController.navigate("dashboard") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("role_selection") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
+                },
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }

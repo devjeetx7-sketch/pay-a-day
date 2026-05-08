@@ -48,6 +48,13 @@ fun SettingsScreen(
                     onCheckedChange = { viewModel.updateConfig(config.copy(languageEnabled = it)) }
                 )
                 ToggleItem(
+                    icon = Icons.Default.Translate,
+                    title = "Language Activity Visibility",
+                    description = "Show language activity to normal users",
+                    checked = config.languageActivityEnabled,
+                    onCheckedChange = { viewModel.updateConfig(config.copy(languageActivityEnabled = it)) }
+                )
+                ToggleItem(
                     icon = Icons.Default.Notifications,
                     title = "Push Notifications",
                     description = "Enable system-wide notifications",

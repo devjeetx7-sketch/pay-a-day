@@ -81,21 +81,21 @@ fun LoginScreen(
     val isTelugu = selectedLanguage == "te"
 
     val titleText = when {
-        isHindi -> "नमस्ते, शुरू करें"
-        isBengali -> "নমস্কার, শুরু করা যাক"
-        isMarathi -> "नमस्कार, सुरुवात करूया"
-        isTamil -> "வணக்கம், தொடங்குவோம்"
-        isTelugu -> "నమస్కారం, ప్రారంభిద్దాం"
-        else -> "Namaste, Let's get started"
+        isHindi -> "शुरू करें"
+        isBengali -> "শুরু করা যাক"
+        isMarathi -> "सुरुवात करूया"
+        isTamil -> "தொடங்குவோம்"
+        isTelugu -> "ప్రారంభిద్దాం"
+        else -> "Let's get started"
     }
 
     val subtitleText = when {
-        isHindi -> "अपने कार्यबल का कुशलतापूर्वक प्रबंधन करें।"
-        isBengali -> "আপনার কর্মীবাহিনী দক্ষতার সাথে পরিচালনা করুন।"
-        isMarathi -> "आपल्या कर्मचाऱ्यांचे प्रभावीपणे व्यवस्थापन करा."
-        isTamil -> "உங்கள் பணியாளர்களை திறமையாக நிர்வகிக்கவும்."
-        isTelugu -> "మీ వర్క్‌ఫోర్స్‌ను సమర్థవంతంగా నిర్వహించండి."
-        else -> "Manage your workforce efficiently."
+        isHindi -> "कार्यबल प्रबंधन।"
+        isBengali -> "কর্মী ব্যবস্থাপনা।"
+        isMarathi -> "कामगार व्यवस्थापन."
+        isTamil -> "பணியாளர் மேலாண்மை."
+        isTelugu -> "వర్క్‌ఫోర్స్ మేనేజ్‌మెంట్."
+        else -> "Manage your workforce."
     }
 
     val nameLabel = if (isHindi) "पूरा नाम" else "Full Name"
@@ -191,7 +191,7 @@ fun LoginScreen(
                     label = nameLabel,
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = "John Doe"
+                    placeholder = "Enter full name"
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -200,7 +200,7 @@ fun LoginScreen(
                 label = emailLabel,
                 value = email,
                 onValueChange = { email = it },
-                placeholder = "name@example.com",
+                placeholder = "Enter email",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -209,7 +209,7 @@ fun LoginScreen(
                 label = passwordLabel,
                 value = password,
                 onValueChange = { password = it },
-                placeholder = "••••••••",
+                placeholder = "Enter password",
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )

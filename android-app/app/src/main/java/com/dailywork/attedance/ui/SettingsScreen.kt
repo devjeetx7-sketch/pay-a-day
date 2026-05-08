@@ -243,7 +243,7 @@ fun SettingsScreenContent(
                             }
                             Switch(checked = state.isRemindersEnabled, onCheckedChange = { viewModel.toggleReminders(it) })
                         }
-                        if (state.isLanguageEnabled) {
+                        if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
                             Divider(color = MaterialTheme.colorScheme.outline)
                             Box(modifier = Modifier.fillMaxWidth()) {
                                 Row(modifier = Modifier.fillMaxWidth().clickable {
