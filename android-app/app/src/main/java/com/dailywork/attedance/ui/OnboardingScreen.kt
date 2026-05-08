@@ -52,14 +52,7 @@ fun OnboardingScreen(
     onComplete: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val pages = remember {
-        getOnboardingPages(onNext = {
-            scope.launch {
-                repository.saveOnboardingCompleted(true)
-                onComplete()
-            }
-        })
-    }
+    val pages = remember { getOnboardingPages() }
     val pagerState = rememberPagerState(pageCount = { pages.size })
 
     Box(
@@ -69,6 +62,28 @@ fun OnboardingScreen(
     ) {
         // Subtle background motion
         AnimatedBackground()
+
+        // Skip Button at top right
+        if (pagerState.currentPage < pages.size - 1) {
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        repository.saveOnboardingCompleted(true)
+                        onComplete()
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .statusBarsPadding()
+            ) {
+                Text(
+                    "Skip",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
 
         Column(modifier = Modifier.fillMaxSize()) {
             HorizontalPager(
@@ -92,12 +107,6 @@ fun OnboardingScreen(
             OnboardingBottomBar(
                 pagerState = pagerState,
                 pageCount = pages.size,
-                onSkip = {
-                    scope.launch {
-                        repository.saveOnboardingCompleted(true)
-                        onComplete()
-                    }
-                },
                 onNext = {
                     if (pagerState.currentPage < pages.size - 1) {
                         scope.launch {
@@ -154,13 +163,13 @@ fun OnboardingPageContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
-                .weight(1f)
+                .weight(1.2f)
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
@@ -196,7 +205,7 @@ fun OnboardingPageContent(
             }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.weight(0.2f))
     }
 }
 
@@ -205,30 +214,16 @@ fun OnboardingPageContent(
 fun OnboardingBottomBar(
     pagerState: androidx.compose.foundation.pager.PagerState,
     pageCount: Int,
-    onSkip: () -> Unit,
     onNext: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 32.dp)
             .navigationBarsPadding(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Skip Button
-        if (pagerState.currentPage < pageCount - 1) {
-            TextButton(onClick = onSkip) {
-                Text(
-                    "Skip",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        } else {
-            Spacer(modifier = Modifier.width(64.dp))
-        }
-
         // Indicators
         Row(verticalAlignment = Alignment.CenterVertically) {
             repeat(pageCount) { index ->
@@ -252,29 +247,27 @@ fun OnboardingBottomBar(
             }
         }
 
-        // Next/Go Button
-        if (pagerState.currentPage < pageCount - 1) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable { onNext() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowForward,
-                    contentDescription = "Next",
-                    tint = Color.White
-                )
-            }
-        } else {
-            Spacer(modifier = Modifier.size(56.dp))
+        // Primary Action Button
+        Button(
+            onClick = onNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Text(
+                text = if (pagerState.currentPage < pageCount - 1) "Continue" else "Get Started",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
         }
     }
 }
 
-fun getOnboardingPages(onNext: () -> Unit): List<OnboardingPage> {
+fun getOnboardingPages(): List<OnboardingPage> {
     return listOf(
         OnboardingPage(
             title = "Manage Attendance Easily",
@@ -309,41 +302,7 @@ fun getOnboardingPages(onNext: () -> Unit): List<OnboardingPage> {
         OnboardingPage(
             title = "Unlock Premium Experience",
             subtitle = "Get advanced analytics, premium contractor tools, exclusive features, and a faster experience.",
-            content = { offset ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    OnboardingPremiumVisual(offset)
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Button(
-                        onClick = onNext,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .graphicsLayer {
-                                alpha = 1f - offset
-                                translationY = offset * 100f
-                            },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Text("Continue as Personal", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedButton(
-                        onClick = onNext,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .graphicsLayer {
-                                alpha = 1f - offset
-                                translationY = offset * 150f
-                            },
-                        shape = RoundedCornerShape(16.dp),
-                        border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                    ) {
-                        Text("Continue as Contractor", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
+            content = { offset -> OnboardingPremiumVisual(offset) }
         )
     )
 }
