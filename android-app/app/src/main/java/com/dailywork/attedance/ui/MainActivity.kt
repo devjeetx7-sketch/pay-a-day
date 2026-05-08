@@ -98,10 +98,11 @@ fun DailyWorkApp(factory: ViewModelFactory) {
     val tokenState by authViewModel.authTokenFlow.collectAsState(initial = "LOADING")
     val languageState by authViewModel.repository.languageFlow.collectAsState(initial = "LOADING")
     val roleState by authViewModel.userRoleFlow.collectAsState(initial = "LOADING")
+    val onboardingCompleted by authViewModel.repository.isOnboardingCompletedFlow.collectAsState(initial = "LOADING")
     val loginState by authViewModel.loginState.collectAsState()
     val settingsState by settingsViewModel.state.collectAsState()
 
-    if (tokenState == "LOADING" || languageState == "LOADING" || roleState == "LOADING") {
+    if (tokenState == "LOADING" || languageState == "LOADING" || roleState == "LOADING" || onboardingCompleted == "LOADING") {
         return // Wait for datastore
     }
 
@@ -120,7 +121,11 @@ fun DailyWorkApp(factory: ViewModelFactory) {
             SplashScreen(
                 onSplashFinished = {
                     val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                    if (languageState == null && settingsState.isLanguageEnabled) {
+                    if (onboardingCompleted == false) {
+                        navController.navigate("onboarding") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    } else if (languageState == null && settingsState.isLanguageEnabled) {
                         navController.navigate("language_selection") {
                             popUpTo("splash") { inclusive = true }
                         }
@@ -135,6 +140,22 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                     } else {
                         navController.navigate("dashboard") {
                             popUpTo("splash") { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+        composable("onboarding") {
+            OnboardingScreen(
+                repository = authViewModel.repository,
+                onComplete = {
+                    if (languageState == null && settingsState.isLanguageEnabled) {
+                        navController.navigate("language_selection") {
+                            popUpTo("onboarding") { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("login") {
+                            popUpTo("onboarding") { inclusive = true }
                         }
                     }
                 }
