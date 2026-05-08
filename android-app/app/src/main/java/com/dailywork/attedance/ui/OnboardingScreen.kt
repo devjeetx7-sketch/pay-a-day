@@ -267,23 +267,23 @@ fun OnboardingBottomBar(
 fun getOnboardingPages(onNext: () -> Unit): List<OnboardingPage> {
     return listOf(
         OnboardingPage(
-            title = "Find Daily Work Faster",
-            subtitle = "Discover nearby jobs, contractors, and opportunities in one powerful platform.",
+            title = "Manage Your Daily Work Smarter",
+            subtitle = "Track activities, monitor progress, and organize your daily workflow in one powerful workspace designed for productivity and consistency.",
             content = { offset -> Page1Visual(offset) }
         ),
         OnboardingPage(
-            title = "For Personal Users",
-            subtitle = "Explore daily jobs, apply instantly, and track your work history with ease.",
+            title = "Built for Individuals & Contractors",
+            subtitle = "Choose your role and get tools tailored to your workflow — whether you're managing personal tasks or handling contractor operations and teams.",
             content = { offset -> Page2Visual(offset) }
         ),
         OnboardingPage(
-            title = "For Contractors",
-            subtitle = "Post jobs, hire workers, and manage your projects with premium business tools.",
+            title = "See Your Progress Clearly",
+            subtitle = "Access work statistics, activity insights, and performance tracking to understand your productivity and improve daily results.",
             content = { offset -> Page3Visual(offset) }
         ),
         OnboardingPage(
-            title = "Unlock Premium Power",
-            subtitle = "Get advanced insights, priority visibility, and smart statistics to grow faster.",
+            title = "Unlock Premium Experience",
+            subtitle = "Get advanced analytics, premium contractor tools, exclusive features, and a faster experience designed for serious users.",
             content = { offset -> Page4Visual(offset) }
         ),
         OnboardingPage(
