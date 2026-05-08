@@ -36,6 +36,7 @@ data class SettingsState(
     val isPremium: Boolean = false,
     val triggerRestart: Boolean = false,
     val isLanguageEnabled: Boolean = true,
+    val isLanguageActivityEnabled: Boolean = true,
     val isRoleUiEnabled: Boolean = true
 )
 
@@ -89,9 +90,11 @@ class SettingsViewModel(
             .addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && snapshot.exists()) {
                     val languageEnabled = snapshot.getBoolean("languageEnabled") ?: true
+                    val languageActivityEnabled = snapshot.getBoolean("languageActivityEnabled") ?: true
                     val roleUiEnabled = snapshot.getBoolean("roleUiEnabled") ?: true
                     _state.value = _state.value.copy(
                         isLanguageEnabled = languageEnabled,
+                        isLanguageActivityEnabled = languageActivityEnabled,
                         isRoleUiEnabled = roleUiEnabled
                     )
                 }

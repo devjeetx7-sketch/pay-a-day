@@ -29,6 +29,7 @@ data class PremiumInfo(
 
 data class AppConfig(
     val languageEnabled: Boolean = true,
+    val languageActivityEnabled: Boolean = true,
     val notificationsEnabled: Boolean = true,
     val roleUiEnabled: Boolean = true,
     val maintenanceMode: Boolean = false,
