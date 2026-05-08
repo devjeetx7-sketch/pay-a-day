@@ -62,7 +62,10 @@ class BillingManager(
     }
 
     fun queryPurchases() {
-        if (!billingClient.isReady) return
+        if (!billingClient.isReady) {
+            Log.e(TAG, "queryPurchases: Billing client not ready")
+            return
+        }
 
         val allPurchases = mutableListOf<Purchase>()
         var queriesFinished = 0
@@ -70,6 +73,7 @@ class BillingManager(
         val checkFinished = {
             queriesFinished++
             if (queriesFinished == 2) {
+                Log.d(TAG, "queryPurchases: Finished querying all purchases. Total found: ${allPurchases.size}")
                 purchaseHandler?.processPurchases(allPurchases)
             }
         }
@@ -81,7 +85,10 @@ class BillingManager(
                 .build()
         ) { result, purchases ->
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                Log.d(TAG, "queryPurchases (SUBS): Found ${purchases.size} purchases")
                 allPurchases.addAll(purchases)
+            } else {
+                Log.e(TAG, "queryPurchases (SUBS) failed: ${result.debugMessage} (Code: ${result.responseCode})")
             }
             checkFinished()
         }
@@ -93,13 +100,21 @@ class BillingManager(
                 .build()
         ) { result, purchases ->
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                Log.d(TAG, "queryPurchases (INAPP): Found ${purchases.size} purchases")
                 allPurchases.addAll(purchases)
+            } else {
+                Log.e(TAG, "queryPurchases (INAPP) failed: ${result.debugMessage} (Code: ${result.responseCode})")
             }
             checkFinished()
         }
     }
 
     suspend fun queryProductDetails(productIds: List<Pair<String, String>>): List<ProductDetails> {
+        if (!billingClient.isReady) {
+            Log.e(TAG, "queryProductDetails: Billing client not ready")
+            return emptyList()
+        }
+
         val productList = productIds.map { (id, type) ->
             QueryProductDetailsParams.Product.newBuilder()
                 .setProductId(id)
@@ -111,10 +126,25 @@ class BillingManager(
             .setProductList(productList)
             .build()
 
+        Log.d(TAG, "queryProductDetails: Starting query for ${productIds.size} products: ${productIds.map { it.first }}")
+
         val (billingResult, productDetailsList) = billingClient.queryProductDetails(params)
+
         return if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            productDetailsList ?: emptyList()
+            val resultList = productDetailsList ?: emptyList()
+            Log.d(TAG, "queryProductDetails: Successfully returned ${resultList.size} products")
+
+            // Check for missing products
+            val requestedIds = productIds.map { it.first }
+            val returnedIds = resultList.map { it.productId }
+            val missingIds = requestedIds.filterNot { returnedIds.contains(it) }
+            if (missingIds.isNotEmpty()) {
+                Log.w(TAG, "queryProductDetails: Warning - Missing products from Play Console: $missingIds")
+            }
+
+            resultList
         } else {
+            Log.e(TAG, "queryProductDetails: Error querying products. Code: ${billingResult.responseCode}, Message: ${billingResult.debugMessage}")
             emptyList()
         }
     }
