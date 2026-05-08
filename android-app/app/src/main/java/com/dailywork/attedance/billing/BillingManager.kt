@@ -115,38 +115,45 @@ class BillingManager(
             return emptyList()
         }
 
-        val productList = productIds.map { (id, type) ->
-            QueryProductDetailsParams.Product.newBuilder()
-                .setProductId(id)
-                .setProductType(type)
-                .build()
-        }
+        val allProductDetails = mutableListOf<ProductDetails>()
+        val groupedProducts = productIds.groupBy { it.second }
 
-        val params = QueryProductDetailsParams.newBuilder()
-            .setProductList(productList)
-            .build()
-
-        Log.d(TAG, "queryProductDetails: Starting query for ${productIds.size} products: ${productIds.map { it.first }}")
-
-        val (billingResult, productDetailsList) = billingClient.queryProductDetails(params)
-
-        return if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            val resultList = productDetailsList ?: emptyList()
-            Log.d(TAG, "queryProductDetails: Successfully returned ${resultList.size} products")
-
-            // Check for missing products
-            val requestedIds = productIds.map { it.first }
-            val returnedIds = resultList.map { it.productId }
-            val missingIds = requestedIds.filterNot { returnedIds.contains(it) }
-            if (missingIds.isNotEmpty()) {
-                Log.w(TAG, "queryProductDetails: Warning - Missing products from Play Console: $missingIds")
+        for ((productType, products) in groupedProducts) {
+            val productList = products.map { (id, type) ->
+                QueryProductDetailsParams.Product.newBuilder()
+                    .setProductId(id)
+                    .setProductType(type)
+                    .build()
             }
 
-            resultList
-        } else {
-            Log.e(TAG, "queryProductDetails: Error querying products. Code: ${billingResult.responseCode}, Message: ${billingResult.debugMessage}")
-            emptyList()
+            val params = QueryProductDetailsParams.newBuilder()
+                .setProductList(productList)
+                .build()
+
+            Log.d(TAG, "queryProductDetails: Starting query for ${products.size} $productType products")
+
+            val (billingResult, productDetailsList) = billingClient.queryProductDetails(params)
+
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                if (productDetailsList != null) {
+                    allProductDetails.addAll(productDetailsList)
+                }
+            } else {
+                Log.e(TAG, "queryProductDetails: Error querying $productType products. Code: ${billingResult.responseCode}, Message: ${billingResult.debugMessage}")
+            }
         }
+
+        Log.d(TAG, "queryProductDetails: Successfully returned ${allProductDetails.size} total products")
+
+        // Check for missing products
+        val requestedIds = productIds.map { it.first }
+        val returnedIds = allProductDetails.map { it.productId }
+        val missingIds = requestedIds.filterNot { returnedIds.contains(it) }
+        if (missingIds.isNotEmpty()) {
+            Log.w(TAG, "queryProductDetails: Warning - Missing products from Play Console: $missingIds")
+        }
+
+        return allProductDetails
     }
 
     fun launchBillingFlow(activity: Activity, productDetails: ProductDetails, offerToken: String? = null) {
