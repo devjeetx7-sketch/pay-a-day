@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -13,6 +14,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +30,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -160,16 +167,19 @@ fun OnboardingPageContent(
             page.content(offset)
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Text(
             text = page.title,
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontSize = 32.sp,
+                lineHeight = 38.sp
+            ),
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
             modifier = Modifier.graphicsLayer {
-                alpha = 1f - (offset * 2f).coerceIn(0f, 1f)
-                translationY = offset * 100f
+                alpha = 1f - (offset * 2.5f).coerceIn(0f, 1f)
+                translationY = offset * 80f
             }
         )
 
@@ -181,12 +191,12 @@ fun OnboardingPageContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.graphicsLayer {
-                alpha = 1f - (offset * 3f).coerceIn(0f, 1f)
-                translationY = offset * 150f
+                alpha = 1f - (offset * 3.5f).coerceIn(0f, 1f)
+                translationY = offset * 120f
             }
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -201,7 +211,7 @@ fun OnboardingBottomBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp)
+            .padding(horizontal = 24.dp, vertical = 32.dp)
             .navigationBarsPadding(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -267,31 +277,41 @@ fun OnboardingBottomBar(
 fun getOnboardingPages(onNext: () -> Unit): List<OnboardingPage> {
     return listOf(
         OnboardingPage(
-            title = "Manage Your Daily Work Smarter",
-            subtitle = "Track activities, monitor progress, and organize your daily workflow in one powerful workspace designed for productivity and consistency.",
-            content = { offset -> Page1Visual(offset) }
+            title = "Manage Attendance Easily",
+            subtitle = "Track daily work, attendance, and payments in one place.",
+            content = { offset -> OnboardingAttendanceVisual(offset) }
         ),
         OnboardingPage(
-            title = "Built for Individuals & Contractors",
-            subtitle = "Choose your role and get tools tailored to your workflow — whether you're managing personal tasks or handling contractor operations and teams.",
-            content = { offset -> Page2Visual(offset) }
+            title = "For Personal & Contractors",
+            subtitle = "Manage your own work or handle complete worker teams.",
+            content = { offset -> OnboardingRoleVisual(offset) }
         ),
         OnboardingPage(
-            title = "See Your Progress Clearly",
-            subtitle = "Access work statistics, activity insights, and performance tracking to understand your productivity and improve daily results.",
-            content = { offset -> Page3Visual(offset) }
+            title = "Complete Worker Records",
+            subtitle = "Track helpers, mistry, overtime, dues, and advances easily.",
+            content = { offset -> OnboardingWorkerRecordsVisual(offset) }
+        ),
+        OnboardingPage(
+            title = "Smart Reports & Passbooks",
+            subtitle = "Generate attendance reports and share PDF passbooks anytime.",
+            content = { offset -> OnboardingReportsVisual(offset) }
+        ),
+        OnboardingPage(
+            title = "Track Every Payment",
+            subtitle = "Manage advance, half payment, full payment, and balances clearly.",
+            content = { offset -> OnboardingPaymentVisual(offset) }
+        ),
+        OnboardingPage(
+            title = "Work Smarter Daily",
+            subtitle = "Stay organized with simple and powerful work management tools.",
+            content = { offset -> OnboardingProductivityVisual(offset) }
         ),
         OnboardingPage(
             title = "Unlock Premium Experience",
-            subtitle = "Get advanced analytics, premium contractor tools, exclusive features, and a faster experience designed for serious users.",
-            content = { offset -> Page4Visual(offset) }
-        ),
-        OnboardingPage(
-            title = "Ready To Start?",
-            subtitle = "Join Work Daily and start working smarter today.",
+            subtitle = "Get advanced analytics, premium contractor tools, exclusive features, and a faster experience.",
             content = { offset ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Page5Visual(offset)
+                    OnboardingPremiumVisual(offset)
                     Spacer(modifier = Modifier.height(32.dp))
                     Button(
                         onClick = onNext,
@@ -300,11 +320,12 @@ fun getOnboardingPages(onNext: () -> Unit): List<OnboardingPage> {
                             .height(56.dp)
                             .graphicsLayer {
                                 alpha = 1f - offset
-                                translationY = offset * 200f
+                                translationY = offset * 100f
                             },
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Continue as Personal", fontWeight = FontWeight.Bold)
+                        Text("Continue as Personal", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedButton(
@@ -314,11 +335,12 @@ fun getOnboardingPages(onNext: () -> Unit): List<OnboardingPage> {
                             .height(56.dp)
                             .graphicsLayer {
                                 alpha = 1f - offset
-                                translationY = offset * 250f
+                                translationY = offset * 150f
                             },
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Continue as Contractor", fontWeight = FontWeight.Bold)
+                        Text("Continue as Contractor", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -327,117 +349,90 @@ fun getOnboardingPages(onNext: () -> Unit): List<OnboardingPage> {
 }
 
 @Composable
-fun Page1Visual(offset: Float) {
-    val infiniteTransition = rememberInfiniteTransition(label = "p1")
+fun OnboardingAttendanceVisual(offset: Float) {
+    val infiniteTransition = rememberInfiniteTransition(label = "attendance")
     val floatAnim by infiniteTransition.animateFloat(
-        initialValue = -10f,
-        targetValue = 10f,
+        initialValue = -8f,
+        targetValue = 8f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
+            animation = tween(2500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "p1Float"
+        label = "float"
     )
 
-    Box(modifier = Modifier.size(280.dp), contentAlignment = Alignment.Center) {
-        // Background Glow
-        Box(
-            modifier = Modifier
-                .size(200.dp)
-                .blur(40.dp)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), CircleShape)
-        )
-
-        // Main Icon Card
+    Box(modifier = Modifier.size(300.dp), contentAlignment = Alignment.Center) {
+        // Calendar Grid Background
         Card(
             modifier = Modifier
-                .size(120.dp)
-                .offset(y = floatAnim.dp)
+                .size(240.dp)
                 .graphicsLayer {
-                    rotationZ = offset * 45f
-                    scaleX = 1f - offset
-                    scaleY = 1f - offset
+                    rotationX = 15f + offset * 20f
+                    rotationZ = -5f
+                    translationY = floatAnim
+                    alpha = 1f - offset
                 },
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("🔍", fontSize = 48.sp)
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    repeat(4) {
+                        Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(8.dp)))
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                repeat(3) { row ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        repeat(4) { col ->
+                            val isChecked = (row + col) % 3 == 0
+                            Box(
+                                modifier = Modifier
+                                    .padding(vertical = 6.dp)
+                                    .size(40.dp)
+                                    .background(
+                                        if (isChecked) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                                        RoundedCornerShape(8.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isChecked) {
+                                    Icon(Icons.Default.Check, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        // Floating Icons
-        val items = listOf("👷" to (-80 to -80), "🏗️" to (80 to -60), "🔧" to (-70 to 70), "🏢" to (70 to 80))
-        items.forEachIndexed { index, (emoji, pos) ->
-            val itemAnim by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1500 + index * 200, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "p1Item$index"
-            )
-
-            Box(
-                modifier = Modifier
-                    .offset(
-                        x = pos.first.dp + (offset * (index * 20 - 40)).dp,
-                        y = pos.second.dp + (itemAnim * 10).dp
-                    )
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .graphicsLayer {
-                        alpha = 1f - offset.absoluteValue
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(emoji, fontSize = 24.sp)
-            }
-        }
-    }
-}
-
-@Composable
-fun Page2Visual(offset: Float) {
-    Box(modifier = Modifier.size(280.dp), contentAlignment = Alignment.Center) {
-        val features = listOf(
-            "Daily Jobs" to "📍",
-            "Instant Apply" to "⚡",
-            "Work History" to "📊"
-        )
-
-        features.forEachIndexed { index, (text, emoji) ->
-            val yOffset = (index - 1) * 70
-            val xOffset = index * 20 - 20
-
-            Card(
-                modifier = Modifier
-                    .width(180.dp)
-                    .height(60.dp)
-                    .offset(
-                        x = (xOffset + offset * (index * 100)).dp,
-                        y = (yOffset - offset * (index * 50)).dp
-                    )
-                    .graphicsLayer {
-                        rotationZ = -5f + index * 5f + offset * 15f
-                        alpha = 1f - offset
-                    },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(emoji, fontSize = 20.sp)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        // Floating Worker Card
+        Card(
+            modifier = Modifier
+                .offset(x = 60.dp, y = 80.dp)
+                .width(160.dp)
+                .height(60.dp)
+                .graphicsLayer {
+                    rotationZ = 5f - offset * 10f
+                    scaleX = 1f + floatAnim / 100f
+                    scaleY = 1f + floatAnim / 100f
+                    alpha = 1f - offset
+                },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+        ) {
+            Row(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(32.dp).background(Color.White.copy(alpha = 0.5f), CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Person, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Box(modifier = Modifier.width(60.dp).height(8.dp).background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f), CircleShape))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(modifier = Modifier.width(40.dp).height(6.dp).background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f), CircleShape))
                 }
             }
         }
@@ -445,65 +440,333 @@ fun Page2Visual(offset: Float) {
 }
 
 @Composable
-fun Page3Visual(offset: Float) {
-    Box(modifier = Modifier.size(280.dp), contentAlignment = Alignment.Center) {
-        // Center Business Dashboard Visual
+fun OnboardingRoleVisual(offset: Float) {
+    val infiniteTransition = rememberInfiniteTransition(label = "roles")
+    val toggle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "toggle"
+    )
+
+    Box(modifier = Modifier.size(300.dp), contentAlignment = Alignment.Center) {
+        // Personal Role Card
         Card(
             modifier = Modifier
-                .size(200.dp)
+                .offset(x = (-40 + toggle * 20).dp, y = (-30 + toggle * 10).dp)
+                .size(160.dp)
+                .graphicsLayer {
+                    scaleX = 0.9f + (1f - toggle) * 0.2f
+                    scaleY = 0.9f + (1f - toggle) * 0.2f
+                    alpha = 0.7f + (1f - toggle) * 0.3f - offset
+                },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = (4 + (1f - toggle) * 8).dp)
+        ) {
+            Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Text("👤", fontSize = 40.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Personal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+
+        // Contractor Role Card
+        Card(
+            modifier = Modifier
+                .offset(x = (40 - toggle * 20).dp, y = (30 - toggle * 10).dp)
+                .size(160.dp)
+                .graphicsLayer {
+                    scaleX = 0.9f + toggle * 0.2f
+                    scaleY = 0.9f + toggle * 0.2f
+                    alpha = 0.7f + toggle * 0.3f - offset
+                },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+            elevation = CardDefaults.cardElevation(defaultElevation = (4 + toggle * 8).dp)
+        ) {
+            Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Text("🏗️", fontSize = 40.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Contractor", fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+fun OnboardingWorkerRecordsVisual(offset: Float) {
+    val infiniteTransition = rememberInfiniteTransition(label = "workers")
+    val listAnim by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "list"
+    )
+
+    Box(modifier = Modifier.size(300.dp), contentAlignment = Alignment.Center) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            val workers = listOf("Rahul Kumar" to "Mistry", "Amit Singh" to "Helper", "Suresh" to "Helper")
+            workers.forEachIndexed { index, (name, role) ->
+                val itemOffset = (index * 0.2f)
+                val entryAnim = ((listAnim - itemOffset).coerceIn(0f, 0.5f) * 2f)
+
+                Card(
+                    modifier = Modifier
+                        .width(260.dp)
+                        .graphicsLayer {
+                            translationX = (1f - entryAnim) * 100f
+                            alpha = entryAnim - offset
+                        },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(36.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) {
+                            Text(name.first().toString(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(role, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(modifier = Modifier.background(Color(0xFF10B981).copy(alpha = 0.1f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                Text("OT", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                            }
+                            if (index == 0) {
+                                Box(modifier = Modifier.background(Color(0xFFEF4444).copy(alpha = 0.1f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                    Text("Due", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEF4444))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OnboardingReportsVisual(offset: Float) {
+    val infiniteTransition = rememberInfiniteTransition(label = "reports")
+    val shareScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+
+    Box(modifier = Modifier.size(300.dp), contentAlignment = Alignment.Center) {
+        // Document Card
+        Card(
+            modifier = Modifier
+                .size(200.dp, 260.dp)
+                .graphicsLayer {
+                    rotationZ = -3f + offset * 10f
+                    alpha = 1f - offset
+                },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Description, null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(modifier = Modifier.width(80.dp).height(8.dp).background(Color.LightGray.copy(alpha = 0.3f), CircleShape))
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                repeat(6) {
+                    Box(modifier = Modifier.fillMaxWidth().height(6.dp).padding(vertical = 4.dp).background(Color.LightGray.copy(alpha = 0.2f), CircleShape))
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(32.dp)
+                        .background(Color(0xFFEF4444).copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("PDF Passbook", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEF4444))
+                }
+            }
+        }
+
+        // Floating Share Icon
+        Box(
+            modifier = Modifier
+                .offset(x = 80.dp, y = -100.dp)
+                .size(56.dp)
+                .scale(shareScale)
+                .graphicsLayer { alpha = 1f - offset }
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.Share, null, tint = Color.White, modifier = Modifier.size(24.dp))
+        }
+    }
+}
+
+@Composable
+fun OnboardingPaymentVisual(offset: Float) {
+    val infiniteTransition = rememberInfiniteTransition(label = "payment")
+    val rupeeY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -40f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rupee"
+    )
+
+    Box(modifier = Modifier.size(300.dp), contentAlignment = Alignment.Center) {
+        // Balance Card
+        Card(
+            modifier = Modifier
+                .width(240.dp)
                 .graphicsLayer {
                     rotationX = offset * 30f
-                    rotationY = offset * -30f
-                    scaleX = 1f - offset * 0.2f
-                    scaleY = 1f - offset * 0.2f
+                    alpha = 1f - offset
+                },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Current Balance", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("₹ 12,450", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color(0xFF10B981))
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(modifier = Modifier.alpha(0.1f))
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text("Paid", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("₹ 8,200", fontWeight = FontWeight.Bold)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Due", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("₹ 4,250", fontWeight = FontWeight.Bold, color = Color(0xFFEF4444))
+                    }
+                }
+            }
+        }
+
+        // Floating Rupee Indicators
+        repeat(3) { i ->
+            val xPos = (i - 1) * 80
+            val delay = i * 600
+            val anim by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, delayMillis = delay, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "rupee$i"
+            )
+
+            Text(
+                "₹",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 1f - anim),
+                modifier = Modifier
+                    .offset(x = xPos.dp, y = (40 - anim * 100).dp)
+                    .graphicsLayer { alpha = (1f - anim) * (1f - offset) }
+            )
+        }
+    }
+}
+
+@Composable
+fun OnboardingProductivityVisual(offset: Float) {
+    val infiniteTransition = rememberInfiniteTransition(label = "productivity")
+    val progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "progress"
+    )
+
+    Box(modifier = Modifier.size(300.dp), contentAlignment = Alignment.Center) {
+        Card(
+            modifier = Modifier
+                .size(260.dp)
+                .graphicsLayer {
+                    scaleX = 1f - offset * 0.1f
+                    scaleY = 1f - offset * 0.1f
+                    alpha = 1f - offset
                 },
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f), CircleShape), contentAlignment = Alignment.Center) {
-                        Text("👨‍💼", fontSize = 20.sp)
+                    Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primary, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.TrendingUp, null, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Box(modifier = Modifier.width(80.dp).height(8.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.1f), CircleShape))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Box(modifier = Modifier.width(40.dp).height(6.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f), CircleShape))
-                    }
+                    Text("Daily Stats", fontWeight = FontWeight.Black, fontSize = 18.sp)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Box(modifier = Modifier.size(45.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)))
-                    Box(modifier = Modifier.size(45.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)))
-                    Box(modifier = Modifier.size(45.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)))
+                // Simple Bar Chart Visual
+                Row(modifier = Modifier.height(100.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.Bottom) {
+                    val heights = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f)
+                    heights.forEachIndexed { index, h ->
+                        val animatedHeight = h * progress
+                        Box(
+                            modifier = Modifier
+                                .width(24.dp)
+                                .fillMaxHeight(animatedHeight)
+                                .background(
+                                    if (index == 3) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                    RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)
+                                )
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Box(modifier = Modifier.fillMaxWidth().height(40.dp).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f), RoundedCornerShape(8.dp)))
-            }
-        }
-
-        // Floating Action Badges
-        val badges = listOf("Hire" to (-80 to -80), "Post" to (80 to 80))
-        badges.forEachIndexed { index, (label, pos) ->
-            Box(
-                modifier = Modifier
-                    .offset(x = pos.first.dp - (offset * 50).dp, y = pos.second.dp)
-                    .background(
-                        if(index == 0) MaterialTheme.colorScheme.primary else Color(0xFFEF4444),
-                        RoundedCornerShape(20.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), CircleShape)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
                     )
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("85% Productivity Reached", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-fun Page4Visual(offset: Float) {
+fun OnboardingPremiumVisual(offset: Float) {
     var isUnlocked by remember { mutableStateOf(false) }
 
     LaunchedEffect(offset) {
@@ -515,15 +778,15 @@ fun Page4Visual(offset: Float) {
         }
     }
 
-    val lockRotation by animateFloatAsState(if (isUnlocked) 0f else -15f)
-    val lockScale by animateFloatAsState(if (isUnlocked) 1.2f else 1f)
+    val lockRotation by animateFloatAsState(if (isUnlocked) 0f else -15f, label = "rot")
+    val lockScale by animateFloatAsState(if (isUnlocked) 1.2f else 1f, label = "scale")
 
-    Box(modifier = Modifier.size(280.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
         // Glowing background
         Box(
             modifier = Modifier
-                .size(220.dp)
-                .blur(60.dp)
+                .size(160.dp)
+                .blur(40.dp)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(Color(0xFFFFD700).copy(alpha = 0.3f), Color.Transparent)
@@ -535,7 +798,7 @@ fun Page4Visual(offset: Float) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(100.dp)
                     .graphicsLayer {
                         rotationZ = lockRotation + offset * 45f
                         scaleX = lockScale - offset
@@ -543,66 +806,16 @@ fun Page4Visual(offset: Float) {
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (isUnlocked) "🔓" else "🔒", fontSize = 72.sp)
+                Text(if (isUnlocked) "🔓" else "🔒", fontSize = 60.sp)
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Box(
                 modifier = Modifier
                     .background(Color(0xFFFFD700).copy(alpha = 0.2f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
-                Text("PREMIUM", color = Color(0xFFB8860B), fontWeight = FontWeight.Black, fontSize = 14.sp)
+                Text("PREMIUM", color = Color(0xFFB8860B), fontWeight = FontWeight.Black, fontSize = 12.sp)
             }
-        }
-    }
-}
-
-@Composable
-fun Page5Visual(offset: Float) {
-    val infiniteTransition = rememberInfiniteTransition(label = "p5")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "p5Scale"
-    )
-
-    Box(modifier = Modifier.size(280.dp), contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .size(200.dp)
-                .scale(scale)
-                .graphicsLayer {
-                    alpha = 1f - offset
-                }
-                .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(MaterialTheme.colorScheme.primary, Color(0xFFEF4444))
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("🚀", fontSize = 80.sp)
-        }
-
-        // Particle effects
-        repeat(6) { i ->
-            val angle = i * 60f
-            val rad = Math.toRadians(angle.toDouble())
-            val x = (120 * Math.cos(rad)).toFloat()
-            val y = (120 * Math.sin(rad)).toFloat()
-
-            Box(
-                modifier = Modifier
-                    .offset(x = x.dp, y = y.dp)
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-            )
         }
     }
 }
