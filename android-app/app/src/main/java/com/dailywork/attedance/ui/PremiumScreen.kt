@@ -102,18 +102,58 @@ fun PremiumScreen(
                     )
                 }
 
-                if (uiState.isLoading) {
-                    items(3) {
-                        LoadingSkeleton()
-                    }
-                } else {
-                    items(uiState.products.sortedBy { it.productId }) { product ->
-                        PremiumPlanItem(
-                            product = product,
-                            isSelected = false, // Simplified for this UI, could add selection state
-                            primaryColor = primaryColor,
-                            onClick = { premiumViewModel.buyProduct(context as Activity, product) }
-                        )
+                item {
+                    Crossfade(targetState = uiState.isLoading, label = "loading_crossfade") { isLoading ->
+                        if (isLoading) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                repeat(3) {
+                                    LoadingSkeleton()
+                                }
+                            }
+                        } else if (uiState.error != null) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Icon(Icons.Default.ErrorOutline, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
+                                    Text(
+                                        uiState.error ?: stringResource(R.string.premium_plans_unavailable),
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Button(onClick = { premiumViewModel.refreshProducts() }) {
+                                        Text(stringResource(R.string.premium_retry))
+                                    }
+                                }
+                            }
+                        } else if (uiState.isFallbackMode) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                uiState.fallbackProducts.forEach { product ->
+                                    PremiumPlanItemFallback(
+                                        product = product,
+                                        primaryColor = primaryColor,
+                                        onClick = { /* Handle fallback click */ }
+                                    )
+                                }
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                uiState.products.sortedBy { it.productId }.forEach { product ->
+                                    PremiumPlanItem(
+                                        product = product,
+                                        isSelected = false,
+                                        primaryColor = primaryColor,
+                                        onClick = { premiumViewModel.buyProduct(context as Activity, product) }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -263,13 +303,15 @@ fun PremiumPlanItem(
         else -> null
     }
 
+    val isBestValue = product.productId == "workdaily_premium_yearly"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(20.dp),
-        border = androidx.compose.foundation.BorderStroke(if (tag == "Best Value") 2.dp else 1.dp, if (tag == "Best Value") primaryColor else Color.LightGray.copy(alpha = 0.5f)),
+        border = androidx.compose.foundation.BorderStroke(if (isBestValue) 2.dp else 1.dp, if (isBestValue) primaryColor else Color.LightGray.copy(alpha = 0.5f)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Box(modifier = Modifier.padding(20.dp)) {
@@ -293,13 +335,102 @@ fun PremiumPlanItem(
                     color = Color.Gray
                 )
             }
-            Text(
-                price ?: "--",
+            Column(
                 modifier = Modifier.align(Alignment.CenterEnd),
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 20.sp,
-                color = primaryColor
-            )
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    price ?: "--",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 20.sp,
+                    color = primaryColor
+                )
+                if (isBestValue) {
+                    Text(
+                        stringResource(R.string.premium_save_30),
+                        color = Color(0xFF10B981),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PremiumPlanItemFallback(
+    product: com.dailywork.attedance.ui.premium.FallbackProduct,
+    primaryColor: Color,
+    onClick: () -> Unit
+) {
+    val isBestValue = product.tag == "Best Value"
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(20.dp),
+        border = androidx.compose.foundation.BorderStroke(if (isBestValue) 2.dp else 1.dp, if (isBestValue) primaryColor else Color.LightGray.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Box(modifier = Modifier.padding(20.dp)) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (product.tag != null) {
+                        Text(
+                            product.tag,
+                            color = primaryColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .background(primaryColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text(
+                        "Test Mode",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+                if (product.tag != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                Text(product.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(
+                    text = product.description,
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+            }
+            Column(
+                modifier = Modifier.align(Alignment.CenterEnd),
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    product.price,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 20.sp,
+                    color = primaryColor
+                )
+                if (isBestValue) {
+                    Text(
+                        "Save ~33%",
+                        color = Color(0xFF10B981),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }
