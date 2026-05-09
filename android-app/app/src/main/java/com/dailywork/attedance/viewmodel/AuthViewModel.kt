@@ -43,13 +43,32 @@ class AuthViewModel(
         }
     }
 
+    private fun canProceed(): Boolean {
+        val state = _loginState.value
+        return state !is LoginState.Loading &&
+                state !is LoginState.OtpSending &&
+                state !is LoginState.OtpVerifying &&
+                state !is LoginState.OtpResending
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    private fun isStrongPassword(password: String): Boolean {
+        // At least 8 characters, one uppercase, one lowercase, one digit
+        val passwordPattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}$".toRegex()
+        return passwordPattern.matches(password)
+    }
+
     fun sendPasswordResetEmail(email: String) {
+        if (!canProceed()) return
         viewModelScope.launch {
             if (email.isBlank()) {
                 _loginState.value = LoginState.Error("Email cannot be empty")
                 return@launch
             }
-            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            if (!isValidEmail(email)) {
                 _loginState.value = LoginState.Error("Please enter a valid email address")
                 return@launch
             }
@@ -58,6 +77,8 @@ class AuthViewModel(
             try {
                 auth.sendPasswordResetEmail(email).await()
                 _loginState.value = LoginState.PasswordResetSent
+            } catch (e: com.google.firebase.auth.FirebaseAuthInvalidUserException) {
+                _loginState.value = LoginState.Error("No account found for this email.")
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Failed to send reset email")
             }
@@ -69,12 +90,13 @@ class AuthViewModel(
     }
 
     fun loginWithEmail(email: String, pass: String) {
+        if (!canProceed()) return
         viewModelScope.launch {
             if (email.isBlank() || pass.isBlank()) {
                 _loginState.value = LoginState.Error("Email and password cannot be empty")
                 return@launch
             }
-            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            if (!isValidEmail(email)) {
                 _loginState.value = LoginState.Error("Please enter a valid email address")
                 return@launch
             }
@@ -87,6 +109,10 @@ class AuthViewModel(
                 fetchAndSaveUserRole(uid)
                 repository.saveAuthToken(uid)
                 _loginState.value = LoginState.Success(uid)
+            } catch (e: com.google.firebase.auth.FirebaseAuthInvalidUserException) {
+                _loginState.value = LoginState.Error("No account found. Please create an account first.")
+            } catch (e: com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
+                _loginState.value = LoginState.Error("Invalid email or password.")
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Login failed")
             }
@@ -94,6 +120,7 @@ class AuthViewModel(
     }
 
     fun registerWithEmail(email: String, pass: String, name: String) {
+        if (!canProceed()) return
         viewModelScope.launch {
             if (name.isBlank()) {
                 _loginState.value = LoginState.Error("Full name is required")
@@ -103,17 +130,24 @@ class AuthViewModel(
                 _loginState.value = LoginState.Error("Email and password cannot be empty")
                 return@launch
             }
-            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            if (!isValidEmail(email)) {
                 _loginState.value = LoginState.Error("Please enter a valid email address")
                 return@launch
             }
-            if (pass.length < 6) {
-                _loginState.value = LoginState.Error("Password must be at least 6 characters")
+            if (!isStrongPassword(pass)) {
+                _loginState.value = LoginState.Error("Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one digit")
                 return@launch
             }
 
             _loginState.value = LoginState.Loading
             try {
+                // Check if account already exists
+                val methods = auth.fetchSignInMethodsForEmail(email).await().signInMethods
+                if (!methods.isNullOrEmpty()) {
+                    _loginState.value = LoginState.Error("Account already exists. Please sign in.")
+                    return@launch
+                }
+
                 pendingRegistration = mapOf(
                     "email" to email,
                     "pass" to pass,
@@ -189,13 +223,19 @@ class AuthViewModel(
     fun resendOtp() {
         val email = pendingRegistration?.get("email")
         if (email != null && _resendTimer.value == 0) {
-            _loginState.value = LoginState.OtpSending
+            _loginState.value = LoginState.OtpResending
             sendOtp(email)
         }
     }
 
     fun verifyOtp(otp: String) {
+        if (!canProceed()) return
         viewModelScope.launch {
+            if (otp.length != 6) {
+                _loginState.value = LoginState.Error("Please enter a valid 6-digit code.")
+                return@launch
+            }
+
             _loginState.value = LoginState.OtpVerifying
             var createdUser: com.google.firebase.auth.FirebaseUser? = null
             try {
@@ -248,6 +288,8 @@ class AuthViewModel(
                 val message = if (e is com.google.firebase.firestore.FirebaseFirestoreException &&
                     e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
                     "Invalid or expired OTP. Please check and try again."
+                } else if (e is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                    "Account already exists. Please sign in."
                 } else {
                     e.message ?: "Verification failed"
                 }
@@ -257,6 +299,7 @@ class AuthViewModel(
     }
 
     fun loginWithGoogleCredential(idToken: String) {
+        if (!canProceed()) return
         viewModelScope.launch {
              _loginState.value = LoginState.Loading
              try {
@@ -377,6 +420,7 @@ sealed class LoginState {
     data class Error(val message: String) : LoginState()
     object OtpSent : LoginState()
     object OtpSending : LoginState()
+    object OtpResending : LoginState()
     object OtpVerifying : LoginState()
     object PasswordResetSent : LoginState()
 }
