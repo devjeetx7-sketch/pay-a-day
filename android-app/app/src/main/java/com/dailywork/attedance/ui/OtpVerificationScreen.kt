@@ -98,11 +98,21 @@ fun OtpVerificationScreen(
                 OtpDigitField(
                     value = value,
                     onValueChange = { newValue ->
-                        if (newValue.length <= 1) {
-                            otpValues[index] = newValue
-                            if (newValue.isNotEmpty() && index < 5) {
+                        // Extract only digits from newValue
+                        val digits = newValue.filter { it.isDigit() }
+                        if (digits.length <= 1) {
+                            otpValues[index] = digits
+                            if (digits.isNotEmpty() && index < 5) {
                                 focusRequesters[index + 1].requestFocus()
                             }
+                        } else if (digits.length > 1 && index == 0) {
+                            // Handle paste
+                            val paste = digits.take(6)
+                            paste.forEachIndexed { i, char ->
+                                if (i < 6) otpValues[i] = char.toString()
+                            }
+                            val nextFocus = if (paste.length < 6) paste.length else 5
+                            focusRequesters[nextFocus].requestFocus()
                         }
                     },
                     modifier = Modifier
@@ -144,7 +154,8 @@ fun OtpVerificationScreen(
             enabled = otpValues.joinToString("").length == 6 &&
                       loginState !is LoginState.Loading &&
                       loginState !is LoginState.OtpSending &&
-                      loginState !is LoginState.OtpVerifying
+                      loginState !is LoginState.OtpVerifying &&
+                      loginState !is LoginState.OtpResending
         ) {
             if (loginState is LoginState.Loading || loginState is LoginState.OtpVerifying) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -168,9 +179,10 @@ fun OtpVerificationScreen(
             enabled = loginState !is LoginState.Loading &&
                       loginState !is LoginState.OtpSending &&
                       loginState !is LoginState.OtpVerifying &&
+                      loginState !is LoginState.OtpResending &&
                       resendTimer == 0
         ) {
-            if (loginState is LoginState.OtpSending) {
+            if (loginState is LoginState.OtpSending || loginState is LoginState.OtpResending) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),

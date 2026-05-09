@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BusinessCenter
@@ -71,6 +72,7 @@ fun LoginScreen(
     var isRegistering by remember { mutableStateOf(false) }
 
     val loginState by authViewModel.loginState.collectAsState()
+    val isProcessing = loginState is LoginState.Loading || loginState is LoginState.OtpSending || loginState is LoginState.OtpVerifying || loginState is LoginState.OtpResending
     val context = LocalContext.current
 
     // Simple language dictionary for Login Screen based on selected language
@@ -199,13 +201,22 @@ fun LoginScreen(
         }
 
         // Form fields
+        val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
         Column(modifier = Modifier.fillMaxWidth()) {
             if (isRegistering) {
                 CustomTextField(
                     label = nameLabel,
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = "Enter full name"
+                    placeholder = "Enter full name",
+                    enabled = !isProcessing,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                    )
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -215,7 +226,14 @@ fun LoginScreen(
                 value = email,
                 onValueChange = { email = it },
                 placeholder = "Enter email",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                enabled = !isProcessing,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                )
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -225,7 +243,21 @@ fun LoginScreen(
                 onValueChange = { password = it },
                 placeholder = "Enter password",
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                enabled = !isProcessing,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        if (isRegistering) {
+                            authViewModel.registerWithEmail(email, password, name)
+                        } else {
+                            authViewModel.loginWithEmail(email, password)
+                        }
+                    }
+                )
             )
 
             if (!isRegistering) {
@@ -267,8 +299,6 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Submit Button
-        val isProcessing = loginState is LoginState.Loading || loginState is LoginState.OtpSending || loginState is LoginState.OtpVerifying
-
         Button(
             onClick = {
                 if (isRegistering) {
@@ -444,7 +474,9 @@ fun CustomTextField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    enabled: Boolean = true
 ) {
     Column {
         Text(
@@ -458,18 +490,20 @@ fun CustomTextField(
             value = value,
             onValueChange = onValueChange,
             textStyle = androidx.compose.ui.text.TextStyle(
-                color = MaterialTheme.colorScheme.onBackground,
+                color = if (enabled) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             ),
             visualTransformation = visualTransformation,
             keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
+            enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.Transparent)
                 .border(
                     width = 2.dp,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = if (enabled) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(16.dp)
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp),
