@@ -111,6 +111,16 @@ fun LoginScreen(
     val noAccountText = if (isHindi) "क्या आपके पास खाता नहीं है?" else "Don't have an account?"
     val signUpText = if (isHindi) "साइन अप करें" else "Sign Up"
 
+    val forgotPasswordText = if (isHindi) "पासवर्ड भूल गए?" else "Forgot Password?"
+    val resetTitleText = if (isHindi) "पासवर्ड रीसेट करें" else "Reset Password"
+    val resetDescText = if (isHindi) "पासवर्ड रीसेट लिंक प्राप्त करने के लिए अपना ईमेल दर्ज करें।" else "Enter your email to receive a password reset link."
+    val sendLinkText = if (isHindi) "लिंक भेजें" else "Send Link"
+    val cancelText = if (isHindi) "रद्द करें" else "Cancel"
+    val resetLinkSentMsg = if (isHindi) "पासवर्ड रीसेट लिंक आपके ईमेल पर भेज दिया गया है" else "Password reset link sent to your email"
+
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -136,6 +146,10 @@ fun LoginScreen(
     LaunchedEffect(loginState) {
         if (loginState is LoginState.Success) {
             onLoginSuccess()
+        } else if (loginState is LoginState.PasswordResetSent) {
+            android.widget.Toast.makeText(context, resetLinkSentMsg, android.widget.Toast.LENGTH_LONG).show()
+            showForgotPasswordDialog = false
+            authViewModel.resetToIdle()
         }
     }
 
@@ -213,6 +227,25 @@ fun LoginScreen(
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
+
+            if (!isRegistering) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = forgotPasswordText,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            resetEmail = email
+                            showForgotPasswordDialog = true
+                        }
+                )
+            }
         }
 
         if (loginState is LoginState.Error) {
@@ -348,6 +381,59 @@ fun LoginScreen(
                 }
             )
         }
+    }
+
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { if (loginState !is LoginState.Loading) showForgotPasswordDialog = false },
+            title = { Text(text = resetTitleText, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(
+                        text = resetDescText,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CustomTextField(
+                        label = emailLabel,
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        placeholder = "Enter email",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                    )
+                    if (loginState is LoginState.Error) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = (loginState as LoginState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { authViewModel.sendPasswordResetEmail(resetEmail) },
+                    enabled = loginState !is LoginState.Loading,
+                    shape = CircleShape
+                ) {
+                    if (loginState is LoginState.Loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text(sendLinkText)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showForgotPasswordDialog = false },
+                    enabled = loginState !is LoginState.Loading
+                ) {
+                    Text(cancelText)
+                }
+            }
+        )
     }
 }
 
