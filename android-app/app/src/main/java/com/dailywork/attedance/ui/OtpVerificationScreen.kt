@@ -34,6 +34,7 @@ fun OtpVerificationScreen(
     var otpValues = remember { mutableStateListOf("", "", "", "", "", "") }
     val focusRequesters = remember { List(6) { FocusRequester() } }
     val loginState by authViewModel.loginState.collectAsState()
+    val resendTimer by authViewModel.resendTimer.collectAsState()
 
     LaunchedEffect(loginState) {
         if (loginState is LoginState.Success) {
@@ -136,14 +137,21 @@ fun OtpVerificationScreen(
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp),
-            enabled = otpValues.joinToString("").length == 6 && loginState !is LoginState.Loading
+            enabled = otpValues.joinToString("").length == 6 &&
+                      loginState !is LoginState.Loading &&
+                      loginState !is LoginState.OtpSending &&
+                      loginState !is LoginState.OtpVerifying
         ) {
-            if (loginState is LoginState.Loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp
-                )
+            if (loginState is LoginState.Loading || loginState is LoginState.OtpVerifying) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (loginState is LoginState.OtpVerifying) "Verifying..." else "Please wait...")
+                }
             } else {
                 Text("Verify", fontWeight = FontWeight.Bold)
             }
@@ -153,13 +161,28 @@ fun OtpVerificationScreen(
 
         TextButton(
             onClick = { authViewModel.resendOtp() },
-            enabled = loginState !is LoginState.Loading
+            enabled = loginState !is LoginState.Loading &&
+                      loginState !is LoginState.OtpSending &&
+                      loginState !is LoginState.OtpVerifying &&
+                      resendTimer == 0
         ) {
-            Text(
-                "Resend Code",
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
+            if (loginState is LoginState.OtpSending) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Sending...", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                }
+            } else {
+                Text(
+                    if (resendTimer > 0) "Resend OTP in ${resendTimer}s" else "Resend Code",
+                    color = if (resendTimer > 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
