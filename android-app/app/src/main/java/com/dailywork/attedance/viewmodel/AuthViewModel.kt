@@ -43,20 +43,29 @@ class AuthViewModel(
         }
     }
 
+    fun resetToIdle() {
+        _loginState.value = LoginState.Idle
+    }
+
     fun loginWithEmail(email: String, pass: String) {
         viewModelScope.launch {
+            if (email.isBlank() || pass.isBlank()) {
+                _loginState.value = LoginState.Error("Email and password cannot be empty")
+                return@launch
+            }
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                _loginState.value = LoginState.Error("Please enter a valid email address")
+                return@launch
+            }
+
             _loginState.value = LoginState.Loading
             try {
-                if (email.isNotEmpty() && pass.isNotEmpty()) {
-                    val result = auth.signInWithEmailAndPassword(email, pass).await()
-                    val uid = result.user?.uid ?: ""
+                val result = auth.signInWithEmailAndPassword(email, pass).await()
+                val uid = result.user?.uid ?: ""
 
-                    fetchAndSaveUserRole(uid)
-                    repository.saveAuthToken(uid)
-                    _loginState.value = LoginState.Success(uid)
-                } else {
-                    _loginState.value = LoginState.Error("Email and password cannot be empty")
-                }
+                fetchAndSaveUserRole(uid)
+                repository.saveAuthToken(uid)
+                _loginState.value = LoginState.Success(uid)
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Login failed")
             }
@@ -65,18 +74,31 @@ class AuthViewModel(
 
     fun registerWithEmail(email: String, pass: String, name: String) {
         viewModelScope.launch {
+            if (name.isBlank()) {
+                _loginState.value = LoginState.Error("Full name is required")
+                return@launch
+            }
+            if (email.isBlank() || pass.isBlank()) {
+                _loginState.value = LoginState.Error("Email and password cannot be empty")
+                return@launch
+            }
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                _loginState.value = LoginState.Error("Please enter a valid email address")
+                return@launch
+            }
+            if (pass.length < 6) {
+                _loginState.value = LoginState.Error("Password must be at least 6 characters")
+                return@launch
+            }
+
             _loginState.value = LoginState.Loading
             try {
-                if (email.isNotEmpty() && pass.isNotEmpty()) {
-                    pendingRegistration = mapOf(
-                        "email" to email,
-                        "pass" to pass,
-                        "name" to name
-                    )
-                    sendOtp(email)
-                } else {
-                    _loginState.value = LoginState.Error("Email and password cannot be empty")
-                }
+                pendingRegistration = mapOf(
+                    "email" to email,
+                    "pass" to pass,
+                    "name" to name
+                )
+                sendOtp(email)
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Registration failed")
             }
@@ -146,6 +168,7 @@ class AuthViewModel(
     fun resendOtp() {
         val email = pendingRegistration?.get("email")
         if (email != null && _resendTimer.value == 0) {
+            _loginState.value = LoginState.OtpSending
             sendOtp(email)
         }
     }

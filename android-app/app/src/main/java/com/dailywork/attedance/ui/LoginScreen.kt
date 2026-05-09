@@ -234,10 +234,12 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Submit Button
+        val isProcessing = loginState is LoginState.Loading || loginState is LoginState.OtpSending || loginState is LoginState.OtpVerifying
+
         Button(
             onClick = {
                 if (isRegistering) {
-                    authViewModel.registerWithEmail(email, password, name.ifBlank { email.substringBefore("@") })
+                    authViewModel.registerWithEmail(email, password, name)
                 } else {
                     authViewModel.loginWithEmail(email, password)
                 }
@@ -252,9 +254,9 @@ fun LoginScreen(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
             ),
-            enabled = loginState !is LoginState.Loading
+            enabled = !isProcessing
         ) {
-            if (loginState is LoginState.Loading) {
+            if (isProcessing) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(24.dp),
@@ -308,7 +310,7 @@ fun LoginScreen(
                 contentColor = MaterialTheme.colorScheme.onBackground
             ),
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            enabled = loginState !is LoginState.Loading
+            enabled = !isProcessing
         ) {
             Text(
                 text = googleText,
@@ -342,6 +344,7 @@ fun LoginScreen(
                     indication = null
                 ) {
                     isRegistering = !isRegistering
+                    authViewModel.resetToIdle()
                 }
             )
         }
