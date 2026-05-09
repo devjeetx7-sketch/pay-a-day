@@ -43,6 +43,27 @@ class AuthViewModel(
         }
     }
 
+    fun sendPasswordResetEmail(email: String) {
+        viewModelScope.launch {
+            if (email.isBlank()) {
+                _loginState.value = LoginState.Error("Email cannot be empty")
+                return@launch
+            }
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                _loginState.value = LoginState.Error("Please enter a valid email address")
+                return@launch
+            }
+
+            _loginState.value = LoginState.Loading
+            try {
+                auth.sendPasswordResetEmail(email).await()
+                _loginState.value = LoginState.PasswordResetSent
+            } catch (e: Exception) {
+                _loginState.value = LoginState.Error(e.message ?: "Failed to send reset email")
+            }
+        }
+    }
+
     fun resetToIdle() {
         _loginState.value = LoginState.Idle
     }
@@ -357,4 +378,5 @@ sealed class LoginState {
     object OtpSent : LoginState()
     object OtpSending : LoginState()
     object OtpVerifying : LoginState()
+    object PasswordResetSent : LoginState()
 }
