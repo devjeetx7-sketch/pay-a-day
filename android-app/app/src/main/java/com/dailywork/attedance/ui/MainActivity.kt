@@ -177,6 +177,7 @@ fun DailyWorkApp(factory: ViewModelFactory) {
             LaunchedEffect(localLoginState) {
                 if (localLoginState is com.dailywork.attedance.viewmodel.LoginState.OtpSent) {
                     navController.navigate("otp_verification")
+                    authViewModel.resetToIdle()
                 }
             }
 

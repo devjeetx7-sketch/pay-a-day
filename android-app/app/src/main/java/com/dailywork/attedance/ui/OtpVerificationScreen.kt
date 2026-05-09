@@ -36,6 +36,10 @@ fun OtpVerificationScreen(
     val loginState by authViewModel.loginState.collectAsState()
     val resendTimer by authViewModel.resendTimer.collectAsState()
 
+    LaunchedEffect(Unit) {
+        focusRequesters[0].requestFocus()
+    }
+
     LaunchedEffect(loginState) {
         if (loginState is LoginState.Success) {
             onVerificationSuccess()
