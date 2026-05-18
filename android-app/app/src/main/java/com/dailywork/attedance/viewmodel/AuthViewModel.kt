@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 
 import com.dailywork.attedance.data.FirestoreRepository
 import com.google.firebase.firestore.FirebaseFirestore
@@ -106,6 +107,20 @@ class AuthViewModel(
                 val result = auth.signInWithEmailAndPassword(email, pass).await()
                 val uid = result.user?.uid ?: ""
 
+                // Verify the user actually completed registration (has a Firestore doc)
+                val userDoc = db.collection("users").document(uid).get().await()
+                if (!userDoc.exists()) {
+                    // Account was created in Firebase Auth but OTP verification failed/was aborted
+                    pendingRegistration = mapOf(
+                        "email" to email,
+                        "pass" to pass,
+                        "name" to (result.user?.displayName ?: ""),
+                        "isLogin" to "true"
+                    )
+                    sendOtp(email, isResend = false)
+                    return@launch
+                }
+
                 fetchAndSaveUserRole(uid)
                 repository.saveAuthToken(uid)
                 _loginState.value = LoginState.Success(uid)
@@ -151,58 +166,63 @@ class AuthViewModel(
                 pendingRegistration = mapOf(
                     "email" to email,
                     "pass" to pass,
-                    "name" to name
+                    "name" to name,
+                    "isLogin" to "false"
                 )
-                sendOtp(email)
+                sendOtp(email, isResend = false)
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Registration failed")
             }
         }
     }
 
-    private fun sendOtp(email: String) {
+    private fun sendOtp(email: String, isResend: Boolean = false) {
         viewModelScope.launch {
-            _loginState.value = LoginState.OtpSending
+            _loginState.value = if (isResend) LoginState.OtpResending else LoginState.OtpSending
             try {
-                val otp = (100000..999999).random().toString()
-                val timestamp = System.currentTimeMillis()
-                val expiry = timestamp + (5 * 60 * 1000) // 5 minutes expiry
+                withTimeout(15000L) {
+                    val otp = (100000..999999).random().toString()
+                    val timestamp = System.currentTimeMillis()
+                    val expiry = timestamp + (5 * 60 * 1000) // 5 minutes expiry
 
-                // 1. Store OTP in Firestore for verification
-                val otpData = mapOf(
-                    "code" to otp,
-                    "createdAt" to timestamp,
-                    "expiresAt" to expiry,
-                    "email" to email
-                )
-                db.collection("otps").document(email).set(otpData).await()
-
-                // 2. Trigger Email delivery via 'mail' collection
-                val mailData = mapOf(
-                    "to" to listOf(email),
-                    "message" to mapOf(
-                        "subject" to "Your Verification Code - DailyWork",
-                        "html" to """
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
-                                <h2 style="color: #EF4444; text-align: center;">DailyWork Verification</h2>
-                                <p>Hello,</p>
-                                <p>Use the following 6-digit code to verify your email address. This code is valid for 5 minutes.</p>
-                                <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 5px;">
-                                    $otp
-                                </div>
-                                <p>If you did not request this code, please ignore this email.</p>
-                                <p style="font-size: 12px; color: #777; text-align: center; margin-top: 20px;">
-                                    &copy; ${java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)} DailyWork App. All rights reserved.
-                                </p>
-                            </div>
-                        """.trimIndent()
+                    // 1. Store OTP in Firestore for verification
+                    val otpData = mapOf(
+                        "code" to otp,
+                        "createdAt" to timestamp,
+                        "expiresAt" to expiry,
+                        "email" to email
                     )
-                )
-                db.collection("mail").add(mailData).await()
+                    db.collection("otps").document(email).set(otpData).await()
 
-                android.util.Log.d("AuthViewModel", "OTP for $email: $otp")
-                _loginState.value = LoginState.OtpSent
-                startResendTimer()
+                    // 2. Trigger Email delivery via 'mail' collection
+                    val mailData = mapOf(
+                        "to" to listOf(email),
+                        "message" to mapOf(
+                            "subject" to "Your Verification Code - DailyWork",
+                            "html" to """
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+                                    <h2 style="color: #EF4444; text-align: center;">DailyWork Verification</h2>
+                                    <p>Hello,</p>
+                                    <p>Use the following 6-digit code to verify your email address. This code is valid for 5 minutes.</p>
+                                    <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 5px;">
+                                        $otp
+                                    </div>
+                                    <p>If you did not request this code, please ignore this email.</p>
+                                    <p style="font-size: 12px; color: #777; text-align: center; margin-top: 20px;">
+                                        &copy; ${java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)} DailyWork App. All rights reserved.
+                                    </p>
+                                </div>
+                            """.trimIndent()
+                        )
+                    )
+                    db.collection("mail").add(mailData).await()
+
+                    android.util.Log.d("AuthViewModel", "OTP for $email: $otp")
+                    _loginState.value = LoginState.OtpSent
+                    startResendTimer()
+                }
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                _loginState.value = LoginState.Error("Network timeout. Please check your connection and try again.")
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error("Failed to send OTP: ${e.message}")
             }
@@ -223,8 +243,7 @@ class AuthViewModel(
     fun resendOtp() {
         val email = pendingRegistration?.get("email")
         if (email != null && _resendTimer.value == 0) {
-            _loginState.value = LoginState.OtpResending
-            sendOtp(email)
+            sendOtp(email, isResend = true)
         }
     }
 
@@ -238,15 +257,31 @@ class AuthViewModel(
 
             _loginState.value = LoginState.OtpVerifying
             var createdUser: com.google.firebase.auth.FirebaseUser? = null
+            var isNewUser = false
             try {
                 val email = pendingRegistration?.get("email") ?: ""
                 val pass = pendingRegistration?.get("pass") ?: ""
                 val name = pendingRegistration?.get("name") ?: ""
+                val isLogin = pendingRegistration?.get("isLogin") == "true"
 
-                // 1. Create Auth User first (required for isOwner rule)
-                val result = auth.createUserWithEmailAndPassword(email, pass).await()
-                createdUser = result.user
-                val uid = createdUser?.uid ?: throw Exception("Failed to create user account")
+                var uid = ""
+                if (isLogin) {
+                    // For login, just sign in
+                    val result = auth.signInWithEmailAndPassword(email, pass).await()
+                    uid = result.user?.uid ?: throw Exception("Failed to sign in")
+                } else {
+                    // 1. Create Auth User first (required for isOwner rule)
+                    try {
+                        val result = auth.createUserWithEmailAndPassword(email, pass).await()
+                        createdUser = result.user
+                        uid = createdUser?.uid ?: throw Exception("Failed to create user account")
+                        isNewUser = true
+                    } catch (e: com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                        // User exists but might be unverified. Sign in to proceed with verification
+                        val result = auth.signInWithEmailAndPassword(email, pass).await()
+                        uid = result.user?.uid ?: throw Exception("Failed to sign in")
+                    }
+                }
 
                 // 2. Attempt to create User document in Firestore
                 // This will succeed ONLY if the OTP matches via Security Rules
@@ -261,10 +296,12 @@ class AuthViewModel(
                     "isPremium" to false
                 )
 
-                db.collection("users")
-                    .document(uid)
-                    .set(userData)
-                    .await()
+                withTimeout(15000L) {
+                    db.collection("users")
+                        .document(uid)
+                        .set(userData)
+                        .await()
+                }
 
                 // 3. If we reached here, verification succeeded
                 // Cleanup: Delete OTP document and remove otp field from user doc
@@ -280,10 +317,14 @@ class AuthViewModel(
                 repository.saveUserRole("contractor")
                 _loginState.value = LoginState.Success(uid)
 
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                _loginState.value = LoginState.Error("Network timeout while verifying OTP. Please try again.")
             } catch (e: Exception) {
                 // If firestore write failed, it's likely due to invalid/expired OTP or connection
-                // Rollback: Delete the auth user so they can try again
-                createdUser?.delete()?.await()
+                // Rollback: Delete the auth user ONLY if we created it in this exact session
+                if (isNewUser) {
+                    createdUser?.delete()?.await()
+                }
 
                 val message = if (e is com.google.firebase.firestore.FirebaseFirestoreException &&
                     e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
